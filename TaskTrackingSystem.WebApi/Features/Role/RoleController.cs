@@ -7,7 +7,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class RoleController : ControllerBase
     {
         private readonly RoleService _roleService;
@@ -36,6 +36,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result<RoleDto>>> CreateRole([FromBody] CreateRoleDto createRoleDto)
         {
             long? currentUserId = null;
@@ -44,6 +45,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result>> UpdateRole(long id, [FromBody] UpdateRoleDto updateRoleDto)
         {
             long? currentUserId = null;
@@ -52,6 +54,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result>> DeleteRole(long id)
         {
             var result = await _roleService.SoftDeleteRoleAsync(id);
@@ -60,6 +63,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
 
         [HttpGet("{id}/menus")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result<List<string>>>> GetAssignedMenus(long id)
         {
             var result = await _roleService.GetAssignedMenusByRoleIdAsync(id);

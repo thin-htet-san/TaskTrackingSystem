@@ -4,7 +4,7 @@
 @using TaskTrackingSystem.Shared.Models.Project
 @using TaskTrackingSystem.Shared.Models.Role
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
 @inject NavigationManager Navigation

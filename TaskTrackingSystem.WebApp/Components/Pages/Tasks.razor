@@ -447,6 +447,7 @@
 
     private bool isLoading = true;
     private bool isAdmin = false;
+    private bool isManager = false;
     private long currentUserId = 0;
     private bool showModal = false;
     private bool isEditing = false;
@@ -641,6 +642,7 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         isAdmin = user.IsInRole("Admin");
+        isManager = user.IsInRole("Manager");
         var idStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (idStr != null) long.TryParse(idStr, out currentUserId);
 
@@ -653,8 +655,8 @@
             await System.Threading.Tasks.Task.WhenAll(tasksTask, projectsTask, usersTask);
 
             var allTasks = tasksTask.Result ?? new();
-            // Non-admin: only show tasks assigned to them
-            taskList = (!isAdmin && currentUserId > 0)
+            // Non-admin / non-manager: only show tasks assigned to them
+            taskList = (!(isAdmin || isManager) && currentUserId > 0)
                 ? allTasks.Where(t => t.AssignedTo == currentUserId).ToList()
                 : allTasks;
             projects = projectsTask.Result ?? new();
@@ -689,7 +691,7 @@
     {
         var client = ApiClient.CreateClient();
         var allTasks = await client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive) ?? new();
-        taskList = (!isAdmin && currentUserId > 0)
+        taskList = (!(isAdmin || isManager) && currentUserId > 0)
             ? allTasks.Where(t => t.AssignedTo == currentUserId).ToList()
             : allTasks;
     }

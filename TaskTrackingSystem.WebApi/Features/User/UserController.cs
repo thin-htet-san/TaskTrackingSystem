@@ -9,7 +9,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
@@ -38,6 +38,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result<UserDto>>> CreateUser([FromBody] CreateUserDto createUserDto)
         {
             long? currentUserId = null;
@@ -46,6 +47,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result>> UpdateUser(long id, [FromBody] UpdateUserDto updateUserDto)
         {
             long? currentUserId = null;
@@ -54,6 +56,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result>> DeleteUser(long id)
         {
             long? loggedInUserId = null;
