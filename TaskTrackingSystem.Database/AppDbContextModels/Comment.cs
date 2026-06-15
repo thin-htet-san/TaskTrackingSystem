@@ -21,7 +21,7 @@ public partial class Comment
 
     public long? UpdatedBy { get; set; }
 
-    public bool? IsDeleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     public virtual Task Task { get; set; } = null!;
 

@@ -21,7 +21,7 @@ public partial class Task
 
     public long? AssignedBy { get; set; }
 
-    public int? EstimatedHours { get; set; }
+    public decimal? EstimatedHours { get; set; }
 
     public DateTime DueDate { get; set; }
 
@@ -46,4 +46,6 @@ public partial class Task
     public virtual Project Project { get; set; } = null!;
 
     public virtual ICollection<TaskHistory> TaskHistories { get; set; } = new List<TaskHistory>();
+
+    public virtual ICollection<TimeLog> TimeLogs { get; set; } = new List<TimeLog>();
 }

@@ -27,7 +27,9 @@ public partial class Project
 
     public long? UpdatedBy { get; set; }
 
-    public bool? IsDeleted { get; set; }
+    public bool IsDeleted { get; set; }
+
+    public int? BudgetedHours { get; set; }
 
     public virtual User CreatedByNavigation { get; set; } = null!;
 

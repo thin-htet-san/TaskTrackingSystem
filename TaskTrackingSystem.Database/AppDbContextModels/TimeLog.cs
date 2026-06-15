@@ -3,19 +3,19 @@ using System.Collections.Generic;
 
 namespace TaskTrackingSystem.Database.AppDbContextModels;
 
-public partial class FileAttachment
+public partial class TimeLog
 {
     public long Id { get; set; }
 
     public long TaskId { get; set; }
 
-    public string FileName { get; set; } = null!;
+    public long UserId { get; set; }
 
-    public string FileType { get; set; } = null!;
+    public decimal HoursLogged { get; set; }
 
-    public string FilePath { get; set; } = null!;
+    public DateOnly LogDate { get; set; }
 
-    public long FileSizeInBytes { get; set; }
+    public string? Notes { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
@@ -28,4 +28,6 @@ public partial class FileAttachment
     public bool IsDeleted { get; set; }
 
     public virtual Task Task { get; set; } = null!;
+
+    public virtual User User { get; set; } = null!;
 }

@@ -8,5 +8,6 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public int TotalAssignedTasks { get; set; }
         public int CompletedTasksCount { get; set; }
         public double EfficiencyRatio { get; set; } // Completed / Total Asssined (percentage or ratio)
+        public double OnTimeDeliveryRate { get; set; }
     }
 }

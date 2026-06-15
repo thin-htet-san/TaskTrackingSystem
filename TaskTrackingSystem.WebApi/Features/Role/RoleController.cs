@@ -58,27 +58,6 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("{id}/permissions")]
-        public async Task<IActionResult> AssignPermissions(long id, [FromBody] AssignPermissionsDto dto)
-        {
-            var result = await _roleService.AssignPermissionsToRoleAsync(id, dto);
-            if (!result.IsSuccess)
-            {
-                return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
-            }
-            return Ok();
-        }
-
-        [HttpGet("{id}/permissions")]
-        public async Task<ActionResult<Result<List<long>>>> GetAssignedPermissions(long id)
-        {
-            var result = await _roleService.GetAssignedPermissionsByRoleIdAsync(id);
-            if (!result.IsSuccess)
-            {
-                return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
-            }
-            return Ok(result);
-        }
 
         [HttpGet("{id}/menus")]
         public async Task<ActionResult<Result<List<string>>>> GetAssignedMenus(long id)

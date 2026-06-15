@@ -133,6 +133,7 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Days Overdue</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -216,6 +217,14 @@
                                     }
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
                                 </td>
+                                <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
+                                    <button @onclick="() => RemindAssignee(task)" class="text-xs font-semibold text-violet-600 hover:text-violet-900 transition-colors font-sans">
+                                        Remind
+                                    </button>
+                                    <button @onclick="() => OpenAdjustDueDateModal(task)" class="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors font-sans">
+                                        Adjust Due Date
+                                    </button>
+                                </td>
                             </tr>
                         }
                     }
@@ -233,6 +242,41 @@
                         TotalCount="FilteredTasks.Count()"
                         OnPageChanged="HandlePageChanged"
                         OnPageSizeChanged="HandlePageSizeChanged" />
+        </div>
+    }
+
+    @if (isAdjustModalOpen && selectedTaskForAdjustment != null)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+            <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+                <h3 class="text-lg font-bold text-slate-900 mb-2 font-sans">Adjust Due Date</h3>
+                <p class="text-sm text-slate-500 mb-4 font-sans">Update the due date for task: <span class="font-semibold text-slate-700">@selectedTaskForAdjustment.Title</span></p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1.5 font-sans">New Due Date</label>
+                        <input @bind="adjustedDueDate" type="date" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(adjustError))
+                    {
+                        <div class="rounded-lg bg-rose-50 p-3 text-xs font-medium text-rose-700 font-sans">@adjustError</div>
+                    }
+
+                    <div class="flex items-center justify-end space-x-3 pt-2">
+                        <button @onclick="CloseAdjustModal" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors font-sans">
+                            Cancel
+                        </button>
+                        <button @onclick="SaveDueDateAdjustment" disabled="@isAdjusting" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-50 shadow-sm flex items-center font-sans">
+                            @if (isAdjusting)
+                            {
+                                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            }
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     }
 </div>
@@ -377,5 +421,81 @@
         var bytes = Encoding.UTF8.GetBytes(sb.ToString());
         var base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("downloadFile", $"overdue_tasks_{DateTime.Today:yyyy-MM-dd}.csv", "text/csv", base64);
+    }
+
+    // Adjust Due Date modal variables and methods
+    private bool isAdjustModalOpen = false;
+    private TaskDto? selectedTaskForAdjustment;
+    private DateTime adjustedDueDate = DateTime.Today;
+    private string adjustError = string.Empty;
+    private bool isAdjusting = false;
+
+    private void RemindAssignee(TaskDto task)
+    {
+        var assigneeName = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo) is { } usr ? $"{usr.FirstName} {usr.LastName}" : "Unassigned";
+        Console.WriteLine($"[REMINDER PLACEHOLDER] Sent reminder notification to assignee '{assigneeName}' for overdue task ID {task.Id} ('{task.Title}')");
+    }
+
+    private void OpenAdjustDueDateModal(TaskDto task)
+    {
+        selectedTaskForAdjustment = task;
+        adjustedDueDate = task.DueDate;
+        adjustError = string.Empty;
+        isAdjustModalOpen = true;
+    }
+
+    private void CloseAdjustModal()
+    {
+        isAdjustModalOpen = false;
+        selectedTaskForAdjustment = null;
+        adjustError = string.Empty;
+    }
+
+    private async Task SaveDueDateAdjustment()
+    {
+        if (selectedTaskForAdjustment == null) return;
+
+        isAdjusting = true;
+        adjustError = string.Empty;
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var updateDto = new UpdateTaskDto
+            {
+                Title = selectedTaskForAdjustment.Title,
+                Description = selectedTaskForAdjustment.Description,
+                StatusId = selectedTaskForAdjustment.StatusId,
+                PriorityId = selectedTaskForAdjustment.PriorityId,
+                AssignedTo = selectedTaskForAdjustment.AssignedTo,
+                AssignedBy = selectedTaskForAdjustment.AssignedBy,
+                EstimatedHours = selectedTaskForAdjustment.EstimatedHours,
+                DueDate = adjustedDueDate
+            };
+
+            var response = await client.PutAsJsonAsync($"Task/{selectedTaskForAdjustment.Id}", updateDto);
+            if (response.IsSuccessStatusCode)
+            {
+                var t = allTasks.FirstOrDefault(x => x.Id == selectedTaskForAdjustment.Id);
+                if (t != null)
+                {
+                    t.DueDate = adjustedDueDate;
+                }
+                ComputeSummary();
+                CloseAdjustModal();
+            }
+            else
+            {
+                var errorRes = await response.Content.ReadFromJsonAsync<Result>();
+                adjustError = errorRes?.ErrorMessage ?? "Failed to update due date. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            adjustError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isAdjusting = false;
+        }
     }
 }

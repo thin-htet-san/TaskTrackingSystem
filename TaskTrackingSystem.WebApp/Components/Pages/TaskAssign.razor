@@ -253,6 +253,7 @@
     private List<ProjectDto> projects = new();
     private List<UserDto> allUsers = new();
     private List<RoleDto> roles = new();
+    private long? adminRoleId;
 
     private long selectedProjectId = 0;
     private long selectedProjectIdInput = 0;
@@ -279,7 +280,11 @@
             tasks = tasksTask.Result ?? new();
             projects = projectsTask.Result ?? new();
             allUsers = usersTask.Result ?? new();
-            roles = rolesTask.Result ?? new();
+            
+            var allLoadedRoles = rolesTask.Result ?? new();
+            var adminRole = allLoadedRoles.FirstOrDefault(r => string.Equals(r.Name, "Admin", StringComparison.OrdinalIgnoreCase));
+            adminRoleId = adminRole?.Id;
+            roles = allLoadedRoles.Where(r => !string.Equals(r.Name, "Admin", StringComparison.OrdinalIgnoreCase)).ToList();
         }
         catch (Exception ex)
         {
@@ -319,6 +324,10 @@
         get
         {
             var result = allUsers.Where(u => u.IsActive);
+            if (adminRoleId.HasValue)
+            {
+                result = result.Where(u => u.RoleId != adminRoleId.Value);
+            }
             if (selectedRoleId > 0)
             {
                 result = result.Where(u => u.RoleId == selectedRoleId);

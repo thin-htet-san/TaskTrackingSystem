@@ -24,6 +24,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             return await _db.Projects
                 .Where(p => p.IsDeleted != true)
+                .OrderBy(p => p.EndDate)
+                .ThenByDescending(p => p.CreatedAt ?? DateTime.UtcNow)
                 .Select(p => new ProjectDto
                 {
                     Id = p.Id,
@@ -32,7 +34,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
                     CreatedById = p.CreatedById,
-                    CreatedAt = p.CreatedAt ?? DateTime.UtcNow
+                    CreatedAt = p.CreatedAt ?? DateTime.UtcNow,
+                    BudgetedHours = p.BudgetedHours
                 }).ToListAsync();
         }
 
@@ -51,7 +54,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 StartDate = project.StartDate,
                 EndDate = project.EndDate,
                 CreatedById = project.CreatedById,
-                CreatedAt = project.CreatedAt ?? DateTime.UtcNow
+                CreatedAt = project.CreatedAt ?? DateTime.UtcNow,
+                BudgetedHours = project.BudgetedHours
             };
         }
 
@@ -71,7 +75,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 CreatedById = dto.CreatedById,
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = currentUserId
+                CreatedBy = currentUserId,
+                BudgetedHours = dto.BudgetedHours
             };
 
             _db.Projects.Add(project);
@@ -85,7 +90,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 StartDate = project.StartDate,
                 EndDate = project.EndDate,
                 CreatedById = project.CreatedById,
-                CreatedAt = project.CreatedAt ?? DateTime.UtcNow
+                CreatedAt = project.CreatedAt ?? DateTime.UtcNow,
+                BudgetedHours = project.BudgetedHours
             };
 
             return Result<ProjectDto>.Success(resultDto, 201);
@@ -105,6 +111,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             project.Description = dto.Description;
             project.StartDate = dto.StartDate;
             project.EndDate = dto.EndDate;
+            project.BudgetedHours = dto.BudgetedHours;
             project.UpdatedAt = DateTime.UtcNow;
             project.UpdatedBy = currentUserId;
 
@@ -251,7 +258,12 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                     AssignedBy = t.AssignedBy,
                     EstimatedHours = t.EstimatedHours,
                     DueDate = t.DueDate,
-                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow
+                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    CompletedAt = t.TaskHistories
+                        .Where(th => th.NewStatusId == 3)
+                        .OrderBy(th => th.CreatedAt)
+                        .Select(th => th.CreatedAt)
+                        .FirstOrDefault()
                 })
                 .ToListAsync();
 

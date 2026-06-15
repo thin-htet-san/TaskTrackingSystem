@@ -110,5 +110,17 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         $"OverdueCriticalTasks_{DateTime.Today:yyyyMMdd}.xlsx");
         }
+
+        // ─── Report 4: Time Tracking ──────────────────────────────────────────────
+
+        [HttpGet("time-tracking")]
+        public async Task<ActionResult<Result<TimeTrackingReportDto>>> GetTimeTracking(
+            [FromQuery] string? search,
+            [FromQuery] long? projectId,
+            [FromQuery] long? statusId)
+        {
+            var result = await _reportService.GetTimeTrackingReportAsync(search, projectId, statusId);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

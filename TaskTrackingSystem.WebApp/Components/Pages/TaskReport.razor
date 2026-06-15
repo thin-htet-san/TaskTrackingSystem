@@ -67,6 +67,7 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
                 <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="uncompleted">Uncompleted</option>
                     <option value="">All</option>
                     <option value="1">To Do</option>
                     <option value="2">In Progress</option>
@@ -273,9 +274,19 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center">
-                                    <i data-lucide="file-search" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
-                                    <p class="text-sm text-slate-400">No tasks found matching criteria.</p>
+                                <td colspan="6" class="px-6 py-16 text-center bg-slate-50/20">
+                                    <div class="flex flex-col items-center justify-center space-y-4">
+                                        <svg class="w-24 h-24 text-slate-300" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <rect x="25" y="15" width="70" height="90" rx="8" stroke="currentColor" stroke-width="3" stroke-dasharray="6 4" />
+                                            <path d="M45 40H75" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                                            <path d="M45 55H75" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                                            <path d="M45 70H60" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                                            <circle cx="85" cy="85" r="15" fill="white" stroke="#7c3aed" stroke-width="3" />
+                                            <path d="M80 85L90 85M85 80L85 90" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" />
+                                        </svg>
+                                        <h3 class="text-lg font-semibold text-slate-700">No Tasks Found</h3>
+                                        <p class="text-sm text-slate-400 max-w-xs">There are no tasks matching your filters. Try adjusting your search query or filters.</p>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -304,7 +315,7 @@
     private string filterPeriod = "all";
     private DateTime? filterStartDate;
     private DateTime? filterEndDate;
-    private string? filterStatus;
+    private string? filterStatus = "uncompleted";
     private int filterProjectId;
     private string projectSearchInput = string.Empty;
     private string projectSearchQuery = string.Empty;
@@ -337,7 +348,7 @@
         filterPeriod = "all";
         filterStartDate = null;
         filterEndDate = null;
-        filterStatus = null;
+        filterStatus = "uncompleted";
         filterProjectId = 0;
         projectSearchInput = string.Empty;
         projectSearchQuery = string.Empty;

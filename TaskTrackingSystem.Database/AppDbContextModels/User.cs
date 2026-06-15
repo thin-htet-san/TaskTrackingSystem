@@ -7,6 +7,8 @@ public partial class User
 {
     public long Id { get; set; }
 
+    public string Username { get; set; } = null!;
+
     public string FirstName { get; set; } = null!;
 
     public string LastName { get; set; } = null!;
@@ -31,8 +33,6 @@ public partial class User
 
     public bool IsDeleted { get; set; }
 
-    public string Username { get; set; } = null!;
-
     public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
@@ -50,4 +50,6 @@ public partial class User
     public virtual ICollection<TaskHistory> TaskHistoryCreatedByNavigations { get; set; } = new List<TaskHistory>();
 
     public virtual ICollection<TaskHistory> TaskHistoryModifiedBies { get; set; } = new List<TaskHistory>();
+
+    public virtual ICollection<TimeLog> TimeLogs { get; set; } = new List<TimeLog>();
 }

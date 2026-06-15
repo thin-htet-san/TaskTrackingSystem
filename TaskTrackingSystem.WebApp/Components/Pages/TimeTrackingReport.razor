@@ -3,6 +3,7 @@
 @using TaskTrackingSystem.Shared.Models.Task
 @using TaskTrackingSystem.Shared.Models.User
 @using TaskTrackingSystem.Shared.Models.Project
+@using TaskTrackingSystem.Shared.Models.Report
 @using System.Text
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
@@ -16,25 +17,25 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Time Tracking &amp; Timesheet</h2>
-            <p class="text-slate-500 mt-1">Estimated vs actual hours breakdown by user and project.</p>
+            <p class="text-slate-500 mt-1 font-sans">Estimated vs actual hours breakdown by user and project.</p>
         </div>
         <div class="flex items-center space-x-3">
             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
                 <button @onclick='() => currentView = "user"'
-                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(currentView == "user" ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="users" class="h-3.5 w-3.5 mr-1"></i> By User
+                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(currentView == "user" ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors font-sans">
+                    <i data-lucide="users" class="h-3.5 w-3.5 mr-1 font-sans"></i> By User
                 </button>
                 <button @onclick='() => currentView = "project"'
-                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(currentView == "project" ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="folder-kanban" class="h-3.5 w-3.5 mr-1"></i> By Project
+                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(currentView == "project" ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors font-sans">
+                    <i data-lucide="folder-kanban" class="h-3.5 w-3.5 mr-1 font-sans"></i> By Project
                 </button>
                 <button @onclick='() => currentView = "detail"'
-                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(currentView == "detail" ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> Detail
+                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(currentView == "detail" ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors font-sans">
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1 font-sans"></i> Detail
                 </button>
             </div>
-            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-sans">
+                <i data-lucide="download" class="h-4 w-4 mr-2 font-sans"></i> Export CSV
             </button>
         </div>
     </div>
@@ -46,8 +47,8 @@
             <div class="rounded-xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">Total Estimated Hrs</p>
-                        <p class="mt-1 text-3xl font-bold text-violet-700">@totalEstimated</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500 font-sans">Total Estimated Hrs</p>
+                        <p class="mt-1 text-3xl font-bold text-violet-700">@reportData.TotalEstimatedHrs.ToString("F1")</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
                         <i data-lucide="clock" class="h-6 w-6 text-violet-600"></i>
@@ -57,8 +58,8 @@
             <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500">Tasks with Hours</p>
-                        <p class="mt-1 text-3xl font-bold text-emerald-700">@tasksWithHours</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500 font-sans">Tasks with Hours</p>
+                        <p class="mt-1 text-3xl font-bold text-emerald-700">@reportData.TasksWithHours</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
                         <i data-lucide="check-circle" class="h-6 w-6 text-emerald-600"></i>
@@ -68,8 +69,8 @@
             <div class="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-500">Avg Hrs / Task</p>
-                        <p class="mt-1 text-3xl font-bold text-blue-700">@avgHoursPerTask</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-500 font-sans">Avg Hrs / Task</p>
+                        <p class="mt-1 text-3xl font-bold text-blue-700">@reportData.AvgHoursPerTask.ToString("F1")</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100">
                         <i data-lucide="bar-chart-2" class="h-6 w-6 text-blue-600"></i>
@@ -79,8 +80,8 @@
             <div class="rounded-xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">Completed Hours</p>
-                        <p class="mt-1 text-3xl font-bold text-amber-700">@completedHours</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500 font-sans">Completed Hours</p>
+                        <p class="mt-1 text-3xl font-bold text-amber-700">@reportData.CompletedHours.ToString("F1")</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
                         <i data-lucide="trophy" class="h-6 w-6 text-amber-600"></i>
@@ -94,34 +95,34 @@
     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5 font-sans">Search</label>
                 <input @bind="searchInput" type="text" placeholder="Search by user, task, or project..."
-                       class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                       class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all font-sans" />
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Project</label>
-                <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5 font-sans">Project</label>
+                <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all font-sans">
                     <option value="0">All Projects</option>
                     @foreach (var p in allProjects)
                     {
-                        <option value="@p.Id">@p.Name</option>
+                        <option value="@p.Id font-sans">@p.Name</option>
                     }
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
-                <select @bind="filterStatusId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="0">All</option>
-                    <option value="1">To Do</option>
-                    <option value="2">In Progress</option>
-                    <option value="3">Done</option>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5 font-sans">Status</label>
+                <select @bind="filterStatusId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all font-sans">
+                    <option value="0 font-sans">All</option>
+                    <option value="1 font-sans">To Do</option>
+                    <option value="2 font-sans">In Progress</option>
+                    <option value="3 font-sans">Done</option>
                 </select>
             </div>
-            <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+            <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm font-sans">
+                <i data-lucide="search" class="h-4 w-4 mr-2 font-sans"></i> Search
             </button>
-            <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> Reset
+            <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm font-sans">
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 font-sans"></i> Reset
             </button>
         </div>
     </div>
@@ -137,66 +138,52 @@
         {
             <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-100">
-                    <h3 class="text-sm font-semibold text-slate-700">Hours Summary by Employee</h3>
+                    <h3 class="text-sm font-semibold text-slate-700 font-sans">Hours Summary by Employee</h3>
                 </div>
                 <table class="w-full">
                     <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50/60">
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Employee</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Tasks</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Hours</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed Hrs</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completion %</th>
+                        <tr class="border-b border-slate-100 bg-slate-50/60 font-sans">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Employee</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Total Tasks</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completed</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Est. Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completed Hrs</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Variance</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completion %</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @{
-                            var userGroups = GetFilteredTasks()
-                                .GroupBy(t => t.AssignedTo)
-                                .OrderByDescending(g => g.Sum(t => t.EstimatedHours ?? 0))
-                                .ToList();
-                        }
-                        @if (userGroups.Any())
+                        @if (reportData.EmployeeSummary.Any())
                         {
-                            @foreach (var group in userGroups)
+                            @foreach (var emp in reportData.EmployeeSummary)
                             {
-                                var user = allUsers.FirstOrDefault(u => u.Id == group.Key);
-                                var totalTasks = group.Count();
-                                var completedTasks = group.Count(t => t.StatusId == 3);
-                                var estHours = group.Sum(t => t.EstimatedHours ?? 0);
-                                var compHours = group.Where(t => t.StatusId == 3).Sum(t => t.EstimatedHours ?? 0);
-                                var pct = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
+                                var pct = emp.CompletionPercentage;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
                                     <td class="px-6 py-4">
-                                        @if (user != null)
-                                        {
-                                            <div class="flex items-center gap-3">
-                                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
-                                                    @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
-                                                </span>
-                                                <div>
-                                                    <p class="text-sm font-semibold text-slate-900">@user.FirstName @user.LastName</p>
-                                                    <p class="text-xs text-slate-400">@@@user.Username</p>
-                                                </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
+                                                @(emp.FullName.Length > 0 ? emp.FullName[0].ToString().ToUpper() : "")
+                                            </span>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-900">@emp.FullName</p>
+                                                <p class="text-xs text-slate-400">@@@emp.Username</p>
                                             </div>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-sm text-slate-400 italic">Unassigned</span>
-                                        }
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 font-medium">@totalTasks</td>
-                                    <td class="px-6 py-4 text-sm text-emerald-600 font-medium">@completedTasks</td>
-                                    <td class="px-6 py-4 text-sm font-semibold text-violet-700">@estHours h</td>
-                                    <td class="px-6 py-4 text-sm font-semibold text-amber-600">@compHours h</td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 font-medium font-sans">@emp.TotalTasks</td>
+                                    <td class="px-6 py-4 text-sm text-emerald-600 font-medium font-sans">@emp.CompletedTasks</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-violet-700 font-sans">@emp.EstHours.ToString("F1") h</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-amber-600 font-sans">@emp.CompletedHours.ToString("F1") h</td>
+                                    <td class="px-6 py-4 text-sm font-semibold @(emp.CompletedHours > emp.EstHours ? "text-rose-600" : "text-emerald-600") font-sans">
+                                        @(emp.Variance.ToString("F1")) h
+                                    </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-3">
                                             <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                                                 <div class="h-2 rounded-full @(pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-400" : "bg-rose-400") transition-all"
                                                      style="width: @pct.ToString("F0")%"></div>
                                             </div>
-                                            <span class="text-xs font-semibold text-slate-600 w-10">@pct.ToString("F0")%</span>
+                                            <span class="text-xs font-semibold text-slate-600 w-10 font-sans">@pct.ToString("F0")%</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -204,7 +191,7 @@
                         }
                         else
                         {
-                            <EmptyState ColSpan="6" Icon="clock" Title="No timesheet data" Subtitle="No tasks found with the current filters." />
+                            <EmptyState ColSpan="7" Icon="clock" Title="No timesheet data" Subtitle="No tasks found with the current filters." />
                         }
                     </tbody>
                 </table>
@@ -216,54 +203,43 @@
         {
             <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-100">
-                    <h3 class="text-sm font-semibold text-slate-700">Hours Summary by Project</h3>
+                    <h3 class="text-sm font-semibold text-slate-700 font-sans">Hours Summary by Project</h3>
                 </div>
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60">
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Tasks</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Hours</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed Hrs</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completion %</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Project</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Total Tasks</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completed</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Est. Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completed Hrs</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completion %</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @{
-                            var projGroups = GetFilteredTasks()
-                                .GroupBy(t => t.ProjectId)
-                                .OrderByDescending(g => g.Sum(t => t.EstimatedHours ?? 0))
-                                .ToList();
-                        }
-                        @if (projGroups.Any())
+                        @if (reportData.ProjectSummary.Any())
                         {
-                            @foreach (var group in projGroups)
+                            @foreach (var proj in reportData.ProjectSummary)
                             {
-                                var project = allProjects.FirstOrDefault(p => p.Id == group.Key);
-                                var totalTasks = group.Count();
-                                var completedTasks = group.Count(t => t.StatusId == 3);
-                                var estHours = group.Sum(t => t.EstimatedHours ?? 0);
-                                var compHours = group.Where(t => t.StatusId == 3).Sum(t => t.EstimatedHours ?? 0);
-                                var pct = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
+                                var pct = proj.CompletionPercentage;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-2">
                                             <i data-lucide="folder-kanban" class="h-4 w-4 text-violet-500"></i>
-                                            <span class="text-sm font-semibold text-slate-900">@(project?.Name ?? "Unknown Project")</span>
+                                            <span class="text-sm font-semibold text-slate-900">@proj.ProjectName</span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 font-medium">@totalTasks</td>
-                                    <td class="px-6 py-4 text-sm text-emerald-600 font-medium">@completedTasks</td>
-                                    <td class="px-6 py-4 text-sm font-semibold text-violet-700">@estHours h</td>
-                                    <td class="px-6 py-4 text-sm font-semibold text-amber-600">@compHours h</td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 font-medium font-sans">@proj.TotalTasks</td>
+                                    <td class="px-6 py-4 text-sm text-emerald-600 font-medium font-sans">@proj.CompletedTasks</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-violet-700 font-sans">@proj.EstHours.ToString("F1") h</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-amber-600 font-sans">@proj.CompletedHours.ToString("F1") h</td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-3">
                                             <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                                                 <div class="h-2 rounded-full @(pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-400" : "bg-rose-400") transition-all"
                                                      style="width: @pct.ToString("F0")%"></div>
                                             </div>
-                                            <span class="text-xs font-semibold text-slate-600 w-10">@pct.ToString("F0")%</span>
+                                            <span class="text-xs font-semibold text-slate-600 w-10 font-sans">@pct.ToString("F0")%</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -283,19 +259,20 @@
         {
             <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-slate-700">
-                        Task-level Detail — <span class="text-violet-600">@FilteredDetailTasks.Count() task(s)</span>
+                    <h3 class="text-sm font-semibold text-slate-700 font-sans">
+                        Task-level Detail — <span class="text-violet-600 font-sans">@FilteredDetailTasks.Count() task(s)</span>
                     </h3>
                 </div>
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60">
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Hours</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Task</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Project</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Assignee</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Est. Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Logged Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -303,8 +280,6 @@
                         {
                             @foreach (var task in PagedDetailTasks)
                             {
-                                var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
-                                var project  = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
                                 var (statusLabel, statusClass) = task.StatusId switch {
                                     2 => ("In Progress", "bg-blue-50 text-blue-700"),
                                     3 => ("Done", "bg-emerald-50 text-emerald-700"),
@@ -314,39 +289,42 @@
                                     <td class="px-6 py-4">
                                         <p class="text-sm font-semibold text-slate-900">@task.Title</p>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">@(project?.Name ?? "—")</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600 font-sans">@task.ProjectName</td>
                                     <td class="px-6 py-4">
-                                        @if (assignee != null)
+                                        @if (!string.IsNullOrEmpty(task.AssigneeName))
                                         {
                                             <div class="flex items-center gap-2">
                                                 <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
-                                                    @(assignee.FirstName[0..1].ToUpper())@(assignee.LastName[0..1].ToUpper())
+                                                    @(task.AssigneeName.Length > 0 ? task.AssigneeName[0].ToString().ToUpper() : "")
                                                 </span>
-                                                <span class="text-sm text-slate-700">@assignee.FirstName @assignee.LastName</span>
+                                                <span class="text-sm text-slate-700 font-sans">@task.AssigneeName</span>
                                             </div>
                                         }
-                                        else { <span class="text-xs text-slate-400">Unassigned</span> }
+                                        else { <span class="text-xs text-slate-400 font-sans">Unassigned</span> }
                                     </td>
                                     <td class="px-6 py-4">
                                         @if (task.EstimatedHours.HasValue)
                                         {
-                                            <span class="text-sm font-semibold text-violet-700">@task.EstimatedHours h</span>
+                                            <span class="text-sm font-semibold text-violet-700 font-sans">@task.EstimatedHours.Value.ToString("F1") h</span>
                                         }
                                         else
                                         {
-                                            <span class="text-xs text-slate-400">—</span>
+                                            <span class="text-xs text-slate-400 font-sans">—</span>
                                         }
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">@task.DueDate.ToString("dd-MMM-yyyy")</td>
                                     <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
+                                        <span class="text-sm font-semibold text-amber-600 font-sans">@task.CompletedHours.ToString("F1") h</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600 font-sans">@task.DueDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass font-sans">@statusLabel</span>
                                     </td>
                                 </tr>
                             }
                         }
                         else
                         {
-                            <EmptyState ColSpan="6" Icon="clock" Title="No tasks found" Subtitle="Try adjusting your filters." />
+                            <EmptyState ColSpan="7" Icon="clock" Title="No tasks found" Subtitle="Try adjusting your filters." />
                         }
                     </tbody>
                 </table>
@@ -367,7 +345,7 @@
     private bool isLoading = true;
     private string currentView = "user";
 
-    private List<TaskDto> allTasks = new();
+    private TimeTrackingReportDto reportData = new();
     private List<UserDto> allUsers = new();
     private List<ProjectDto> allProjects = new();
 
@@ -383,52 +361,23 @@
     private int detailPage = 1;
     private int pageSize = 10;
 
-    // Summary stats
-    private int totalEstimated = 0;
-    private int tasksWithHours = 0;
-    private int avgHoursPerTask = 0;
-    private int completedHours = 0;
-
-    private IEnumerable<TaskDto> GetFilteredTasks()
-    {
-        var result = allTasks.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(appliedSearch))
-        {
-            var q = appliedSearch.Trim().ToLower();
-            result = result.Where(t =>
-                t.Title.ToLower().Contains(q) ||
-                (allUsers.FirstOrDefault(u => u.Id == t.AssignedTo) is { } usr &&
-                 ($"{usr.FirstName} {usr.LastName}").ToLower().Contains(q)) ||
-                (allProjects.FirstOrDefault(p => p.Id == t.ProjectId) is { } prj &&
-                 prj.Name.ToLower().Contains(q))
-            );
-        }
-        if (appliedProjectId > 0)
-            result = result.Where(t => t.ProjectId == appliedProjectId);
-        if (appliedStatusId > 0)
-            result = result.Where(t => t.StatusId == appliedStatusId);
-        return result;
-    }
-
-    private IEnumerable<TaskDto> FilteredDetailTasks => GetFilteredTasks().OrderBy(t => t.ProjectId).ThenBy(t => t.Title);
+    private IEnumerable<TaskTimeDetailDto> FilteredDetailTasks => reportData.TaskDetail;
     private int DetailTotalPages => (int)Math.Ceiling((double)FilteredDetailTasks.Count() / pageSize);
-    private IEnumerable<TaskDto> PagedDetailTasks => FilteredDetailTasks.Skip((detailPage - 1) * pageSize).Take(pageSize);
+    private IEnumerable<TaskTimeDetailDto> PagedDetailTasks => FilteredDetailTasks.Skip((detailPage - 1) * pageSize).Take(pageSize);
 
     protected override async Task OnInitializedAsync()
     {
         var client = ApiClient.CreateClient();
         try
         {
-            var tasksTask    = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
             var usersTask    = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
             var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
-            await System.Threading.Tasks.Task.WhenAll(tasksTask, usersTask, projectsTask);
+            await System.Threading.Tasks.Task.WhenAll(usersTask, projectsTask);
 
-            allTasks    = tasksTask.Result    ?? new();
             allUsers    = usersTask.Result    ?? new();
             allProjects = projectsTask.Result ?? new();
 
-            ComputeSummary();
+            await LoadTimeTrackingData();
         }
         catch (Exception ex) { Console.WriteLine($"Load error: {ex.Message}"); }
         finally { isLoading = false; }
@@ -439,29 +388,47 @@
         await JS.InvokeVoidAsync("initIcons");
     }
 
-    private void ComputeSummary()
+    private async Task LoadTimeTrackingData()
     {
-        var withHours = allTasks.Where(t => t.EstimatedHours.HasValue).ToList();
-        tasksWithHours  = withHours.Count;
-        totalEstimated  = withHours.Sum(t => t.EstimatedHours ?? 0);
-        avgHoursPerTask = tasksWithHours > 0 ? totalEstimated / tasksWithHours : 0;
-        completedHours  = allTasks.Where(t => t.StatusId == 3 && t.EstimatedHours.HasValue).Sum(t => t.EstimatedHours ?? 0);
+        isLoading = true;
+        StateHasChanged();
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var query = $"Report/time-tracking?search={Uri.EscapeDataString(appliedSearch)}&projectId={appliedProjectId}&statusId={appliedStatusId}";
+            var result = await client.GetFromJsonAsync<Result<TimeTrackingReportDto>>(query, Serialization.CaseInsensitive);
+            if (result?.IsSuccess == true && result.Value != null)
+            {
+                reportData = result.Value;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading time tracking data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
-    private void ApplyFilters()
+    private async Task ApplyFilters()
     {
         appliedSearch    = searchInput;
         appliedProjectId = filterProjectId;
         appliedStatusId  = filterStatusId;
         detailPage = 1;
+        await LoadTimeTrackingData();
     }
 
-    private void ResetFilters()
+    private async Task ResetFilters()
     {
         searchInput = "";      appliedSearch    = "";
         filterProjectId = 0;   appliedProjectId = 0;
         filterStatusId = 0;    appliedStatusId  = 0;
         detailPage = 1;
+        await LoadTimeTrackingData();
     }
 
     private void HandleDetailPageChanged(int page) => detailPage = page;
@@ -470,13 +437,11 @@
     private async Task DownloadCsv()
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Task Title,Project,Assignee,Estimated Hours,Due Date,Status");
-        foreach (var task in GetFilteredTasks())
+        sb.AppendLine("Task Title,Project,Assignee,Estimated Hours,Logged Hours,Due Date,Status");
+        foreach (var task in reportData.TaskDetail)
         {
-            var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
-            var project  = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
-            var status   = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
-            sb.AppendLine($"\"{task.Title}\",\"{project?.Name ?? ""}\",\"{(assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : "Unassigned")}\",{task.EstimatedHours?.ToString() ?? ""},\"{task.DueDate:dd-MMM-yyyy}\",{status}");
+            var status = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
+            sb.AppendLine($"\"{task.Title}\",\"{task.ProjectName}\",\"{task.AssigneeName}\",{task.EstimatedHours?.ToString() ?? ""},{task.CompletedHours},\"{task.DueDate:dd-MMM-yyyy}\",{status}");
         }
         var bytes  = Encoding.UTF8.GetBytes(sb.ToString());
         var base64 = Convert.ToBase64String(bytes);

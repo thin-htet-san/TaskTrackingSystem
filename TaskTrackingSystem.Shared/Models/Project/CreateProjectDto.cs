@@ -22,5 +22,7 @@ namespace TaskTrackingSystem.Shared.Models.Project
 
         [Required]
         public long CreatedById { get; set; }
+
+        public int? BudgetedHours { get; set; }
     }
 }

@@ -15,5 +15,6 @@ namespace TaskTrackingSystem.Shared.Models.Project
         public DateTime EndDate { get; set; }
         public long CreatedById { get; set; }
         public DateTime CreatedAt { get; set; }
+        public int? BudgetedHours { get; set; }
     }
 }

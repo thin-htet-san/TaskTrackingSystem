@@ -95,6 +95,45 @@
     }
     else
     {
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- Total Active Projects Card -->
+            <div class="rounded-xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500 font-sans">Total Active Projects</p>
+                        <p class="mt-1 text-3xl font-bold text-violet-700">@totalActiveProjects</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
+                        <i data-lucide="folder" class="h-6 w-6 text-violet-600"></i>
+                    </span>
+                </div>
+            </div>
+            <!-- Ahead of Schedule Card -->
+            <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500 font-sans">Ahead of Schedule</p>
+                        <p class="mt-1 text-3xl font-bold text-emerald-700">@aheadOfScheduleCount</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
+                        <i data-lucide="trending-up" class="h-6 w-6 text-emerald-600"></i>
+                    </span>
+                </div>
+            </div>
+            <!-- At Risk Card -->
+            <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500 font-sans">At Risk</p>
+                        <p class="mt-1 text-3xl font-bold text-rose-700">@atRiskCount</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100">
+                        <i data-lucide="alert-triangle" class="h-6 w-6 text-rose-600"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
         @if (isChartView)
         {
             <!-- Chart View: SVG Project Progress Bars -->
@@ -202,6 +241,11 @@
     private int currentPage = 1;
     private int pageSize = 10;
 
+    // Card stats
+    private int totalActiveProjects = 0;
+    private int aheadOfScheduleCount = 0;
+    private int atRiskCount = 0;
+
     private void ApplyAllFilters()
     {
         ApplyPeriodPreset();
@@ -308,6 +352,8 @@
             filteredProjects = filteredProjects.Where(p => p.StartDate <= filterEndDate.Value.AddDays(1)).ToList();
         }
 
+        var today = DateTime.Today;
+
         foreach (var p in filteredProjects)
         {
             var projectTasks = tasks.Where(t => t.ProjectId == p.Id).ToList();
@@ -315,7 +361,7 @@
             // Apply filter status on tasks if matching
             if (filterStatus == "overdue")
             {
-                projectTasks = projectTasks.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != 3).ToList();
+                projectTasks = projectTasks.Where(t => t.DueDate.Date < today && t.StatusId != 3).ToList();
             }
             else if (long.TryParse(filterStatus, out var statusId) && statusId > 0)
             {
@@ -326,6 +372,21 @@
             int completedTasks = projectTasks.Count(t => t.StatusId == 3); // Done = 3
             double progress = totalTasks > 0 ? ((double)completedTasks / totalTasks) * 100 : 0;
 
+            // Ahead of schedule calculation
+            double elapsedPct;
+            if (today < p.StartDate) elapsedPct = 0;
+            else if (today > p.EndDate) elapsedPct = 100;
+            else
+            {
+                var totalDays = (p.EndDate - p.StartDate).TotalDays;
+                var elapsedDays = (today - p.StartDate).TotalDays;
+                elapsedPct = totalDays > 0 ? (elapsedDays / totalDays) * 100 : 100;
+            }
+            bool isAhead = progress > elapsedPct && progress > 0 && progress < 100;
+
+            // At risk calculation
+            bool isAtRisk = (projectTasks.Any(t => t.StatusId != 3 && t.DueDate.Date < today)) || (p.EndDate.Date < today && progress < 100);
+
             metrics.Add(new ProjectMetric
             {
                 ProjectName = p.Name,
@@ -333,11 +394,18 @@
                 EndDate = p.EndDate,
                 TotalTasks = totalTasks,
                 CompletedTasks = completedTasks,
-                Progress = progress
+                Progress = progress,
+                IsAhead = isAhead,
+                IsAtRisk = isAtRisk
             });
         }
 
         displayList = metrics.OrderByDescending(m => m.Progress).ToList();
+
+        // Calculate card statistics
+        totalActiveProjects = displayList.Count;
+        aheadOfScheduleCount = displayList.Count(m => m.IsAhead);
+        atRiskCount = displayList.Count(m => m.IsAtRisk);
     }
 
     private async Task DownloadCsv()
@@ -361,5 +429,7 @@
         public int TotalTasks { get; set; }
         public int CompletedTasks { get; set; }
         public double Progress { get; set; }
+        public bool IsAhead { get; set; }
+        public bool IsAtRisk { get; set; }
     }
 }

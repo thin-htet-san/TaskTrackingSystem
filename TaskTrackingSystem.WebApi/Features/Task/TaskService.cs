@@ -24,6 +24,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             return await _db.Tasks
                 .Where(t => t.IsDeleted != true)
+                .OrderBy(t => t.DueDate)
+                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
                 .Select(t => new TaskDto
                 {
                     Id = t.Id,
@@ -36,13 +38,19 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     AssignedBy = t.AssignedBy,
                     EstimatedHours = t.EstimatedHours,
                     DueDate = t.DueDate,
-                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow
+                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    CompletedAt = t.TaskHistories
+                        .Where(th => th.NewStatusId == 3)
+                        .OrderBy(th => th.CreatedAt)
+                        .Select(th => th.CreatedAt)
+                        .FirstOrDefault()
                 }).ToListAsync();
         }
 
         public async Task<TaskDto?> GetTaskByIdAsync(long id)
         {
             var task = await _db.Tasks
+                .Include(t => t.TaskHistories)
                 .FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
 
             if (task == null) return null;
@@ -59,7 +67,12 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 AssignedBy = task.AssignedBy,
                 EstimatedHours = task.EstimatedHours,
                 DueDate = task.DueDate,
-                CreatedAt = task.CreatedAt ?? DateTime.UtcNow
+                CreatedAt = task.CreatedAt ?? DateTime.UtcNow,
+                CompletedAt = task.TaskHistories
+                    .Where(th => th.NewStatusId == 3)
+                    .OrderBy(th => th.CreatedAt)
+                    .Select(th => th.CreatedAt)
+                    .FirstOrDefault()
             };
         }
 
@@ -111,7 +124,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 AssignedBy = task.AssignedBy,
                 EstimatedHours = task.EstimatedHours,
                 DueDate = task.DueDate,
-                CreatedAt = task.CreatedAt ?? DateTime.UtcNow
+                CreatedAt = task.CreatedAt ?? DateTime.UtcNow,
+                CompletedAt = null
             };
 
             return Result<TaskDto>.Success(resultDto, 201);
@@ -176,7 +190,12 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     AssignedBy = t.AssignedBy,
                     EstimatedHours = t.EstimatedHours,
                     DueDate = t.DueDate,
-                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow
+                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    CompletedAt = t.TaskHistories
+                        .Where(th => th.NewStatusId == 3)
+                        .OrderBy(th => th.CreatedAt)
+                        .Select(th => th.CreatedAt)
+                        .FirstOrDefault()
                 })
                 .ToListAsync();
 

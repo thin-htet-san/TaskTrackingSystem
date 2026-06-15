@@ -25,7 +25,7 @@ namespace TaskTrackingSystem.Shared.Models.Task
 
         public long? AssignedBy { get; set; }
 
-        public int? EstimatedHours { get; set; }
+        public decimal? EstimatedHours { get; set; }
 
         [Required]
         public DateTime DueDate { get; set; }

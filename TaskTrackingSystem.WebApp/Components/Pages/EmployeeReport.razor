@@ -132,6 +132,7 @@
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Assigned</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed Tasks</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Efficiency</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">On-Time Delivery</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -161,13 +162,24 @@
                                             <span class="text-sm font-semibold text-slate-700">@emp.Efficiency.ToString("F0")%</span>
                                         </div>
                                     </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden max-w-[120px]">
+                                                <div class="h-full rounded-full @(emp.OnTimeDeliveryRate >= 80 ? "bg-emerald-500" : emp.OnTimeDeliveryRate >= 50 ? "bg-amber-400" : "bg-rose-500") transition-all" 
+                                                     style="width: @(Math.Min(emp.OnTimeDeliveryRate, 100))%"></div>
+                                            </div>
+                                            <span class="text-sm font-semibold @(emp.OnTimeDeliveryRate >= 80 ? "text-emerald-600" : emp.OnTimeDeliveryRate >= 50 ? "text-amber-500" : "text-rose-600")">
+                                                @emp.OnTimeDeliveryRate.ToString("F0")%
+                                            </span>
+                                        </div>
+                                    </td>
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="4" class="px-6 py-12 text-center">
+                                <td colspan="5" class="px-6 py-12 text-center">
                                     <p class="text-sm text-slate-400">No employee data found matching criteria.</p>
                                 </td>
                             </tr>
@@ -331,13 +343,18 @@
             int completedCount = userTasks.Count(t => t.StatusId == 3); // Done = 3
             double efficiency = assignedCount > 0 ? ((double)completedCount / assignedCount) * 100 : 0;
 
+            var completedTasksList = userTasks.Where(t => t.StatusId == 3).ToList();
+            int onTimeCompletedCount = completedTasksList.Count(t => t.CompletedAt.HasValue && t.CompletedAt.Value.Date <= t.DueDate.Date);
+            double onTimeDeliveryRate = completedCount > 0 ? ((double)onTimeCompletedCount / completedCount) * 100 : 0;
+
             metrics.Add(new EmployeeMetric
             {
                 FullName = $"{u.FirstName} {u.LastName}".Trim(),
                 Username = u.Username,
                 AssignedCount = assignedCount,
                 CompletedCount = completedCount,
-                Efficiency = efficiency
+                Efficiency = efficiency,
+                OnTimeDeliveryRate = onTimeDeliveryRate
             });
         }
 
@@ -347,11 +364,11 @@
     private async Task DownloadCsv()
     {
         var csv = new StringBuilder();
-        csv.AppendLine("Employee Name,Username,Total Assigned,Completed Tasks,Efficiency %");
+        csv.AppendLine("Employee Name,Username,Total Assigned,Completed Tasks,Efficiency %,On-Time Delivery %");
 
         foreach (var emp in displayList)
         {
-            csv.AppendLine($"\"{emp.FullName}\",\"{emp.Username}\",\"{emp.AssignedCount}\",\"{emp.CompletedCount}\",\"{emp.Efficiency:F0}%\"");
+            csv.AppendLine($"\"{emp.FullName}\",\"{emp.Username}\",\"{emp.AssignedCount}\",\"{emp.CompletedCount}\",\"{emp.Efficiency:F0}%\",\"{emp.OnTimeDeliveryRate:F0}%\"");
         }
 
         await JS.InvokeVoidAsync("downloadFile", "EmployeeProductivityReport.csv", "text/csv;charset=utf-8;", csv.ToString());
@@ -364,5 +381,6 @@
         public int AssignedCount { get; set; }
         public int CompletedCount { get; set; }
         public double Efficiency { get; set; }
+        public double OnTimeDeliveryRate { get; set; }
     }
 }

@@ -19,5 +19,7 @@ namespace TaskTrackingSystem.Shared.Models.Project
 
         [Required]
         public DateTime EndDate { get; set; }
+
+        public int? BudgetedHours { get; set; }
     }
 }

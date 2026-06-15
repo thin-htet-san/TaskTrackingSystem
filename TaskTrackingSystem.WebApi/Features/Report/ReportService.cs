@@ -39,12 +39,22 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             if (!string.IsNullOrWhiteSpace(status))
             {
                 var sl = status.Trim().ToLower();
-                long? sid = sl switch { "to do" => 1, "in progress" => 2, "done" => 3, _ => null };
-                if (sid.HasValue) query = query.Where(t => t.StatusId == sid.Value);
-                else if (long.TryParse(status, out var pid)) query = query.Where(t => t.StatusId == pid);
+                if (sl == "uncompleted")
+                {
+                    query = query.Where(t => t.StatusId != 3);
+                }
+                else
+                {
+                    long? sid = sl switch { "to do" => 1, "in progress" => 2, "done" => 3, _ => null };
+                    if (sid.HasValue) query = query.Where(t => t.StatusId == sid.Value);
+                    else if (long.TryParse(status, out var pid)) query = query.Where(t => t.StatusId == pid);
+                }
             }
 
-            var tasks = await query.ToListAsync();
+            var tasks = await query
+                .OrderBy(t => t.DueDate)
+                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
+                .ToListAsync();
             var list = tasks.Select(t => new TaskReportDto
             {
                 TaskId = t.Id,
@@ -72,8 +82,21 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             var list = new List<UserProductivityDto>();
             foreach (var user in users)
             {
-                var tasks = await _db.Tasks.Where(t => t.AssignedTo == user.Id && t.IsDeleted != true).ToListAsync();
-                int total = tasks.Count, done = tasks.Count(t => t.StatusId == 3);
+                var tasks = await _db.Tasks
+                    .Include(t => t.TaskHistories)
+                    .Where(t => t.AssignedTo == user.Id && t.IsDeleted != true)
+                    .ToListAsync();
+                
+                int total = tasks.Count;
+                var completedTasks = tasks.Where(t => t.StatusId == 3).ToList();
+                int done = completedTasks.Count;
+                
+                int onTimeCount = completedTasks.Count(t => 
+                    t.TaskHistories.Any(th => th.NewStatusId == 3 && th.CreatedAt <= t.DueDate)
+                );
+                
+                double onTimeDeliveryRate = done > 0 ? Math.Round(((double)onTimeCount / done) * 100, 2) : 0;
+
                 list.Add(new UserProductivityDto
                 {
                     UserId = user.Id,
@@ -81,7 +104,8 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     FullName = $"{user.FirstName} {user.LastName}".Trim(),
                     TotalAssignedTasks = total,
                     CompletedTasksCount = done,
-                    EfficiencyRatio = total > 0 ? Math.Round(((double)done / total) * 100, 2) : 0
+                    EfficiencyRatio = total > 0 ? Math.Round(((double)done / total) * 100, 2) : 0,
+                    OnTimeDeliveryRate = onTimeDeliveryRate
                 });
             }
             return Result<IEnumerable<UserProductivityDto>>.Success(list);
@@ -102,7 +126,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             if (projectId.HasValue && projectId > 0)
                 query = query.Where(t => t.ProjectId == projectId.Value);
 
-            var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
+            var tasks = await query.OrderBy(t => t.DueDate).ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow).ToListAsync();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -303,6 +327,139 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             using var ms = new MemoryStream();
             wb.SaveAs(ms);
             return ms.ToArray();
+        }
+
+        public async Task<Result<TimeTrackingReportDto>> GetTimeTrackingReportAsync(
+            string? search, long? projectId, long? statusId)
+        {
+            var query = _db.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.AssignedToNavigation)
+                .Include(t => t.TimeLogs.Where(tl => !tl.IsDeleted))
+                .Where(t => t.IsDeleted != true);
+
+            if (projectId.HasValue && projectId > 0)
+                query = query.Where(t => t.ProjectId == projectId.Value);
+            if (statusId.HasValue && statusId > 0)
+                query = query.Where(t => t.StatusId == statusId.Value);
+
+            var tasks = await query.ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                tasks = tasks.Where(t =>
+                    t.Title.ToLower().Contains(s) ||
+                    (t.Project?.Name.ToLower().Contains(s) == true) ||
+                    (t.AssignedToNavigation != null &&
+                     ($"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}").ToLower().Contains(s))
+                ).ToList();
+            }
+
+            var totalEstimatedHrs = tasks.Sum(t => t.EstimatedHours ?? 0m);
+            var completedHours = tasks.Sum(t => t.TimeLogs.Sum(tl => tl.HoursLogged));
+            var variance = totalEstimatedHrs - completedHours;
+            var completionPercentage = totalEstimatedHrs > 0m 
+                ? (double)Math.Round((completedHours / totalEstimatedHrs) * 100m, 2) 
+                : 0.0;
+
+            var tasksWithHours = tasks.Count(t => t.EstimatedHours.HasValue || t.TimeLogs.Any());
+            var avgHoursPerTask = tasksWithHours > 0 
+                ? Math.Round(totalEstimatedHrs / tasksWithHours, 2) 
+                : 0m;
+
+            var result = new TimeTrackingReportDto
+            {
+                TotalEstimatedHrs = totalEstimatedHrs,
+                CompletedHours = completedHours,
+                Variance = variance,
+                CompletionPercentage = completionPercentage,
+                TasksWithHours = tasksWithHours,
+                AvgHoursPerTask = avgHoursPerTask
+            };
+
+            // Group by Employee
+            var employeeGroups = tasks
+                .GroupBy(t => t.AssignedTo)
+                .ToList();
+
+            foreach (var group in employeeGroups)
+            {
+                var userId = group.Key;
+                var user = userId.HasValue ? await _db.Users.FindAsync(userId.Value) : null;
+
+                var total = group.Count();
+                var completed = group.Count(t => t.StatusId == 3);
+                var est = group.Sum(t => t.EstimatedHours ?? 0m);
+                var comp = group.Sum(t => t.TimeLogs.Sum(tl => tl.HoursLogged));
+                var employeeVariance = est - comp;
+                var employeePct = est > 0m 
+                    ? (double)Math.Round((comp / est) * 100m, 2) 
+                    : 0.0;
+
+                result.EmployeeSummary.Add(new EmployeeTimeSummaryDto
+                {
+                    UserId = group.Key ?? 0,
+                    FullName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : "Unassigned",
+                    Username = user?.Username ?? "unassigned",
+                    TotalTasks = total,
+                    CompletedTasks = completed,
+                    EstHours = est,
+                    CompletedHours = comp,
+                    Variance = employeeVariance,
+                    CompletionPercentage = employeePct
+                });
+            }
+
+            // Group by Project
+            var projectGroups = tasks
+                .GroupBy(t => new { t.ProjectId, ProjectName = t.Project?.Name ?? "Unknown Project" })
+                .ToList();
+
+            foreach (var group in projectGroups)
+            {
+                var total = group.Count();
+                var completed = group.Count(t => t.StatusId == 3);
+                var est = group.Sum(t => t.EstimatedHours ?? 0m);
+                var comp = group.Sum(t => t.TimeLogs.Sum(tl => tl.HoursLogged));
+                var projectVariance = est - comp;
+                var projectPct = est > 0m 
+                    ? (double)Math.Round((comp / est) * 100m, 2) 
+                    : 0.0;
+
+                result.ProjectSummary.Add(new ProjectTimeSummaryDto
+                {
+                    ProjectId = group.Key.ProjectId,
+                    ProjectName = group.Key.ProjectName,
+                    TotalTasks = total,
+                    CompletedTasks = completed,
+                    EstHours = est,
+                    CompletedHours = comp,
+                    Variance = projectVariance,
+                    CompletionPercentage = projectPct
+                });
+            }
+
+            // Task Details
+            foreach (var t in tasks)
+            {
+                result.TaskDetail.Add(new TaskTimeDetailDto
+                {
+                    TaskId = t.Id,
+                    Title = t.Title,
+                    ProjectId = t.ProjectId,
+                    ProjectName = t.Project?.Name ?? "",
+                    AssignedTo = t.AssignedTo,
+                    AssigneeName = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}".Trim() : "Unassigned",
+                    AssigneeUsername = t.AssignedToNavigation?.Username ?? "",
+                    EstimatedHours = t.EstimatedHours,
+                    CompletedHours = t.TimeLogs.Sum(tl => tl.HoursLogged),
+                    DueDate = t.DueDate,
+                    StatusId = t.StatusId
+                });
+            }
+
+            return Result<TimeTrackingReportDto>.Success(result);
         }
     }
 }
