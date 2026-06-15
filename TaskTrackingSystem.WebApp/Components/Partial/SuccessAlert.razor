@@ -1,0 +1,55 @@
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (!string.IsNullOrEmpty(displayMessage))
+{
+    <div class="fixed top-6 right-6 z-[100] pointer-events-none">
+        <div class="flex items-center gap-3 rounded-xl bg-violet-600 text-white px-5 py-3 shadow-lg border border-violet-500/30 animate-pulse-once">
+            <i data-lucide="check-circle" class="h-5 w-5 shrink-0"></i>
+            <span class="text-sm font-semibold">@displayMessage</span>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+
+    private string? displayMessage;
+    private CancellationTokenSource? hideCts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Message) && Message != displayMessage)
+        {
+            hideCts?.Cancel();
+            hideCts?.Dispose();
+            hideCts = new CancellationTokenSource();
+
+            displayMessage = Message;
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("initIcons");
+
+            var token = hideCts.Token;
+            _ = HideAfterDelay(token);
+        }
+    }
+
+    private async Task HideAfterDelay(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(3000, token);
+            displayMessage = null;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        hideCts?.Cancel();
+        hideCts?.Dispose();
+    }
+}

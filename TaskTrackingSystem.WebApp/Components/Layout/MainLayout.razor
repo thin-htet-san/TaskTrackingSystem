@@ -1,0 +1,152 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@using System.Security.Claims
+
+<div class="flex h-screen bg-[#F4F3FA] font-sans text-slate-800 antialiased overflow-hidden">
+    <aside class="flex w-64 flex-col border-r border-slate-100 bg-white shrink-0 overflow-hidden">
+        <div class="flex h-20 items-center px-6">
+            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+                <i data-lucide="flame" class="h-5 w-5 fill-current"></i>
+            </span>
+            <span class="ml-3 font-bold text-xl tracking-tight text-slate-800">Taskify</span>
+        </div>
+
+        <NavMenu @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+
+        <div class="border-t border-slate-100 p-4 shrink-0">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="flex items-center rounded-xl p-2 hover:bg-slate-50 transition-all">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white font-semibold text-sm shrink-0">
+                            @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
+                        </span>
+                        <div class="ml-3 overflow-hidden flex flex-col">
+                            <span class="text-sm font-semibold truncate max-w-[130px]" style="color: var(--text-primary);">@context.User.Identity?.Name</span>
+                            <form method="post" action="/account/logout" class="mt-0.5">
+                                <AntiforgeryToken />
+                                <button type="submit" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all" style="color: var(--brand-accent);">
+                                    <i data-lucide="log-out" class="h-3 w-3"></i>
+                                    Sign Out
+                                </button>
+                             </form>
+                        </div>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/login" class="flex items-center justify-center rounded-xl bg-violet-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-violet-700 transition-all">
+                        Sign In
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-y-auto">
+        <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
+            <h1 class="text-lg font-semibold text-slate-900">Workspace</h1>
+            <div class="flex items-center space-x-4">
+                <button class="relative rounded-full p-1.5 text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-all">
+                    <i data-lucide="bell" class="h-5 w-5"></i>
+                    <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-8 flex-1">
+            @if (isAuthorizedPage)
+            {
+                @Body
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-20 px-4">
+                    <div class="rounded-full p-4 mb-4" style="color: var(--brand-accent); background-color: var(--status-warning-bg);">
+                        <i data-lucide="shield-alert" class="h-12 w-12"></i>
+                    </div>
+                    <h3 class="text-xl font-bold" style="color: var(--text-primary);">Access Denied</h3>
+                    <p class="text-center mt-2 max-w-sm text-sm" style="color: var(--text-muted);">
+                        You do not have permission to access this page. Please contact your system administrator.
+                    </p>
+                    <a href="/dashboard" class="mt-6 inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors shadow-sm hover:opacity-90" style="background-color: var(--brand-primary);">
+                        <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private MenuAuthorizationService MenuAuthorization { get; set; } = default!;
+    [Inject] private Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
+    private bool isAuthorizedPage = true;
+
+    private bool IsDashboardPage => 
+        string.IsNullOrEmpty(Navigation.ToBaseRelativePath(Navigation.Uri)) || 
+        Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].Trim('/') is "dashboard" or "Home" or "";
+
+    private string CurrentPageTitle => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].Trim('/') switch
+    {
+        "projects" => "Projects",
+        "tasks" => "Tasks",
+        "reports" => "Reports",
+        "roles" => "Roles & Permissions",
+        "users" => "Users",
+        _ => "Workspace"
+    };
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        UpdateAuthorization();
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        UpdateAuthorization();
+    }
+
+    private void UpdateAuthorization()
+    {
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+
+        _ = UpdateAuthorizationAsync(relativePath);
+    }
+
+    private async Task UpdateAuthorizationAsync(string relativePath)
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            if (!MenuAuthorizationService.IsPublicRoute(relativePath))
+            {
+                var returnPath = new Uri(Navigation.Uri).AbsolutePath;
+                Navigation.NavigateTo($"/login?ReturnUrl={Uri.EscapeDataString(returnPath)}");
+            }
+
+            isAuthorizedPage = MenuAuthorizationService.IsPublicRoute(relativePath);
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        await MenuAuthorization.GetUserMenusAsync(user);
+        isAuthorizedPage = MenuAuthorization.IsRouteAllowed(user, relativePath);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

@@ -1,0 +1,415 @@
+@page "/projects/assign"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using TaskTrackingSystem.Shared.Models.Project
+@using TaskTrackingSystem.Shared.Models.Role
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<PageTitle>Project Assignment</PageTitle>
+
+<SuccessAlert Message="@successMessage" />
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Project Assignment</h2>
+            <p class="text-slate-500 mt-1">Assign team members to projects to control their task visibility.</p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading projects and users..." />
+    }
+    else
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left panel: Projects list -->
+            <div class="lg:col-span-1 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col h-[600px]">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/60">
+                    <h3 class="font-bold text-slate-800 text-sm mb-3">Select Project</h3>
+                    <div class="relative flex gap-2">
+                        <div class="relative flex-1">
+                            <input @bind="projectSearchInput" type="text" placeholder="Search projects..."
+                                   class="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                            <i data-lucide="search" class="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400"></i>
+                        </div>
+                        <button @onclick="ApplyProjectSearch" class="inline-flex items-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 transition-colors shrink-0">
+                            <i data-lucide="search" class="h-3.5 w-3.5 mr-1.5"></i> Search
+                        </button>
+                        <button @onclick="ResetProjectSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shrink-0">
+                            <i data-lucide="rotate-ccw" class="h-3.5 w-3.5 mr-1.5 text-slate-500"></i> Reset
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
+                    @if (FilteredProjects.Any())
+                    {
+                        @foreach (var proj in FilteredProjects)
+                        {
+                            var isSelected = SelectedProject?.Id == proj.Id;
+                            <button @onclick="() => SelectProject(proj)"
+                                    class="w-full text-left p-4 hover:bg-slate-50/60 transition-colors flex flex-col gap-1 @(isSelected ? "bg-violet-50/60 border-l-4 border-violet-600 pl-3" : "")">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-900 @(isSelected ? "text-violet-700" : "")">@proj.Name</span>
+                                    <span class="text-[10px] text-slate-400">@proj.StartDate.ToString("MMM yy") - @proj.EndDate.ToString("MMM yy")</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(proj.Description))
+                                {
+                                    <p class="text-xs text-slate-500 line-clamp-1">@proj.Description</p>
+                                }
+                            </button>
+                        }
+                    }
+                    else
+                    {
+                        <div class="p-8 text-center text-slate-400 text-xs">No projects found.</div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right panel: Assignment controls -->
+            <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col h-[600px] overflow-hidden">
+                @if (SelectedProject == null)
+                {
+                    <div class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/30">
+                        <div class="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                            <i data-lucide="folder-kanban" class="h-6 w-6"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-800">No Project Selected</h4>
+                        <p class="text-xs text-slate-500 mt-1 max-w-sm">Please select a project from the left panel to manage user assignments.</p>
+                    </div>
+                }
+                else
+                {
+                    <!-- Selected Project Header -->
+                    <div class="p-6 border-b border-slate-100 bg-gradient-to-r from-violet-50/40 via-white to-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <span class="text-[10px] font-bold text-violet-600 uppercase tracking-wider">Currently Managing</span>
+                            <h3 class="text-xl font-bold text-slate-900">@SelectedProject.Name</h3>
+                            @if (!string.IsNullOrEmpty(SelectedProject.Description))
+                            {
+                                <p class="text-xs text-slate-500 mt-1">@SelectedProject.Description</p>
+                            }
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                                @SelectedProject.StartDate.ToString("dd-MMM-yyyy") - @SelectedProject.EndDate.ToString("dd-MMM-yyyy")
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Filter & Selection Stats -->
+                    <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="relative max-w-xs flex-1 flex gap-2">
+                            <div class="relative flex-1">
+                                <input @bind="userSearchInput" type="text" placeholder="Search team members..."
+                                       class="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                                <i data-lucide="search" class="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400"></i>
+                            </div>
+                            <button @onclick="ApplyUserSearch" class="inline-flex items-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 transition-colors shrink-0">
+                                <i data-lucide="search" class="h-3.5 w-3.5 mr-1.5"></i> Search
+                            </button>
+                            <button @onclick="ResetUserSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shrink-0">
+                                <i data-lucide="rotate-ccw" class="h-3.5 w-3.5 mr-1.5 text-slate-500"></i> Reset
+                            </button>
+                        </div>
+                        <div class="w-40 shrink-0">
+                            <select @bind="selectedRoleId" class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                                <option value="0">All Roles</option>
+                                @foreach (var r in roles)
+                                {
+                                    <option value="@r.Id">@r.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button @onclick="SelectAllUsers" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition-colors">Select All</button>
+                            <span class="text-slate-300">|</span>
+                            <button @onclick="DeselectAllUsers" class="text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors">Deselect All</button>
+                            <span class="text-slate-300">|</span>
+                            <span class="text-xs font-bold text-slate-600">@SelectedUserIds.Count assigned</span>
+                        </div>
+                    </div>
+
+                    <!-- Users list checklist -->
+                    <div class="flex-1 overflow-y-auto p-6 space-y-2">
+                        @if (isLoadingMembers)
+                        {
+                            <div class="flex justify-center py-12">
+                                <LoadingSpinner Message="Loading members..." />
+                            </div>
+                        }
+                        else
+                        {
+                            @if (FilteredUsers.Any())
+                            {
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    @foreach (var user in FilteredUsers)
+                                    {
+                                        var isChecked = SelectedUserIds.Contains(user.Id);
+                                        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white hover:bg-slate-50/50 hover:border-slate-200 cursor-pointer transition-all shadow-sm select-none @(isChecked ? "border-violet-100 bg-violet-50/10" : "")">
+                                            <input type="checkbox" checked="@isChecked"
+                                                   @onchange="(e) => ToggleUserSelection(user.Id, (bool)(e.Value ?? false))"
+                                                   class="h-4 w-4 rounded border-slate-300 accent-violet-600 focus:ring-violet-500" />
+                                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold shrink-0">
+                                                @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                            </span>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-semibold text-slate-800 truncate">@user.FirstName @user.LastName</p>
+                                                <p class="text-xs text-slate-400 truncate">@@@user.Username</p>
+                                            </div>
+                                        </label>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-slate-400 py-12 text-sm">No team members match your search criteria.</div>
+                            }
+                        }
+                    </div>
+
+                    <!-- Action bar -->
+                    <div class="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            @if (!string.IsNullOrEmpty(statusMessage))
+                            {
+                                <p class="text-sm font-medium @(isError ? "text-red-600" : "text-emerald-700")">
+                                    <i data-lucide="@(isError ? "alert-circle" : "check-circle")" class="h-4 w-4 inline mr-1.5"></i>
+                                    @statusMessage
+                                </p>
+                            }
+                        </div>
+                        <button @onclick="RequestSaveConfirmation" disabled="@(isSaving || isLoadingMembers)"
+                                class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm">
+                            <i data-lucide="user-check" class="h-4 w-4 mr-2"></i>
+                            @(isSaving ? "Saving changes..." : "Save Assignment Changes")
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<ConfirmDialog IsVisible="showConfirmDialog"
+               Title="Save Assignment?"
+               Message="Are you sure you want to save these project member assignments?"
+               ConfirmText="Yes, Save"
+               Icon="user-check"
+               OnConfirm="ConfirmSaveAssignments"
+               OnCancel="CloseConfirmDialog" />
+
+@code {
+    private bool isLoading = true;
+    private bool isLoadingMembers = false;
+    private bool isSaving = false;
+    private bool showConfirmDialog = false;
+    private string? statusMessage;
+    private string? successMessage;
+    private bool isError = false;
+
+    private List<ProjectDto> projects = new();
+    private List<UserDto> allUsers = new();
+    private List<RoleDto> roles = new();
+    
+    private ProjectDto? SelectedProject { get; set; }
+    private HashSet<long> SelectedUserIds { get; set; } = new();
+
+    private string projectSearchInput = "";
+    private string projectSearch = "";
+    private string userSearchInput = "";
+    private string userSearch = "";
+    private long selectedRoleId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+            var rolesTask = client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive);
+            await Task.WhenAll(projectsTask, usersTask, rolesTask);
+
+            projects = projectsTask.Result ?? new();
+            allUsers = usersTask.Result ?? new();
+            roles = rolesTask.Result ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading initial data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private IEnumerable<ProjectDto> FilteredProjects =>
+        string.IsNullOrWhiteSpace(projectSearch)
+            ? projects
+            : projects.Where(p => p.Name.Contains(projectSearch, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<UserDto> FilteredUsers
+    {
+        get
+        {
+            var result = allUsers.Where(u => u.IsActive);
+            if (selectedRoleId > 0)
+            {
+                result = result.Where(u => u.RoleId == selectedRoleId);
+            }
+            if (!string.IsNullOrWhiteSpace(userSearch))
+            {
+                result = result.Where(u => $"{u.FirstName} {u.LastName}".Contains(userSearch, StringComparison.OrdinalIgnoreCase)
+                    || u.Username.Contains(userSearch, StringComparison.OrdinalIgnoreCase));
+            }
+            return result;
+        }
+    }
+
+    private void ApplyProjectSearch()
+    {
+        projectSearch = projectSearchInput;
+    }
+
+    private void ApplyUserSearch()
+    {
+        userSearch = userSearchInput;
+    }
+
+    private void ResetProjectSearch()
+    {
+        projectSearchInput = "";
+        projectSearch = "";
+    }
+
+    private void ResetUserSearch()
+    {
+        userSearchInput = "";
+        userSearch = "";
+        selectedRoleId = 0;
+    }
+
+    private async Task SelectProject(ProjectDto project)
+    {
+        SelectedProject = project;
+        SelectedUserIds.Clear();
+        statusMessage = null;
+        isLoadingMembers = true;
+        StateHasChanged();
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var membersResult = await client.GetFromJsonAsync<Result<IEnumerable<UserDto>>>($"Project/{project.Id}/members", Serialization.CaseInsensitive);
+            if (membersResult?.IsSuccess == true && membersResult.Value != null)
+            {
+                SelectedUserIds = new HashSet<long>(membersResult.Value.Select(u => u.Id));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading project members: {ex.Message}");
+            statusMessage = "Failed to load project members.";
+            isError = true;
+        }
+        finally
+        {
+            isLoadingMembers = false;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initIcons");
+        }
+    }
+
+    private void ToggleUserSelection(long userId, bool isChecked)
+    {
+        if (isChecked) SelectedUserIds.Add(userId);
+        else SelectedUserIds.Remove(userId);
+        statusMessage = null;
+    }
+
+    private void SelectAllUsers()
+    {
+        foreach (var u in FilteredUsers)
+        {
+            SelectedUserIds.Add(u.Id);
+        }
+        statusMessage = null;
+    }
+
+    private void DeselectAllUsers()
+    {
+        foreach (var u in FilteredUsers)
+        {
+            SelectedUserIds.Remove(u.Id);
+        }
+        statusMessage = null;
+    }
+
+    private void RequestSaveConfirmation()
+    {
+        if (SelectedProject == null) return;
+        showConfirmDialog = true;
+    }
+
+    private void CloseConfirmDialog()
+    {
+        showConfirmDialog = false;
+    }
+
+    private async Task ConfirmSaveAssignments()
+    {
+        showConfirmDialog = false;
+        await SaveAssignments();
+    }
+
+    private async Task SaveAssignments()
+    {
+        if (SelectedProject == null) return;
+        
+        isSaving = true;
+        statusMessage = null;
+        var client = ApiClient.CreateClient();
+        
+        try
+        {
+            var dto = new AssignMembersDto { UserIds = SelectedUserIds.ToList() };
+            var response = await client.PostAsJsonAsync($"Project/{SelectedProject.Id}/members", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                statusMessage = "Project assignments saved successfully!";
+                successMessage = "Assignment saved successfully!";
+                isError = false;
+                Navigation.NavigateTo("/projects");
+            }
+            else
+            {
+                statusMessage = "Failed to save assignment. Please try again.";
+                isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error: {ex.Message}";
+            isError = true;
+        }
+        finally
+        {
+            isSaving = false;
+            await JS.InvokeVoidAsync("initIcons");
+        }
+    }
+}

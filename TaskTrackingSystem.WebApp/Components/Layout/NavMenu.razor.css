@@ -1,0 +1,85 @@
+/* Modern Sidebar Navigation Styles */
+::deep a.nav-link-item {
+    display: flex;
+    align-items: center;
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4B5563; /* text-slate-600 */
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+::deep a.nav-link-item:hover {
+    background-color: #F9FAFB; /* bg-slate-50 */
+    color: #111827; /* text-slate-900 */
+}
+
+::deep a.nav-link-item.active {
+    background-color: #F5F3FF !important; /* bg-violet-50 */
+    color: #7C3AED !important; /* text-violet-600 */
+    border-left: 3px solid #7C3AED !important;
+    font-weight: 600;
+}
+
+::deep a.nav-link-item.active i {
+    color: #7C3AED !important;
+}
+
+::deep a.nav-link-item i {
+    transition: color 0.2s ease;
+}
+
+/* Dropdown toggle button (parent item) */
+::deep button.nav-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4B5563;
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+::deep button.nav-dropdown-toggle:hover {
+    background-color: #F9FAFB;
+    color: #111827;
+}
+
+::deep button.nav-dropdown-toggle.expanded {
+    color: #111827;
+    font-weight: 600;
+}
+
+/* Chevron rotation on expand */
+::deep button.nav-dropdown-toggle .nav-chevron {
+    transition: transform 0.25s ease;
+}
+
+::deep button.nav-dropdown-toggle.expanded .nav-chevron {
+    transform: rotate(180deg);
+}
+
+/* Dropdown children container */
+::deep .nav-dropdown-children {
+    margin-left: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 1.5px solid #E2E8F0; /* slate-200 */
+    margin-top: 0.125rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Child nav items — slightly smaller */
+::deep a.nav-child-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    border-left: none !important;
+    border-radius: 0.5rem;
+}

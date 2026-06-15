@@ -1,0 +1,368 @@
+@page "/reports/employees"
+@using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared.Models.User
+@using TaskTrackingSystem.Shared.Models.Task
+@using System.Text
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+
+<PageTitle>Employee Productivity Report</PageTitle>
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Employee Productivity</h2>
+            <p class="text-slate-500 mt-1">Monitor task completion and performance metric charts.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                </button>
+                <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                </button>
+            </div>
+            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Employee</label>
+                <input @bind="searchInput" type="text" placeholder="Search by name..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Period Filter</label>
+                <select @bind="filterPeriod" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="all">All Time</option>
+                    <option value="daily">Daily (Today)</option>
+                    <option value="monthly">Monthly (This Month)</option>
+                    <option value="yearly">Yearly (This Year)</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            @if (filterPeriod == "custom")
+            {
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Start Date</label>
+                    <input @bind="filterStartDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">End Date</label>
+                    <input @bind="filterEndDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+            }
+
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Task Status</label>
+                <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="0">All Tasks</option>
+                    <option value="1">To Do</option>
+                    <option value="2">In Progress</option>
+                    <option value="3">Done</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+            <button @onclick="ApplyAllFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+            </button>
+            <button @onclick="ResetAllFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    @if (isLoading)
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="flex items-center space-x-3 text-slate-500">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span class="text-sm font-medium">Loading data...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (isChartView)
+        {
+            <!-- Chart View: SVG Horizontal Bar Chart showing Efficiency -->
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 class="font-semibold text-slate-900 mb-4 font-sans text-md">Employee Productivity Chart</h3>
+                @if (!PagedList.Any())
+                {
+                    <p class="text-slate-400 text-center py-8">No data available.</p>
+                }
+                else
+                {
+                    <div class="space-y-4 max-w-2xl">
+                        @foreach (var emp in PagedList)
+                        {
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                                    <span>@emp.FullName (@emp.Username)</span>
+                                    <span>@emp.CompletedCount / @emp.AssignedCount tasks (@emp.Efficiency.ToString("F0")% efficiency)</span>
+                                </div>
+                                <div class="h-4 rounded-full bg-slate-100 overflow-hidden flex">
+                                    <div class="h-full bg-emerald-500 rounded-full transition-all" style="width: @(Math.Min(emp.Efficiency, 100))%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- List View -->
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/60">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Employee</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Assigned</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed Tasks</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Efficiency</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @if (PagedList.Any())
+                        {
+                            @foreach (var emp in PagedList)
+                            {
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-semibold text-xs">
+                                                @(emp.FullName.Length > 0 ? emp.FullName[0].ToString().ToUpper() : "U")
+                                            </span>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-900">@emp.FullName</p>
+                                                <p class="text-xs text-slate-400">@@@emp.Username</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-900">@emp.AssignedCount</td>
+                                    <td class="px-6 py-4 text-sm font-medium text-emerald-600">@emp.CompletedCount</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden max-w-[120px]">
+                                                <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: @(Math.Min(emp.Efficiency, 100))%"></div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-slate-700">@emp.Efficiency.ToString("F0")%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="px-6 py-12 text-center">
+                                    <p class="text-sm text-slate-400">No employee data found matching criteria.</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <Pagination CurrentPage="currentPage"
+                            TotalPages="TotalPages"
+                            PageSize="pageSize"
+                            TotalCount="FilteredList.Count()"
+                            OnPageChanged="HandlePageChanged"
+                            OnPageSizeChanged="HandlePageSizeChanged" />
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private bool isChartView = false;
+    private List<UserDto> users = new();
+    private List<TaskDto> tasks = new();
+    private List<EmployeeMetric> displayList = new();
+
+    // Filters
+    private string filterPeriod = "all";
+    private DateTime? filterStartDate;
+    private DateTime? filterEndDate;
+    private string filterStatus = "0";
+
+    // Search and Pagination
+    private string searchInput = "";
+    private string searchQuery = "";
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private void ApplyAllFilters()
+    {
+        ApplyPeriodPreset();
+        searchQuery = searchInput;
+        currentPage = 1;
+        CalculateMetrics();
+    }
+
+    private void ResetAllFilters()
+    {
+        searchInput = "";
+        searchQuery = "";
+        filterPeriod = "all";
+        filterStartDate = null;
+        filterEndDate = null;
+        filterStatus = "0";
+        currentPage = 1;
+        CalculateMetrics();
+    }
+
+    private void HandlePageChanged(int page) { currentPage = page; }
+    private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
+
+    private IEnumerable<EmployeeMetric> FilteredList =>
+        string.IsNullOrWhiteSpace(searchQuery)
+            ? displayList
+            : displayList.Where(e => e.FullName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
+                || e.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredList.Count() / pageSize);
+
+    private IEnumerable<EmployeeMetric> PagedList =>
+        FilteredList.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User");
+            var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task");
+            await Task.WhenAll(usersTask, tasksTask);
+
+            users = usersTask.Result ?? new();
+            tasks = tasksTask.Result ?? new();
+            CalculateMetrics();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private void SetView(bool chartView)
+    {
+        isChartView = chartView;
+    }
+
+    private void ApplyPeriodPreset()
+    {
+        var today = DateTime.Today;
+        if (filterPeriod == "daily")
+        {
+            filterStartDate = today;
+            filterEndDate = today;
+        }
+        else if (filterPeriod == "monthly")
+        {
+            filterStartDate = new DateTime(today.Year, today.Month, 1);
+            filterEndDate = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+        }
+        else if (filterPeriod == "yearly")
+        {
+            filterStartDate = new DateTime(today.Year, 1, 1);
+            filterEndDate = new DateTime(today.Year, 12, 31);
+        }
+        else
+        {
+            filterStartDate = null;
+            filterEndDate = null;
+        }
+    }
+
+    private void CalculateMetrics()
+    {
+        var metrics = new List<EmployeeMetric>();
+
+        foreach (var u in users)
+        {
+            // Filter user's tasks
+            var userTasks = tasks.Where(t => t.AssignedTo == u.Id).ToList();
+
+            // Apply Period Filter
+            if (filterStartDate.HasValue)
+            {
+                userTasks = userTasks.Where(t => t.CreatedAt >= filterStartDate.Value).ToList();
+            }
+            if (filterEndDate.HasValue)
+            {
+                userTasks = userTasks.Where(t => t.CreatedAt <= filterEndDate.Value.AddDays(1)).ToList();
+            }
+
+            // Apply Status Filter if matching
+            if (filterStatus == "overdue")
+            {
+                userTasks = userTasks.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != 3).ToList();
+            }
+            else if (long.TryParse(filterStatus, out var statusId) && statusId > 0)
+            {
+                userTasks = userTasks.Where(t => t.StatusId == statusId).ToList();
+            }
+
+            int assignedCount = userTasks.Count;
+            int completedCount = userTasks.Count(t => t.StatusId == 3); // Done = 3
+            double efficiency = assignedCount > 0 ? ((double)completedCount / assignedCount) * 100 : 0;
+
+            metrics.Add(new EmployeeMetric
+            {
+                FullName = $"{u.FirstName} {u.LastName}".Trim(),
+                Username = u.Username,
+                AssignedCount = assignedCount,
+                CompletedCount = completedCount,
+                Efficiency = efficiency
+            });
+        }
+
+        displayList = metrics.OrderByDescending(m => m.Efficiency).ToList();
+    }
+
+    private async Task DownloadCsv()
+    {
+        var csv = new StringBuilder();
+        csv.AppendLine("Employee Name,Username,Total Assigned,Completed Tasks,Efficiency %");
+
+        foreach (var emp in displayList)
+        {
+            csv.AppendLine($"\"{emp.FullName}\",\"{emp.Username}\",\"{emp.AssignedCount}\",\"{emp.CompletedCount}\",\"{emp.Efficiency:F0}%\"");
+        }
+
+        await JS.InvokeVoidAsync("downloadFile", "EmployeeProductivityReport.csv", "text/csv;charset=utf-8;", csv.ToString());
+    }
+
+    private class EmployeeMetric
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public int AssignedCount { get; set; }
+        public int CompletedCount { get; set; }
+        public double Efficiency { get; set; }
+    }
+}

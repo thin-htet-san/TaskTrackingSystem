@@ -1,0 +1,993 @@
+@page "/roles"
+@using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared.Models.Menu
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+
+
+
+<PageTitle>Roles & Menu Permissions</PageTitle>
+
+<SuccessAlert Message="@successMessage" />
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Roles & Permissions</h2>
+            <p class="text-slate-500 mt-1">Manage roles, assign permissions, and control menu access.</p>
+        </div>
+        <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+            <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+            New Role
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading roles..." />
+    }
+    else
+    {
+        <!-- Search Panel -->
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm mb-4">
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1 max-w-md">
+                    <input @bind="searchInput" type="text" placeholder="Search roles by name..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+                <button @onclick="ApplySearch" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                    <i data-lucide="search" class="h-4 w-4 mr-2"></i>
+                    Search
+                </button>
+                <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Roles Table -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50/60">
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @if (PagedRoles.Any())
+                    {
+                        @foreach (var role in PagedRoles)
+                        {
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                        </span>
+                                        <span class="text-sm font-semibold text-slate-900">@role.Name</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">@(role.Description ?? "—")</td>
+                                <td class="px-6 py-4 text-sm text-slate-400">@role.CreatedAt.ToString("dd-MMM-yyyy")</td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <button @onclick="() => OpenMenuPermissionsModal(role)"
+                                                class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all"
+                                                title="Manage Permissions">
+                                            <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                                            Permissions
+                                        </button>
+                                        <button @onclick="() => OpenEditModal(role)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                            <i data-lucide="pencil" class="h-4 w-4"></i>
+                                        </button>
+                                        <button @onclick="() => RequestDeleteConfirmation(role.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <EmptyState ColSpan="4" Icon="shield-check" Title="No roles yet" Subtitle="Create your first role to get started." />
+                    }
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="TotalPages"
+                        PageSize="pageSize"
+                        TotalCount="FilteredRoles.Count()"
+                        OnPageChanged="HandlePageChanged"
+                        OnPageSizeChanged="HandlePageSizeChanged" />
+        </div>
+    }
+</div>
+
+@* ===== Create / Edit Role Modal ===== *@
+@if (showRoleModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 flex flex-col overflow-hidden"
+             style="max-width: @(isEditing ? "30rem" : "58rem"); max-height: 88vh;">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white shrink-0">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
+                        <i data-lucide="@(isEditing ? "pencil" : "shield-plus")" class="h-4 w-4"></i>
+                    </span>
+                    <h3 class="text-base font-semibold text-slate-900">
+                        @(isEditing ? "Edit Role" : "Create New Role")
+                    </h3>
+                </div>
+                <button @onclick="CloseRoleModal" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+
+            <!-- Body: two panels on Create, single on Edit -->
+            <div class="flex overflow-hidden flex-1 min-h-0">
+
+                <!-- LEFT: Role Details -->
+                <div class="p-6 space-y-4 overflow-y-auto @(isEditing ? "w-full" : "w-5/12") border-r border-slate-100">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                            Role Name <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input @bind="formName" type="text" placeholder="e.g. Manager, Viewer"
+                                   class="w-full rounded-lg border @(isRoleNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all pr-10" />
+                            @if (isRoleNameError)
+                            {
+                                <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            }
+                        </div>
+                        @if (isRoleNameError)
+                        {
+                            <p class="mt-1 text-xs text-red-500">@roleNameErrorMsg</p>
+                        }
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+                        <textarea @bind="formDescription" rows="4" placeholder="What can this role do?"
+                                  class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all resize-none"></textarea>
+                    </div>
+                    @if (!string.IsNullOrEmpty(roleError))
+                    {
+                        <div class="p-3 rounded-lg bg-red-50 border border-red-100 flex items-start gap-2">
+                            <i data-lucide="alert-circle" class="h-4 w-4 text-red-500 mt-0.5 shrink-0"></i>
+                            <p class="text-sm text-red-600">@roleError</p>
+                        </div>
+                    }
+                    @if (!isEditing)
+                    {
+                        <p class="text-xs text-slate-400 flex items-center gap-1">
+                            <i data-lucide="info" class="h-3.5 w-3.5 shrink-0"></i>
+                            Pick permissions on the right — they will be assigned when you create.
+                        </p>
+                    }
+                </div>
+
+                <!-- RIGHT: Permissions (Create only) -->
+                @if (!isEditing)
+                {
+                    <div class="w-7/12 flex flex-col min-h-0 border-l border-slate-100">
+                        <!-- Permission panel header -->
+                        <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="shield-check" class="h-4 w-4 text-violet-500"></i>
+                                <span class="text-sm font-semibold text-slate-700">Assign Permissions</span>
+                            </div>
+                            @if (formAllMenus.Any())
+                            {
+                                <label class="flex items-center gap-1.5 cursor-pointer group">
+                                    <input type="checkbox"
+                                           checked="@IsAllFormMenusSelected"
+                                           @onchange="ToggleSelectAllFormMenus"
+                                           class="h-3.5 w-3.5 rounded accent-violet-600" />
+                                    <span class="text-xs text-slate-500 group-hover:text-violet-600 transition-colors">Select All</span>
+                                </label>
+                            }
+                        </div>
+
+                        <!-- Permission items -->
+                        <div class="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+                            @if (isLoadingFormMenus)
+                            {
+                                <div class="flex items-center justify-center py-10">
+                                    <svg class="animate-spin h-5 w-5 text-violet-500" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                </div>
+                            }
+                            else if (!formAllMenus.Any())
+                            {
+                                <p class="text-sm text-slate-400 text-center py-8">No menus found in database.</p>
+                            }
+                            else
+                            {
+                                @foreach (var parent in formAllMenus.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
+                                {
+                                    var children = formAllMenus.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
+                                    var parentChecked = formSelectedMenuCodes.Contains(parent.MenuCode);
+
+                                    <div class="mb-3 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+                                        <!-- Parent Row -->
+                                        <label class="flex items-center gap-3 px-4 py-2.5 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors">
+                                            <input type="checkbox" checked="@parentChecked"
+                                                   @onchange="(e) => ToggleMenuSelection(parent, (bool)(e.Value ?? false), isForm: true)"
+                                                   class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                            <div class="flex items-center gap-2 flex-1">
+                                                @if (!string.IsNullOrEmpty(parent.Icon))
+                                                {
+                                                    <i data-lucide="@parent.Icon" class="h-4 w-4 text-violet-500 shrink-0"></i>
+                                                }
+                                                <span class="text-sm font-semibold text-slate-800">@parent.MenuName</span>
+                                            </div>
+                                        </label>
+
+                                        @if (children.Any())
+                                        {
+                                            <!-- Submenus inside Card -->
+                                            <div class="divide-y divide-slate-100 bg-white">
+                                                @foreach (var child in children)
+                                                {
+                                                    var childChecked = formSelectedMenuCodes.Contains(child.MenuCode);
+                                                    <div class="pl-8 pr-4 py-2.5">
+                                                        <label class="flex items-center gap-3 cursor-pointer hover:text-violet-600 transition-colors mb-1.5">
+                                                            <input type="checkbox" checked="@childChecked"
+                                                                   @onchange="(e) => ToggleMenuSelection(child, (bool)(e.Value ?? false), isForm: true)"
+                                                                   class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                                            <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
+                                                        </label>
+
+                                                        @if (child.Actions.Any())
+                                                        {
+                                                            <div class="flex flex-wrap gap-2 pl-7 mt-1">
+                                                                @foreach (var action in child.Actions)
+                                                                {
+                                                                    var isActionChecked = formSelectedMenuCodes.Contains(action.MenuDetailCode);
+                                                                    <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
+                                                                                  @(isActionChecked
+                                                                                      ? "bg-violet-50 border-violet-200 text-violet-700"
+                                                                                      : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
+                                                                        <input type="checkbox" checked="@isActionChecked"
+                                                                               @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
+                                                                               class="h-3 w-3 rounded accent-violet-600" />
+                                                                        <span class="text-xs">@action.ActionName</span>
+                                                                    </label>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (parent.Actions.Any())
+                                        {
+                                            <!-- Direct Actions under Parent -->
+                                            <div class="px-5 py-2.5 bg-white flex flex-wrap gap-2">
+                                                @foreach (var action in parent.Actions)
+                                                {
+                                                    var isActionChecked = formSelectedMenuCodes.Contains(action.MenuDetailCode);
+                                                    <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border cursor-pointer select-none transition-all
+                                                                  @(isActionChecked
+                                                                      ? "bg-violet-50 border-violet-200 text-violet-700 shadow-sm"
+                                                                      : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
+                                                        <input type="checkbox" checked="@isActionChecked"
+                                                               @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
+                                                               class="h-3.5 w-3.5 rounded accent-violet-600" />
+                                                        <span class="text-xs font-medium">@action.ActionName</span>
+                                                    </label>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
+                <span class="text-xs text-slate-400">
+                    @if (!isEditing && formSelectedMenuCodes.Count > 0)
+                    {
+                        <span class="text-violet-600 font-medium">@formSelectedMenuCodes.Count permission(s) / menu(s)</span>
+                        <span> will be assigned</span>
+                    }
+                </span>
+                <div class="flex items-center gap-3">
+                    <button @onclick="CloseRoleModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button @onclick="RequestSaveConfirmation" disabled="@isSaving"
+                            class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm">
+                        <svg class="animate-spin h-4 w-4 @(isSaving ? "" : "hidden")" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        <span class="@(isSaving ? "" : "hidden")">Saving...</span>
+                        
+                        <i data-lucide="@(isEditing ? "check" : "shield-plus")" class="h-4 w-4 @(isSaving ? "hidden" : "")"></i>
+                        <span class="@(isSaving ? "hidden" : "")">@(isEditing ? "Update Role" : "Create Role")</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ===== Assign Permissions Modal ===== *@
+@* ===== Role Permissions Modal ===== *@
+@if (showMenuModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col" style="max-height: 85vh;">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-indigo-50">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-slate-900">Role Permissions — <span class="text-violet-700">@selectedRoleName</span></h3>
+                        <p class="text-xs text-slate-500">Configure menu access and action permissions</p>
+                    </div>
+                </div>
+                <button @onclick="CloseMenuModal" class="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-600 transition-all">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+
+            <!-- Select All Bar -->
+            <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked="@IsAllMenusSelected" @onchange="ToggleSelectAllMenus"
+                           class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                    <span class="text-sm font-medium text-slate-700">Select All Permissions</span>
+                </label>
+                <span class="text-xs text-slate-400">@selectedMenuCodes.Count selected</span>
+            </div>
+
+            <!-- Menu Items Body -->
+            <div class="overflow-y-auto flex-1 px-6 py-4">
+                @if (isLoadingMenus)
+                {
+                    <div class="flex items-center justify-center py-12">
+                        <svg class="animate-spin h-6 w-6 text-violet-500" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </div>
+                }
+                else if (!allMenus.Any())
+                {
+                    <div class="text-center py-12">
+                        <i data-lucide="shield-check" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
+                        <p class="text-sm text-slate-500">No menus found in database.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var parent in allMenus.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
+                    {
+                        var children = allMenus.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
+                        var parentChecked = selectedMenuCodes.Contains(parent.MenuCode);
+
+                        <div class="mb-4 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+                            <!-- Parent Row -->
+                            <label class="flex items-center gap-3 px-4 py-3 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors">
+                                <input type="checkbox" checked="@parentChecked"
+                                       @onchange="(e) => ToggleMenuSelection(parent, (bool)(e.Value ?? false), isForm: false)"
+                                       class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                <div class="flex items-center gap-2 flex-1">
+                                    @if (!string.IsNullOrEmpty(parent.Icon))
+                                    {
+                                        <i data-lucide="@parent.Icon" class="h-4 w-4 text-violet-500 shrink-0"></i>
+                                    }
+                                    <span class="text-sm font-semibold text-slate-800">@parent.MenuName</span>
+                                </div>
+                            </label>
+
+                            @if (children.Any())
+                            {
+                                <!-- Submenus inside Card -->
+                                <div class="divide-y divide-slate-100 bg-white">
+                                    @foreach (var child in children)
+                                    {
+                                        var childChecked = selectedMenuCodes.Contains(child.MenuCode);
+                                        <div class="pl-8 pr-4 py-3">
+                                            <label class="flex items-center gap-3 cursor-pointer hover:text-violet-600 transition-colors mb-2">
+                                                <input type="checkbox" checked="@childChecked"
+                                                       @onchange="(e) => ToggleMenuSelection(child, (bool)(e.Value ?? false), isForm: false)"
+                                                       class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                                <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
+                                            </label>
+
+                                            @if (child.Actions.Any())
+                                            {
+                                                <div class="flex flex-wrap gap-2 pl-7 mt-1.5">
+                                                    @foreach (var action in child.Actions)
+                                                    {
+                                                        var isActionChecked = selectedMenuCodes.Contains(action.MenuDetailCode);
+                                                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
+                                                                      @(isActionChecked
+                                                                          ? "bg-violet-50 border-violet-200 text-violet-700"
+                                                                          : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
+                                                            <input type="checkbox" checked="@isActionChecked"
+                                                                   @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
+                                                                   class="h-3 w-3 rounded accent-violet-600" />
+                                                            <span class="text-xs">@action.ActionName</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else if (parent.Actions.Any())
+                            {
+                                <!-- Direct Actions under Parent -->
+                                <div class="px-6 py-3.5 bg-white flex flex-wrap gap-2.5">
+                                    @foreach (var action in parent.Actions)
+                                    {
+                                        var isActionChecked = selectedMenuCodes.Contains(action.MenuDetailCode);
+                                        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer select-none transition-all
+                                                      @(isActionChecked
+                                                          ? "bg-violet-50 border-violet-300 text-violet-700 shadow-sm"
+                                                          : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
+                                            <input type="checkbox" checked="@isActionChecked"
+                                                   @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
+                                                   class="h-3.5 w-3.5 rounded accent-violet-600" />
+                                            <span class="text-xs font-medium">@action.ActionName</span>
+                                        </label>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Footer -->
+            @if (!string.IsNullOrEmpty(menuSaveError))
+            {
+                <div class="px-6 pb-2">
+                    <div class="p-3 rounded-lg bg-red-50 border border-red-100">
+                        <p class="text-sm text-red-600">@menuSaveError</p>
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(menuSaveSuccess))
+            {
+                <div class="px-6 pb-2">
+                    <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+                        <p class="text-sm text-emerald-700">@menuSaveSuccess</p>
+                    </div>
+                </div>
+            }
+
+            <div class="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                <span class="text-xs text-slate-400">
+                    <i data-lucide="info" class="h-3.5 w-3.5 inline mr-1 text-slate-400"></i>
+                    Changes apply immediately after saving.
+                </span>
+                <div class="flex items-center gap-3">
+                    <button @onclick="CloseMenuModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button @onclick="SaveMenuPermissions" disabled="@isSavingMenus"
+                            class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm">
+                        <svg class="animate-spin h-4 w-4 @(isSavingMenus ? "" : "hidden")" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        <span class="@(isSavingMenus ? "" : "hidden")">Saving...</span>
+                        
+                        <i data-lucide="save" class="h-4 w-4 @(isSavingMenus ? "hidden" : "")"></i>
+                        <span class="@(isSavingMenus ? "hidden" : "")">Save Permissions</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ===== Confirm Dialog ===== *@
+<ConfirmDialog IsVisible="showConfirmDialog"
+               Title="@confirmTitle"
+               Message="@confirmMessage"
+               ConfirmText="@confirmButtonText"
+               Icon="@confirmIcon"
+               IconBgClass="@confirmIconBg"
+               IconTextClass="@confirmIconText"
+               ButtonClass="@confirmButtonClass"
+               OnConfirm="HandleConfirmAction"
+               OnCancel="CloseConfirmDialog" />
+
+@code {
+    private bool isLoading = true;
+    private bool showRoleModal = false;
+    private bool showMenuModal = false;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string? roleError;
+    private bool isRoleNameError = false;
+    private string roleNameErrorMsg = "";
+
+    // Confirm dialog state
+    private bool showConfirmDialog = false;
+    private string? successMessage;
+    private string confirmTitle = "";
+    private string confirmMessage = "";
+    private string confirmButtonText = "";
+    private string confirmIcon = "";
+    private string confirmIconBg = "";
+    private string confirmIconText = "";
+    private string confirmButtonClass = "";
+    private Func<Task>? confirmAction;
+    private List<RoleDto> roleList = new();
+
+    // Search state
+    private string searchInput = "";
+    private string searchQuery = "";
+
+    // Pagination state
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private void ApplySearch()
+    {
+        searchQuery = searchInput;
+        currentPage = 1;
+    }
+
+    private void ResetSearch()
+    {
+        searchInput = "";
+        searchQuery = "";
+        currentPage = 1;
+    }
+
+    private IEnumerable<RoleDto> FilteredRoles =>
+        string.IsNullOrWhiteSpace(searchQuery)
+            ? roleList
+            : roleList.Where(r => r.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) 
+                || (r.Description != null && r.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)));
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredRoles.Count() / pageSize);
+
+    private IEnumerable<RoleDto> PagedRoles =>
+        FilteredRoles.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    // Role form
+    private long editingId;
+    private string formName = "";
+    private string? formDescription;
+
+    // Inline permissions in Create form
+    private List<MenuAdminDto> formAllMenus = new();
+    private HashSet<string> formSelectedMenuCodes = new();
+    private bool isLoadingFormMenus = false;
+
+    private bool IsAllFormMenusSelected
+        => formAllMenus.Count > 0 && formSelectedMenuCodes.Count == (formAllMenus.Count + formAllMenus.Sum(m => m.Actions.Count));
+
+    // Menu permissions modal (for editing existing role)
+    private long selectedRoleId;
+    private string selectedRoleName = "";
+    private List<MenuAdminDto> allMenus = new();
+    private HashSet<string> selectedMenuCodes = new();
+    private bool isLoadingMenus = false;
+    private bool isSavingMenus = false;
+    private string? menuSaveError;
+    private string? menuSaveSuccess;
+
+    private bool IsAllMenusSelected 
+        => allMenus.Count > 0 && selectedMenuCodes.Count == (allMenus.Count + allMenus.Sum(m => m.Actions.Count));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRoles();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task LoadRoles()
+    {
+        isLoading = true;
+        var client = ApiClient.CreateClient();
+        try
+        {
+            roleList = await client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive) ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Load roles error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // Pagination handlers
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+    }
+
+    private void HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+    }
+
+    // ===== Role CRUD =====
+    private async Task OpenCreateModal()
+    {
+        isEditing = false;
+        editingId = 0;
+        formName = "";
+        formDescription = null;
+        roleError = null;
+        isRoleNameError = false;
+        roleNameErrorMsg = "";
+        formSelectedMenuCodes = new(StringComparer.OrdinalIgnoreCase);
+        formAllMenus = new();
+        isLoadingFormMenus = true;
+        showRoleModal = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = ApiClient.CreateClient();
+            formAllMenus = await client.GetFromJsonAsync<List<MenuAdminDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Load form menus error: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingFormMenus = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenEditModal(RoleDto role)
+    {
+        isEditing = true;
+        editingId = role.Id;
+        formName = role.Name;
+        formDescription = role.Description;
+        roleError = null;
+        isRoleNameError = false;
+        roleNameErrorMsg = "";
+        showRoleModal = true;
+    }
+
+    private void CloseRoleModal()
+    {
+        showRoleModal = false;
+        roleError = null;
+        isRoleNameError = false;
+        roleNameErrorMsg = "";
+        formAllMenus = new();
+        formSelectedMenuCodes = new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void ToggleMenuSelection(MenuAdminDto menu, bool isChecked, bool isForm)
+    {
+        var targetSet = isForm ? formSelectedMenuCodes : selectedMenuCodes;
+        var allMenuSource = isForm ? formAllMenus : allMenus;
+
+        if (isChecked)
+        {
+            targetSet.Add(menu.MenuCode);
+            // Select direct actions
+            foreach (var action in menu.Actions)
+            {
+                targetSet.Add(action.MenuDetailCode);
+            }
+            // Select child menus and their actions
+            var children = allMenuSource.Where(c => c.ParentCode == menu.MenuCode).ToList();
+            foreach (var child in children)
+            {
+                targetSet.Add(child.MenuCode);
+                foreach (var action in child.Actions)
+                {
+                    targetSet.Add(action.MenuDetailCode);
+                }
+            }
+        }
+        else
+        {
+            targetSet.Remove(menu.MenuCode);
+            // Unselect direct actions
+            foreach (var action in menu.Actions)
+            {
+                targetSet.Remove(action.MenuDetailCode);
+            }
+            // Unselect child menus and their actions
+            var children = allMenuSource.Where(c => c.ParentCode == menu.MenuCode).ToList();
+            foreach (var child in children)
+            {
+                targetSet.Remove(child.MenuCode);
+                foreach (var action in child.Actions)
+                {
+                    targetSet.Remove(action.MenuDetailCode);
+                }
+            }
+        }
+        StateHasChanged();
+    }
+
+    private void ToggleActionSelection(string actionCode, bool isChecked, bool isForm)
+    {
+        var targetSet = isForm ? formSelectedMenuCodes : selectedMenuCodes;
+        if (isChecked)
+        {
+            targetSet.Add(actionCode);
+        }
+        else
+        {
+            targetSet.Remove(actionCode);
+        }
+        StateHasChanged();
+    }
+
+    private void ToggleSelectAllFormMenus(ChangeEventArgs e)
+    {
+        var selectAll = (bool)(e.Value ?? false);
+        if (selectAll)
+        {
+            formSelectedMenuCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var menu in formAllMenus)
+            {
+                formSelectedMenuCodes.Add(menu.MenuCode);
+                foreach (var action in menu.Actions)
+                {
+                    formSelectedMenuCodes.Add(action.MenuDetailCode);
+                }
+            }
+        }
+        else
+        {
+            formSelectedMenuCodes.Clear();
+        }
+    }
+
+    private void RequestSaveConfirmation()
+    {
+        isRoleNameError = false;
+        roleNameErrorMsg = "";
+        roleError = null;
+        bool hasError = false;
+
+        if (string.IsNullOrWhiteSpace(formName))
+        {
+            isRoleNameError = true;
+            roleNameErrorMsg = ResultMessages.RoleNameRequired;
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        if (isEditing)
+        {
+            confirmTitle = "Update Role?";
+            confirmMessage = "Are you sure you want to update this role?";
+            confirmButtonText = "Update";
+            confirmIcon = "pencil";
+            confirmIconBg = "bg-amber-50";
+            confirmIconText = "text-amber-500";
+            confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        }
+        else
+        {
+            confirmTitle = "Create Role?";
+            confirmMessage = "Are you sure you want to create this role?";
+            confirmButtonText = "Create";
+            confirmIcon = "plus-circle";
+            confirmIconBg = "bg-emerald-50";
+            confirmIconText = "text-emerald-500";
+            confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        }
+        confirmAction = SaveRole;
+        showConfirmDialog = true;
+    }
+
+    private void RequestDeleteConfirmation(long id)
+    {
+        confirmTitle = "Delete Role?";
+        confirmMessage = "Are you sure you want to delete this role? This action cannot be undone.";
+        confirmButtonText = "Delete";
+        confirmIcon = "trash-2";
+        confirmIconBg = "bg-rose-50";
+        confirmIconText = "text-rose-500";
+        confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        confirmAction = () => DeleteRole(id);
+        showConfirmDialog = true;
+    }
+
+    private async Task HandleConfirmAction()
+    {
+        showConfirmDialog = false;
+        if (confirmAction != null)
+            await confirmAction();
+    }
+
+    private void CloseConfirmDialog()
+    {
+        showConfirmDialog = false;
+    }
+
+    private async Task SaveRole()
+    {
+        if (string.IsNullOrWhiteSpace(formName))
+        {
+            return;
+        }
+
+        isSaving = true;
+        roleError = null;
+        var client = ApiClient.CreateClient();
+
+        try
+        {
+            if (isEditing)
+            {
+                var dto = new UpdateRoleDto { Name = formName, Description = formDescription };
+                var response = await client.PutAsJsonAsync($"Role/{editingId}", dto);
+                var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+                if (res == null || !res.IsSuccess) { roleError = res?.ErrorMessage ?? ResultMessages.FailedToUpdateRole; return; }
+            }
+            else
+            {
+                var dto = new CreateRoleDto
+                {
+                    Name = formName,
+                    Description = formDescription,
+                    MenuCodes = formSelectedMenuCodes.ToList()
+                };
+                var response = await client.PostAsJsonAsync("Role", dto);
+                var res = await response.Content.ReadFromJsonAsync<Result<RoleDto>>(Serialization.CaseInsensitive);
+                if (res == null || !res.IsSuccess) { roleError = res?.ErrorMessage ?? ResultMessages.FailedToCreateRole; return; }
+            }
+            CloseRoleModal();
+            await LoadRoles();
+            successMessage = isEditing ? "Role updated successfully!" : "Role created successfully!";
+        }
+        catch (Exception ex) { roleError = ex.Message; }
+        finally { isSaving = false; }
+    }
+
+    private async Task DeleteRole(long id)
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.DeleteAsync($"Role/{id}");
+            var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+            if (res == null || !res.IsSuccess)
+            {
+                await JS.InvokeVoidAsync("alert", res?.ErrorMessage ?? "Failed to delete role.");
+                return;
+            }
+            await LoadRoles();
+            if (currentPage > TotalPages && TotalPages > 0)
+                currentPage = TotalPages;
+            successMessage = "Role deleted successfully!";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Delete error: {ex.Message}");
+        }
+    }
+
+    // ===== Menu & Action Permissions =====
+    private async Task OpenMenuPermissionsModal(RoleDto role)
+    {
+        selectedRoleId = role.Id;
+        selectedRoleName = role.Name;
+        menuSaveError = null;
+        menuSaveSuccess = null;
+        isLoadingMenus = true;
+        showMenuModal = true;
+        StateHasChanged();
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            // Load all available menus with their nested actions
+            allMenus = await client.GetFromJsonAsync<List<MenuAdminDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
+
+            // Load currently assigned menus/actions for this role
+            var assignedResult = await client.GetFromJsonAsync<Result<List<string>>>($"Role/{role.Id}/menus", Serialization.CaseInsensitive);
+            selectedMenuCodes = new HashSet<string>(assignedResult?.Value ?? new(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Load menus error: {ex.Message}");
+            menuSaveError = "Failed to load menus. Please try again.";
+        }
+        finally
+        {
+            isLoadingMenus = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseMenuModal()
+    {
+        showMenuModal = false;
+        allMenus = new();
+        selectedMenuCodes = new(StringComparer.OrdinalIgnoreCase);
+        menuSaveError = null;
+        menuSaveSuccess = null;
+    }
+
+    private void ToggleSelectAllMenus(ChangeEventArgs e)
+    {
+        var selectAll = (bool)(e.Value ?? false);
+        if (selectAll)
+        {
+            selectedMenuCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var menu in allMenus)
+            {
+                selectedMenuCodes.Add(menu.MenuCode);
+                foreach (var action in menu.Actions)
+                {
+                    selectedMenuCodes.Add(action.MenuDetailCode);
+                }
+            }
+        }
+        else
+        {
+            selectedMenuCodes.Clear();
+        }
+    }
+
+    private async Task SaveMenuPermissions()
+    {
+        isSavingMenus = true;
+        menuSaveError = null;
+        menuSaveSuccess = null;
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var dto = new AssignMenusDto { MenuCodes = selectedMenuCodes.ToList() };
+            var response = await client.PostAsJsonAsync($"Role/{selectedRoleId}/menus", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                menuSaveSuccess = $"Permissions for '{selectedRoleName}' saved successfully!";
+            }
+            else
+            {
+                menuSaveError = "Failed to save permissions. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            menuSaveError = ex.Message;
+        }
+        finally
+        {
+            isSavingMenus = false;
+            StateHasChanged();
+        }
+    }
+}

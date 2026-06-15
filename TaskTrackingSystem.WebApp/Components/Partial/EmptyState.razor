@@ -1,0 +1,23 @@
+@* Partial/EmptyState.razor - Reusable empty state for table bodies *@
+
+<tr>
+    <td colspan="@ColSpan" class="px-6 py-12 text-center">
+        <i data-lucide="@Icon" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
+        <p class="text-sm font-medium text-slate-500">@Title</p>
+        <p class="text-xs text-slate-400 mt-1">@Subtitle</p>
+    </td>
+</tr>
+
+@code {
+    /// <summary>Number of columns to span.</summary>
+    [Parameter] public int ColSpan { get; set; } = 1;
+
+    /// <summary>Lucide icon name to display.</summary>
+    [Parameter] public string Icon { get; set; } = "inbox";
+
+    /// <summary>Primary empty-state message.</summary>
+    [Parameter] public string Title { get; set; } = "No data yet";
+
+    /// <summary>Secondary hint text.</summary>
+    [Parameter] public string Subtitle { get; set; } = "Create your first entry to get started.";
+}

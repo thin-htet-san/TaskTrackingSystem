@@ -1,0 +1,388 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using TaskTrackingSystem.Shared.Models.Menu
+@using Microsoft.JSInterop
+@implements IDisposable
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+
+<nav class="flex-1 space-y-1 px-4 py-6 overflow-y-auto">
+    @if (menus.Any())
+    {
+        @foreach (var menu in menus)
+        {
+            @if (menu.SubMenus != null && menu.SubMenus.Count > 0)
+            {
+                <!-- Parent with sub-menus: collapsible dropdown -->
+                <button class="nav-dropdown-toggle @(IsMenuGroupExpanded(menu.MenuCode) ? "expanded" : "")"
+                        @onclick="() => ToggleMenuGroup(menu.MenuCode)">
+                    @if (!string.IsNullOrEmpty(menu.Icon))
+                    {
+                        <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                    }
+                    else
+                    {
+                        <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                    }
+                    <span class="flex-1 text-left">@menu.MenuName</span>
+                    <i data-lucide="chevron-down" class="nav-chevron h-4 w-4 text-slate-400 shrink-0"></i>
+                </button>
+                @if (IsMenuGroupExpanded(menu.MenuCode))
+                {
+                    <div class="nav-dropdown-children">
+                        @foreach (var sub in menu.SubMenus)
+                        {
+                            <NavLink class="nav-link-item nav-child-item"
+                                     href="@MenuAuthorizationService.NormalizeMenuHref(sub.MenuUrl)"
+                                     Match="@GetNavLinkMatch(sub.MenuUrl)">
+                                @if (!string.IsNullOrEmpty(sub.Icon))
+                                {
+                                    <i data-lucide="@sub.Icon" class="h-3.5 w-3.5 mr-3 text-slate-400 shrink-0"></i>
+                                }
+                                else
+                                {
+                                    <i data-lucide="circle" class="h-3.5 w-3.5 mr-3 text-slate-400 shrink-0"></i>
+                                }
+                                <span>@sub.MenuName</span>
+                            </NavLink>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <!-- Simple nav link -->
+                <NavLink class="nav-link-item"
+                         href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
+                         Match="@(string.IsNullOrWhiteSpace(menu.MenuUrl) || menu.MenuUrl.Trim('/') is "dashboard" or "" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                    @if (!string.IsNullOrEmpty(menu.Icon))
+                    {
+                        <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                    }
+                    else
+                    {
+                        <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                    }
+                    <span>@menu.MenuName</span>
+                </NavLink>
+            }
+        }
+    }
+    else if (showRoleFallback)
+    {
+        @foreach (var link in fallbackLinks)
+        {
+            @if (link.Children != null && link.Children.Count > 0)
+            {
+                <!-- Fallback parent with children: collapsible dropdown -->
+                <button class="nav-dropdown-toggle @(IsFallbackGroupExpanded(link.Label) ? "expanded" : "")"
+                        @onclick="() => ToggleFallbackGroup(link.Label)">
+                    <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                    <span class="flex-1 text-left">@link.Label</span>
+                    <i data-lucide="chevron-down" class="nav-chevron h-4 w-4 text-slate-400 shrink-0"></i>
+                </button>
+                @if (IsFallbackGroupExpanded(link.Label))
+                {
+                    <div class="nav-dropdown-children">
+                        @foreach (var child in link.Children)
+                        {
+                            <NavLink class="nav-link-item nav-child-item"
+                                     href="@child.Href" Match="@child.Match">
+                                <i data-lucide="@child.Icon" class="h-3.5 w-3.5 mr-3 text-slate-400 shrink-0"></i>
+                                <span>@child.Label</span>
+                            </NavLink>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <!-- Simple fallback link -->
+                <NavLink class="nav-link-item"
+                         href="@link.Href" Match="@link.Match">
+                    <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                    <span>@link.Label</span>
+                </NavLink>
+            }
+        }
+    }
+</nav>
+
+@code {
+    private List<MenuDto> menus = new();
+    private bool showRoleFallback;
+    private List<FallbackLink> fallbackLinks = new();
+    private string currentPath = string.Empty;
+    private HashSet<string> expandedMenuGroups = new();
+    private HashSet<string> expandedFallbackGroups = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/');
+        Navigation.LocationChanged += OnLocationChanged;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                fallbackLinks = BuildFallbackLinks(user);
+                showRoleFallback = fallbackLinks.Count > 0;
+
+                // Auto-expand fallback groups whose children match the current route
+                foreach (var link in fallbackLinks)
+                {
+                    if (link.Children != null && IsFallbackExpanded(link.Children))
+                    {
+                        expandedFallbackGroups.Add(link.Label);
+                    }
+                }
+
+                menus = await MenuAuthorization.GetUserMenusAsync(user);
+                if (menus.Count > 0)
+                {
+                    showRoleFallback = false;
+
+                    // Build URL-based hierarchy for menus that have no SubMenus from the API
+                    BuildUrlHierarchy(menus);
+
+                    // Auto-expand dynamic menu groups whose sub-menus match the current route
+                    foreach (var menu in menus)
+                    {
+                        if (menu.SubMenus != null && menu.SubMenus.Count > 0 && IsMenuExpanded(menu.MenuCode, menu.SubMenus))
+                        {
+                            expandedMenuGroups.Add(menu.MenuCode);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dynamic menus: {ex.Message}");
+        }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentPath = Navigation.ToBaseRelativePath(e.Location).Trim('/');
+
+        // Auto-expand groups on navigation
+        foreach (var link in fallbackLinks)
+        {
+            if (link.Children != null && IsFallbackExpanded(link.Children))
+            {
+                expandedFallbackGroups.Add(link.Label);
+            }
+        }
+        foreach (var menu in menus)
+        {
+            if (menu.SubMenus != null && menu.SubMenus.Count > 0 && IsMenuExpanded(menu.MenuCode, menu.SubMenus))
+            {
+                expandedMenuGroups.Add(menu.MenuCode);
+            }
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Toggle helpers
+    private void ToggleMenuGroup(string menuCode)
+    {
+        if (!expandedMenuGroups.Remove(menuCode))
+            expandedMenuGroups.Add(menuCode);
+    }
+
+    private void ToggleFallbackGroup(string label)
+    {
+        if (!expandedFallbackGroups.Remove(label))
+            expandedFallbackGroups.Add(label);
+    }
+
+    private bool IsMenuGroupExpanded(string menuCode) => expandedMenuGroups.Contains(menuCode);
+    private bool IsFallbackGroupExpanded(string label) => expandedFallbackGroups.Contains(label);
+
+    private bool IsMenuExpanded(string menuCode, IEnumerable<MenuDto> subMenus)
+    {
+        return subMenus.Any(s =>
+            !string.IsNullOrWhiteSpace(s.MenuUrl) &&
+            currentPath.StartsWith(s.MenuUrl.Trim('/'), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool IsFallbackExpanded(IEnumerable<FallbackLink> children)
+    {
+        return children.Any(c =>
+            currentPath.StartsWith(c.Href.TrimStart('/'), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static NavLinkMatch GetNavLinkMatch(string? menuUrl)
+    {
+        return string.IsNullOrWhiteSpace(menuUrl) || menuUrl.Trim('/') is "dashboard" or ""
+            ? NavLinkMatch.All
+            : NavLinkMatch.Prefix;
+    }
+
+    /// <summary>
+    /// Post-processes a flat menu list: if a parent menu (e.g. /reports) has no SubMenus
+    /// but other top-level items share that URL prefix (e.g. /reports/employees),
+    /// nest them as SubMenus and remove from the top-level list.
+    /// Also injects known report sub-pages if the Reports menu has no children.
+    /// </summary>
+    private static void BuildUrlHierarchy(List<MenuDto> menuList)
+    {
+        var toRemove = new List<MenuDto>();
+
+        foreach (var parent in menuList)
+        {
+            if (string.IsNullOrWhiteSpace(parent.MenuUrl))
+                continue;
+
+            // Only process parents that don't already have SubMenus from the API
+            if (parent.SubMenus != null && parent.SubMenus.Count > 0)
+                continue;
+
+            var parentPath = parent.MenuUrl.Trim('/');
+            if (string.IsNullOrEmpty(parentPath))
+                continue;
+
+            // Find other top-level items whose URL starts with this parent's URL + "/"
+            var children = menuList
+                .Where(m => m != parent
+                    && !string.IsNullOrWhiteSpace(m.MenuUrl)
+                    && m.MenuUrl.Trim('/').StartsWith(parentPath + "/", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(m => m.OrderNo)
+                .ToList();
+
+            if (children.Count > 0)
+            {
+                parent.SubMenus = children;
+                toRemove.AddRange(children);
+            }
+        }
+
+        foreach (var item in toRemove)
+        {
+            menuList.Remove(item);
+        }
+
+        // Inject known report sub-pages if the Reports menu exists but still has no children
+        var reportsMenu = menuList.FirstOrDefault(m =>
+            !string.IsNullOrWhiteSpace(m.MenuUrl) &&
+            m.MenuUrl.Trim('/').Equals("reports", StringComparison.OrdinalIgnoreCase));
+
+        if (reportsMenu != null && (reportsMenu.SubMenus == null || reportsMenu.SubMenus.Count == 0))
+        {
+            reportsMenu.SubMenus = new List<MenuDto>
+            {
+                new() { MenuCode = "RPT_EMP", MenuName = "Employee Report",   MenuUrl = "/reports/employees",  Icon = "users",        OrderNo = 1 },
+                new() { MenuCode = "RPT_PRJ", MenuName = "Project Progress",   MenuUrl = "/reports/projects",   Icon = "folder-kanban", OrderNo = 2 },
+                new() { MenuCode = "RPT_TSK", MenuName = "Task Report",         MenuUrl = "/reports/tasks",      Icon = "check-square",  OrderNo = 3 },
+                new() { MenuCode = "RPT_OVD", MenuName = "Overdue Tasks",       MenuUrl = "/reports/overdue",    Icon = "alert-circle",  OrderNo = 4 },
+                new() { MenuCode = "RPT_TMS", MenuName = "Time Tracking",       MenuUrl = "/reports/timesheet",  Icon = "clock",         OrderNo = 5 }
+            };
+        }
+
+        // Inject known project sub-pages if the Projects menu exists but still has no children
+        var projectsMenu = menuList.FirstOrDefault(m =>
+            !string.IsNullOrWhiteSpace(m.MenuUrl) &&
+            m.MenuUrl.Trim('/').Equals("projects", StringComparison.OrdinalIgnoreCase));
+
+        if (projectsMenu != null && (projectsMenu.SubMenus == null || projectsMenu.SubMenus.Count == 0))
+        {
+            projectsMenu.SubMenus = new List<MenuDto>
+            {
+                new() { MenuCode = "PRJ_ALL", MenuName = "All Projects", MenuUrl = "/projects/all", Icon = "folder-kanban", OrderNo = 1 },
+                new() { MenuCode = "PRJ_ASN", MenuName = "Project Assign", MenuUrl = "/projects/assign", Icon = "user-plus", OrderNo = 2 }
+            };
+        }
+
+        // Inject known task sub-pages if the Tasks menu exists but still has no children
+        var tasksMenu = menuList.FirstOrDefault(m =>
+            !string.IsNullOrWhiteSpace(m.MenuUrl) &&
+            m.MenuUrl.Trim('/').Equals("tasks", StringComparison.OrdinalIgnoreCase));
+
+        if (tasksMenu != null && (tasksMenu.SubMenus == null || tasksMenu.SubMenus.Count == 0))
+        {
+            tasksMenu.SubMenus = new List<MenuDto>
+            {
+                new() { MenuCode = "TSK_ALL", MenuName = "All Tasks", MenuUrl = "/tasks/all", Icon = "check-square", OrderNo = 1 },
+                new() { MenuCode = "TSK_ASN", MenuName = "Task Assign", MenuUrl = "/tasks/assign", Icon = "user-check", OrderNo = 2 }
+            };
+        }
+    }
+
+    private static List<FallbackLink> BuildFallbackLinks(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var role = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Member";
+        var projectChildren = new List<FallbackLink>
+        {
+            new("/projects/all", "All Projects", "folder-kanban", NavLinkMatch.Prefix)
+        };
+        var taskChildren = new List<FallbackLink>
+        {
+            new("/tasks/all", "All Tasks", "check-square", NavLinkMatch.Prefix)
+        };
+
+        if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            projectChildren.Add(new("/projects/assign", "Project Assign", "user-plus", NavLinkMatch.Prefix));
+            taskChildren.Add(new("/tasks/assign", "Task Assign", "user-check", NavLinkMatch.Prefix));
+        }
+
+        var links = new List<FallbackLink>
+        {
+            new("/dashboard", "Dashboard", "layout-dashboard", NavLinkMatch.All),
+            new FallbackLink("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix, projectChildren),
+            new FallbackLink("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix, taskChildren)
+        };
+
+        if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            links.Add(new FallbackLink(
+                "/reports",
+                "Reports",
+                "bar-chart-3",
+                NavLinkMatch.Prefix,
+                new List<FallbackLink>
+                {
+                    new("/reports/employees", "Employee Report",  "users",         NavLinkMatch.Prefix),
+                    new("/reports/projects",  "Project Progress",  "folder-kanban", NavLinkMatch.Prefix),
+                    new("/reports/tasks",     "Task Report",       "check-square",  NavLinkMatch.Prefix),
+                    new("/reports/overdue",   "Overdue Tasks",     "alert-circle",  NavLinkMatch.Prefix),
+                    new("/reports/timesheet", "Time Tracking",     "clock",         NavLinkMatch.Prefix)
+                }));
+            links.Add(new("/roles", "Roles", "shield-check", NavLinkMatch.Prefix));
+            links.Add(new("/users", "Users", "users", NavLinkMatch.Prefix));
+        }
+
+        return links;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("initIcons");
+        }
+        catch
+        {
+            // Ignore JS errors during prerendering or if JS is not available yet
+        }
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private sealed record FallbackLink(
+        string Href,
+        string Label,
+        string Icon,
+        NavLinkMatch Match,
+        List<FallbackLink>? Children = null);
+}

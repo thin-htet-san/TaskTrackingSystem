@@ -1,0 +1,381 @@
+@page "/reports/overdue"
+@using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared.Models.Task
+@using TaskTrackingSystem.Shared.Models.User
+@using TaskTrackingSystem.Shared.Models.Project
+@using System.Text
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+
+<PageTitle>Overdue &amp; Delayed Tasks Report</PageTitle>
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Overdue &amp; Delayed Tasks</h2>
+            <p class="text-slate-500 mt-1">Track tasks that have passed their due date or are at risk of delay.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    @if (!isLoading)
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">Overdue Tasks</p>
+                        <p class="mt-1 text-3xl font-bold text-rose-700">@overdueCount</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100">
+                        <i data-lucide="alert-circle" class="h-6 w-6 text-rose-600"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="rounded-xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">Critical (High Priority)</p>
+                        <p class="mt-1 text-3xl font-bold text-amber-700">@criticalCount</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
+                        <i data-lucide="flame" class="h-6 w-6 text-amber-600"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="rounded-xl border border-orange-100 bg-orange-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-orange-500">Due Within 3 Days</p>
+                        <p class="mt-1 text-3xl font-bold text-orange-700">@dueSoonCount</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
+                        <i data-lucide="clock" class="h-6 w-6 text-orange-600"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="rounded-xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">Avg Days Overdue</p>
+                        <p class="mt-1 text-3xl font-bold text-violet-700">@avgDaysOverdue</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
+                        <i data-lucide="calendar-x" class="h-6 w-6 text-violet-600"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Tasks</label>
+                <input @bind="searchInput" type="text" placeholder="Search by title, assignee, or project..."
+                       class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
+                <select @bind="filterPriority" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="0">All Priorities</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Delay Type</label>
+                <select @bind="filterDelayType" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="all">All Delayed</option>
+                    <option value="overdue">Overdue (Past Due)</option>
+                    <option value="soon">Due Within 3 Days</option>
+                </select>
+            </div>
+            <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+            </button>
+            <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading overdue tasks..." />
+    }
+    else
+    {
+        <!-- Results Table -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-700">
+                    Showing <span class="text-rose-600 font-bold">@FilteredTasks.Count()</span> delayed / overdue task(s)
+                </h3>
+            </div>
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50/60">
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Days Overdue</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @if (PagedTasks.Any())
+                    {
+                        @foreach (var task in PagedTasks)
+                        {
+                            var daysOverdue = (DateTime.Today - task.DueDate).Days;
+                            var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
+                            var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">@task.Title</p>
+                                        @if (!string.IsNullOrEmpty(task.Description))
+                                        {
+                                            <p class="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">@task.Description</p>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center gap-1 text-sm text-slate-600">
+                                        <i data-lucide="folder" class="h-3.5 w-3.5 text-violet-500"></i>
+                                        @(project?.Name ?? "—")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (assignee != null)
+                                    {
+                                        <div class="flex items-center gap-2">
+                                            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
+                                                @(assignee.FirstName.Length > 0 ? assignee.FirstName[0].ToString().ToUpper() : "")@(assignee.LastName.Length > 0 ? assignee.LastName[0].ToString().ToUpper() : "")
+                                            </span>
+                                            <span class="text-sm text-slate-700">@assignee.FirstName @assignee.LastName</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400">Unassigned</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-sm font-medium @(daysOverdue > 0 ? "text-rose-600" : "text-amber-600")">
+                                        @task.DueDate.ToString("dd-MMM-yyyy")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (daysOverdue > 0)
+                                    {
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                                            <i data-lucide="alert-triangle" class="h-3 w-3"></i>
+                                            @daysOverdue day@(daysOverdue != 1 ? "s" : "")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        var daysDue = Math.Abs(daysOverdue);
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                                            <i data-lucide="clock" class="h-3 w-3"></i>
+                                            Due in @daysDue day@(daysDue != 1 ? "s" : "")
+                                        </span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4">
+                                    @{
+                                        var (priorityLabel, priorityClass) = task.PriorityId switch {
+                                            3 => ("High", "bg-rose-50 text-rose-700"),
+                                            2 => ("Medium", "bg-amber-50 text-amber-700"),
+                                            _ => ("Low", "bg-slate-100 text-slate-600")
+                                        };
+                                    }
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @priorityClass">@priorityLabel</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @{
+                                        var (statusLabel, statusClass) = task.StatusId switch {
+                                            2 => ("In Progress", "bg-blue-50 text-blue-700"),
+                                            3 => ("Done", "bg-emerald-50 text-emerald-700"),
+                                            _ => ("To Do", "bg-slate-100 text-slate-600")
+                                        };
+                                    }
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <EmptyState ColSpan="7" Icon="check-circle" Title="No overdue tasks" Subtitle="Great! No tasks are overdue or at risk based on the current filters." />
+                    }
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="TotalPages"
+                        PageSize="pageSize"
+                        TotalCount="FilteredTasks.Count()"
+                        OnPageChanged="HandlePageChanged"
+                        OnPageSizeChanged="HandlePageSizeChanged" />
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private List<TaskDto> allTasks = new();
+    private List<UserDto> allUsers = new();
+    private List<ProjectDto> allProjects = new();
+
+    // Filters
+    private string searchInput = "";
+    private string appliedSearch = "";
+    private int filterPriority = 0;
+    private int appliedPriority = 0;
+    private string filterDelayType = "all";
+    private string appliedDelayType = "all";
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    // Summary stats
+    private int overdueCount = 0;
+    private int criticalCount = 0;
+    private int dueSoonCount = 0;
+    private int avgDaysOverdue = 0;
+
+    private IEnumerable<TaskDto> FilteredTasks
+    {
+        get
+        {
+            var today = DateTime.Today;
+            var result = allTasks.AsEnumerable();
+
+            // Only show non-completed tasks that are overdue or due soon
+            result = result.Where(t => t.StatusId != 3); // exclude Done
+
+            if (appliedDelayType == "overdue")
+                result = result.Where(t => t.DueDate < today);
+            else if (appliedDelayType == "soon")
+                result = result.Where(t => t.DueDate >= today && t.DueDate <= today.AddDays(3));
+            else
+                result = result.Where(t => t.DueDate <= today.AddDays(3)); // overdue + due within 3 days
+
+            if (!string.IsNullOrWhiteSpace(appliedSearch))
+            {
+                var q = appliedSearch.Trim().ToLower();
+                result = result.Where(t =>
+                    t.Title.ToLower().Contains(q) ||
+                    (t.Description != null && t.Description.ToLower().Contains(q)) ||
+                    (allUsers.FirstOrDefault(u => u.Id == t.AssignedTo) is { } usr &&
+                     ($"{usr.FirstName} {usr.LastName}").ToLower().Contains(q)) ||
+                    (allProjects.FirstOrDefault(p => p.Id == t.ProjectId) is { } prj &&
+                     prj.Name.ToLower().Contains(q))
+                );
+            }
+
+            if (appliedPriority > 0)
+                result = result.Where(t => t.PriorityId == appliedPriority);
+
+            return result.OrderByDescending(t => (DateTime.Today - t.DueDate).Days);
+        }
+    }
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredTasks.Count() / pageSize);
+    private IEnumerable<TaskDto> PagedTasks => FilteredTasks.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var tasksTask    = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
+            var usersTask    = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+            await System.Threading.Tasks.Task.WhenAll(tasksTask, usersTask, projectsTask);
+
+            allTasks    = tasksTask.Result    ?? new();
+            allUsers    = usersTask.Result    ?? new();
+            allProjects = projectsTask.Result ?? new();
+
+            ComputeSummary();
+        }
+        catch (Exception ex) { Console.WriteLine($"Load error: {ex.Message}"); }
+        finally { isLoading = false; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private void ComputeSummary()
+    {
+        var today = DateTime.Today;
+        var activeTasks = allTasks.Where(t => t.StatusId != 3).ToList();
+        var overdueTasks = activeTasks.Where(t => t.DueDate < today).ToList();
+        overdueCount = overdueTasks.Count;
+        criticalCount = overdueTasks.Count(t => t.PriorityId == 3);
+        dueSoonCount = activeTasks.Count(t => t.DueDate >= today && t.DueDate <= today.AddDays(3));
+        avgDaysOverdue = overdueTasks.Any()
+            ? (int)overdueTasks.Average(t => (today - t.DueDate).Days)
+            : 0;
+    }
+
+    private void ApplyFilters()
+    {
+        appliedSearch = searchInput;
+        appliedPriority = filterPriority;
+        appliedDelayType = filterDelayType;
+        currentPage = 1;
+    }
+
+    private void ResetFilters()
+    {
+        searchInput = "";
+        appliedSearch = "";
+        filterPriority = 0;
+        appliedPriority = 0;
+        filterDelayType = "all";
+        appliedDelayType = "all";
+        currentPage = 1;
+    }
+
+    private void HandlePageChanged(int page) => currentPage = page;
+    private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
+
+    private async Task DownloadCsv()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Task Title,Project,Assignee,Due Date,Days Overdue,Priority,Status");
+        foreach (var task in FilteredTasks)
+        {
+            var daysOver = (DateTime.Today - task.DueDate).Days;
+            var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
+            var project  = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
+            var priority = task.PriorityId switch { 3 => "High", 2 => "Medium", _ => "Low" };
+            var status   = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
+            sb.AppendLine($"\"{task.Title}\",\"{project?.Name ?? ""}\",\"{(assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : "Unassigned")}\",{task.DueDate:dd-MMM-yyyy},{daysOver},{priority},{status}");
+        }
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("downloadFile", $"overdue_tasks_{DateTime.Today:yyyy-MM-dd}.csv", "text/csv", base64);
+    }
+}

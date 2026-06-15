@@ -1,0 +1,675 @@
+@page "/users"
+@using Microsoft.AspNetCore.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Users</PageTitle>
+
+<SuccessAlert Message="@successMessage" />
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Users</h2>
+            <p class="text-slate-500 mt-1">Manage system users and their roles.</p>
+        </div>
+        <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+            <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+            New User
+        </button>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm mb-4">
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[240px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Users</label>
+                <input @bind="searchInput" type="text" placeholder="Search by name, email, username..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Role</label>
+                <select @bind="filterRoleIdInput" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="0">All Roles</option>
+                    @foreach (var r in roles)
+                    {
+                        <option value="@r.Id">@r.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <select @bind="filterStatusInput" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <button @onclick="ApplySearch" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="search" class="h-4 w-4 mr-2"></i>
+                Search
+            </button>
+            <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
+                Reset
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading users..." />
+    }
+    else
+    {
+        <!-- Users Table -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50/60">
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @if (PagedUsers.Any())
+                    {
+                        @foreach (var user in PagedUsers)
+                        {
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-semibold text-xs">
+                                            @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                        </span>
+                                        <div>
+                                            <p class="text-sm font-semibold text-slate-900">@user.FirstName @user.LastName</p>
+                                            <p class="text-xs text-slate-400">@@@user.Username</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">@user.Email</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">@(user.Phone ?? "—")</td>
+                                <td class="px-6 py-4">
+                                    @{ var role = roles.FirstOrDefault(r => r.Id == user.RoleId); }
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                                        @(role?.Name ?? $"Role #{user.RoleId}")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(user.IsActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")">
+                                        @(user.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <button @onclick="() => OpenEditModal(user)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                            <i data-lucide="pencil" class="h-4 w-4"></i>
+                                        </button>
+                                        <button @onclick="() => RequestDeleteConfirmation(user.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <EmptyState ColSpan="6" Icon="users" Title="No users found" Subtitle="Try adjusting your search or create a new user." />
+                    }
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="TotalPages"
+                        PageSize="pageSize"
+                        TotalCount="FilteredUsers.Count()"
+                        OnPageChanged="HandlePageChanged"
+                        OnPageSizeChanged="HandlePageSizeChanged" />
+        </div>
+    }
+</div>
+
+@* ===== Create / Edit User Modal ===== *@
+@if (showModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <h3 class="text-lg font-semibold text-slate-900">@(isEditing ? "Edit User" : "New User")</h3>
+                <button @onclick="CloseModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">First Name <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input @bind="formFirstName" type="text" placeholder="First name" class="w-full rounded-lg border @(isFirstNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                            @if (isFirstNameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
+                        </div>
+                        @if (isFirstNameError) { <p class="mt-1 text-xs text-red-500">@firstNameErrorMsg</p> }
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Last Name <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input @bind="formLastName" type="text" placeholder="Last name" class="w-full rounded-lg border @(isLastNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                            @if (isLastNameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
+                        </div>
+                        @if (isLastNameError) { <p class="mt-1 text-xs text-red-500">@lastNameErrorMsg</p> }
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Username <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <input @bind="formUsername" type="text" placeholder="username" class="w-full rounded-lg border @(isUsernameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                        @if (isUsernameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
+                    </div>
+                    @if (isUsernameError) { <p class="mt-1 text-xs text-red-500">@usernameErrorMsg</p> }
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Email <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <input @bind="formEmail" type="email" placeholder="user@example.com" class="w-full rounded-lg border @(isEmailError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                        @if (isEmailError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
+                    </div>
+                    @if (isEmailError) { <p class="mt-1 text-xs text-red-500">@emailErrorMsg</p> }
+                </div>
+                @if (!isEditing)
+                {
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Password <span class="text-red-500">*</span></label>
+                        <input @bind="formPassword" type="@(showPassword ? "text" : "password")" placeholder="Min 8 characters (A-Z, a-z, 0-9, special)" class="w-full rounded-lg border @(isPasswordError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                        <button type="button" @onclick="TogglePassword" class="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none">
+                            @if (showPassword)
+                            {
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>
+                            }
+                            else
+                            {
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            }
+                        </button>
+                        @if (isPasswordError) { <p class="mt-1 text-xs text-red-500">@passwordErrorMsg</p> }
+                    </div>
+                }
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
+                        <input @bind="formPhone" type="text" placeholder="Phone number" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
+                        <select @bind="formRoleId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                            @foreach (var r in roles)
+                            {
+                                <option value="@r.Id">@r.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                @if (isEditing)
+                {
+                    <div class="flex items-center space-x-3">
+                        <input @bind="formIsActive" type="checkbox" id="isActiveToggle" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900" />
+                        <label for="isActiveToggle" class="text-sm font-medium text-slate-700">Active</label>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="rounded-lg bg-rose-50 p-3 border border-rose-200">
+                        <p class="text-xs text-rose-600 font-medium flex items-center gap-1.5">
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            @errorMessage
+                        </p>
+                    </div>
+                }
+            </div>
+            <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                <button @onclick="RequestSaveConfirmation" disabled="@isSaving" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                    @(isSaving ? "Saving..." : (isEditing ? "Update" : "Create"))
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ===== Confirm Dialog ===== *@
+<ConfirmDialog IsVisible="showConfirmDialog"
+               Title="@confirmTitle"
+               Message="@confirmMessage"
+               ConfirmText="@confirmButtonText"
+               Icon="@confirmIcon"
+               IconBgClass="@confirmIconBg"
+               IconTextClass="@confirmIconText"
+               ButtonClass="@confirmButtonClass"
+               OnConfirm="HandleConfirmAction"
+               OnCancel="CloseConfirmDialog" />
+
+@code {
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    // Per-field validation errors
+    private bool isFirstNameError = false; private string firstNameErrorMsg = "";
+    private bool isLastNameError = false;  private string lastNameErrorMsg = "";
+    private bool isUsernameError = false;  private string usernameErrorMsg = "";
+    private bool isEmailError = false;     private string emailErrorMsg = "";
+    private bool isPasswordError = false;  private string passwordErrorMsg = "";
+
+    // Confirm dialog state
+    private bool showConfirmDialog = false;
+    private string confirmTitle = "";
+    private string confirmMessage = "";
+    private string confirmButtonText = "";
+    private string confirmIcon = "";
+    private string confirmIconBg = "";
+    private string confirmIconText = "";
+    private string confirmButtonClass = "";
+    private Func<Task>? confirmAction;
+    private List<UserDto> users = new();
+    private List<RoleDto> roles = new();
+
+    private string? successMessage;
+    private bool showPassword = false;
+
+    // Search / filter
+    private string searchInput = "";
+    private string searchQuery = "";
+
+    private void ApplySearch()
+    {
+        searchQuery = searchInput;
+        filterRoleId = filterRoleIdInput;
+        filterStatus = filterStatusInput;
+        currentPage = 1;
+    }
+
+    private void ResetSearch()
+    {
+        searchInput = "";
+        searchQuery = "";
+        filterRoleIdInput = 0;
+        filterRoleId = 0;
+        filterStatusInput = "all";
+        filterStatus = "all";
+        currentPage = 1;
+    }
+
+    private long filterRoleIdInput = 0;
+    private string filterStatusInput = "all";
+    private long filterRoleId = 0;
+    private string filterStatus = "all";
+
+    // Pagination state
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredUsers.Count() / pageSize);
+
+    private IEnumerable<UserDto> FilteredUsers
+    {
+        get
+        {
+            var result = users.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                var query = searchQuery.Trim().ToLower();
+                result = result.Where(u =>
+                    (u.FirstName != null && u.FirstName.ToLower().Contains(query)) ||
+                    (u.LastName  != null && u.LastName.ToLower().Contains(query)) ||
+                    (u.Username  != null && u.Username.ToLower().Contains(query)) ||
+                    (u.Email     != null && u.Email.ToLower().Contains(query))
+                );
+            }
+
+            if (filterRoleId > 0)
+                result = result.Where(u => u.RoleId == filterRoleId);
+
+            if (filterStatus == "active")
+                result = result.Where(u => u.IsActive);
+            else if (filterStatus == "inactive")
+                result = result.Where(u => !u.IsActive);
+
+            return result;
+        }
+    }
+
+    private IEnumerable<UserDto> PagedUsers =>
+        FilteredUsers.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    // Form fields
+    private long editingId;
+    private string formUsername = "";
+    private string formFirstName = "";
+    private string formLastName = "";
+    private string formEmail = "";
+    private string formPassword = "";
+    private string? formPhone;
+    private long formRoleId;
+    private bool formIsActive = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+            var rolesTask = client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive);
+            await System.Threading.Tasks.Task.WhenAll(usersTask, rolesTask);
+
+            users = usersTask.Result ?? new();
+            roles = rolesTask.Result ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Load error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task LoadUsers()
+    {
+        var client = ApiClient.CreateClient();
+        users = await client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive) ?? new();
+    }
+
+    // Pagination handlers
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+    }
+
+    private void HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditing = false;
+        editingId = 0;
+        formUsername = "";
+        formFirstName = "";
+        formLastName = "";
+        formEmail = "";
+        formPassword = "";
+        formPhone = null;
+        formRoleId = roles.FirstOrDefault()?.Id ?? 0;
+        formIsActive = true;
+        errorMessage = null;
+        isFirstNameError = false; firstNameErrorMsg = "";
+        isLastNameError = false;  lastNameErrorMsg = "";
+        isUsernameError = false;  usernameErrorMsg = "";
+        isEmailError = false;     emailErrorMsg = "";
+        isPasswordError = false;  passwordErrorMsg = "";
+        showModal = true;
+    }
+
+    private void OpenEditModal(UserDto user)
+    {
+        isEditing = true;
+        editingId = user.Id;
+        formUsername = user.Username;
+        formFirstName = user.FirstName;
+        formLastName = user.LastName;
+        formEmail = user.Email;
+        formPhone = user.Phone;
+        formRoleId = user.RoleId;
+        formIsActive = user.IsActive;
+        errorMessage = null;
+        isFirstNameError = false; firstNameErrorMsg = "";
+        isLastNameError = false;  lastNameErrorMsg = "";
+        isUsernameError = false;  usernameErrorMsg = "";
+        isEmailError = false;     emailErrorMsg = "";
+        isPasswordError = false;  passwordErrorMsg = "";
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        errorMessage = null;
+        isFirstNameError = false; isLastNameError = false; isUsernameError = false;
+        isEmailError = false; isPasswordError = false;
+    }
+
+    private void RequestSaveConfirmation()
+    {
+        isFirstNameError = false; firstNameErrorMsg = "";
+        isLastNameError = false;  lastNameErrorMsg = "";
+        isUsernameError = false;  usernameErrorMsg = "";
+        isEmailError = false;     emailErrorMsg = "";
+        isPasswordError = false;  passwordErrorMsg = "";
+        bool hasError = false;
+
+        if (string.IsNullOrWhiteSpace(formFirstName)) { isFirstNameError = true; firstNameErrorMsg = "First name is required."; hasError = true; }
+        if (string.IsNullOrWhiteSpace(formLastName))  { isLastNameError = true;  lastNameErrorMsg = "Last name is required.";  hasError = true; }
+        
+        if (string.IsNullOrWhiteSpace(formUsername))  { isUsernameError = true;  usernameErrorMsg = "Username is required.";   hasError = true; }
+        else if (formUsername.Length < 3) { isUsernameError = true; usernameErrorMsg = ResultMessages.UsernameMinLength; hasError = true; }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(formUsername, @"^[a-zA-Z0-9._]+$")) { isUsernameError = true; usernameErrorMsg = ResultMessages.UsernameInvalidCharacters; hasError = true; }
+
+        if (string.IsNullOrWhiteSpace(formEmail))     { isEmailError = true;     emailErrorMsg = "Email is required.";         hasError = true; }
+        
+        if (!isEditing)
+        {
+            if (string.IsNullOrWhiteSpace(formPassword))
+            {
+                isPasswordError = true;
+                passwordErrorMsg = "Password is required.";
+                hasError = true;
+            }
+            else if (formPassword.Length < 8)
+            {
+                isPasswordError = true;
+                passwordErrorMsg = ResultMessages.PasswordMinLengthRule;
+                hasError = true;
+            }
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(formPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$"))
+            {
+                isPasswordError = true;
+                passwordErrorMsg = ResultMessages.PasswordComplexityRule;
+                hasError = true;
+            }
+        }
+        if (hasError) return;
+
+        if (isEditing)
+        {
+            confirmTitle = "Update User?";
+            confirmMessage = "Are you sure you want to update this user?";
+            confirmButtonText = "Update";
+            confirmIcon = "pencil";
+            confirmIconBg = "bg-amber-50";
+            confirmIconText = "text-amber-500";
+            confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        }
+        else
+        {
+            confirmTitle = "Create User?";
+            confirmMessage = "Are you sure you want to create this user?";
+            confirmButtonText = "Create";
+            confirmIcon = "plus-circle";
+            confirmIconBg = "bg-emerald-50";
+            confirmIconText = "text-emerald-500";
+            confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        }
+        confirmAction = SaveUser;
+        showConfirmDialog = true;
+    }
+
+    private void RequestDeleteConfirmation(long id)
+    {
+        confirmTitle = "Delete User?";
+        confirmMessage = "Are you sure you want to delete this user? This action cannot be undone.";
+        confirmButtonText = "Delete";
+        confirmIcon = "trash-2";
+        confirmIconBg = "bg-rose-50";
+        confirmIconText = "text-rose-500";
+        confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        confirmAction = () => DeleteUser(id);
+        showConfirmDialog = true;
+    }
+
+    private async Task HandleConfirmAction()
+    {
+        showConfirmDialog = false;
+        if (confirmAction != null)
+            await confirmAction();
+    }
+
+    private void CloseConfirmDialog()
+    {
+        showConfirmDialog = false;
+    }
+
+    private async Task SaveUser()
+    {
+        if (string.IsNullOrWhiteSpace(formUsername) || string.IsNullOrWhiteSpace(formFirstName) || string.IsNullOrWhiteSpace(formLastName) || string.IsNullOrWhiteSpace(formEmail))
+        {
+            errorMessage = ResultMessages.FillAllFields;
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        var client = ApiClient.CreateClient();
+
+        try
+        {
+            if (isEditing)
+            {
+                var dto = new UpdateUserDto
+                {
+                    Username = formUsername,
+                    FirstName = formFirstName,
+                    LastName = formLastName,
+                    Phone = formPhone,
+                    RoleId = formRoleId,
+                    IsActive = formIsActive
+                };
+                var response = await client.PutAsJsonAsync($"User/{editingId}", dto);
+                var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+                if (res == null || !res.IsSuccess)
+                {
+                    errorMessage = res?.ErrorMessage ?? ResultMessages.FailedToUpdateUser;
+                    return;
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(formPassword))
+                {
+                    errorMessage = "Password is required.";
+                    isSaving = false;
+                    return;
+                }
+                if (formPassword.Length < 8)
+                {
+                    errorMessage = ResultMessages.PasswordMinLengthRule;
+                    isSaving = false;
+                    return;
+                }
+                if (!System.Text.RegularExpressions.Regex.IsMatch(formPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$"))
+                {
+                    errorMessage = ResultMessages.PasswordComplexityRule;
+                    isSaving = false;
+                    return;
+                }
+                var dto = new CreateUserDto
+                {
+                    Username = formUsername,
+                    FirstName = formFirstName,
+                    LastName = formLastName,
+                    Email = formEmail,
+                    Password = formPassword,
+                    Phone = formPhone,
+                    RoleId = formRoleId
+                };
+                var response = await client.PostAsJsonAsync("User", dto);
+                var res = await response.Content.ReadFromJsonAsync<Result<UserDto>>(Serialization.CaseInsensitive);
+                if (res == null || !res.IsSuccess)
+                {
+                    errorMessage = res?.ErrorMessage ?? ResultMessages.FailedToCreateUser;
+                    return;
+                }
+            }
+
+            CloseModal();
+            await LoadUsers();
+            successMessage = isEditing ? "User updated successfully!" : "User created successfully!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteUser(long id)
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var currentUserIdStr = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (currentUserIdStr != null && long.TryParse(currentUserIdStr, out var currentUserId) && currentUserId == id)
+        {
+            await JS.InvokeVoidAsync("alert", "You cannot delete your own account.");
+            return;
+        }
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.DeleteAsync($"User/{id}");
+            var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+            if (res == null || !res.IsSuccess)
+            {
+                await JS.InvokeVoidAsync("alert", res?.ErrorMessage ?? "Failed to delete user.");
+                return;
+            }
+            await LoadUsers();
+            if (currentPage > TotalPages && TotalPages > 0)
+                currentPage = TotalPages;
+            successMessage = "User deleted successfully!";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Delete error: {ex.Message}");
+        }
+    }
+
+    private async Task TogglePassword()
+    {
+        showPassword = !showPassword;
+        await JS.InvokeVoidAsync("initIcons");
+    }
+}

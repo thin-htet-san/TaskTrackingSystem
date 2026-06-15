@@ -1,0 +1,955 @@
+@page "/tasks"
+@page "/tasks/all"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Tasks</PageTitle>
+
+<SuccessAlert Message="@successMessage" />
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Tasks</h2>
+            <p class="text-slate-500 mt-1">@(isAdmin ? "View and manage all tasks across projects." : "Your assigned tasks.")</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <!-- View Toggle Button Group -->
+            <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button @onclick='() => SetView("list")' class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(currentView == "list" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+                    <i data-lucide="list" class="h-3.5 w-3.5"></i>
+                    <span>List View</span>
+                </button>
+                <button @onclick='() => SetView("backlog")' class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(currentView == "backlog" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+                    <i data-lucide="layers" class="h-3.5 w-3.5"></i>
+                    <span>Backlog View</span>
+                </button>
+                <button @onclick='() => SetView("board")' class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(currentView == "board" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+                    <i data-lucide="kanban" class="h-3.5 w-3.5"></i>
+                    <span>Board View</span>
+                </button>
+            </div>
+            
+            <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+                New Task
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading tasks..." />
+    }
+    else
+    {
+        <!-- Search and Filters Panel -->
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="relative flex-1 min-w-[200px]">
+                    <input @bind="searchInput" type="text" placeholder="Search tasks by title..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+                <div class="w-44 shrink-0">
+                    <select @bind="filterProjectIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">All Projects</option>
+                        @foreach (var p in projects)
+                        {
+                            <option value="@p.Id">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="w-40 shrink-0">
+                    <select @bind="filterStatusIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">All Statuses</option>
+                        <option value="1">To Do</option>
+                        <option value="2">In Progress</option>
+                        <option value="3">Done</option>
+                    </select>
+                </div>
+                <div class="w-40 shrink-0">
+                    <select @bind="filterPriorityIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">All Priorities</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                    </select>
+                </div>
+                <button @onclick="ApplySearch" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm shrink-0">
+                    <i data-lucide="search" class="h-4 w-4 mr-2"></i>
+                    Search
+                </button>
+                <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm shrink-0">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        @if (currentView == "backlog")
+        {
+            <div class="space-y-6 mt-4">
+                @foreach (var proj in projects.Where(p => filterProjectId == 0 || p.Id == filterProjectId))
+                {
+                    var projTasks = FilteredTasks.Where(t => t.ProjectId == proj.Id).ToList();
+                    @if (projTasks.Any())
+                    {
+                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                            <!-- Project Header Row -->
+                            <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-100">
+                                <div class="flex items-center space-x-3">
+                                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-600 font-bold text-xs">P</span>
+                                    <h3 class="font-bold text-sm text-slate-800">@proj.Name</h3>
+                                    <span class="px-2.5 py-0.5 rounded-full bg-slate-200/80 text-[10px] text-slate-500 font-semibold font-sans">@projTasks.Count tasks</span>
+                                </div>
+                                <button @onclick="() => OpenCreateModalForProject(proj.Id)" class="inline-flex items-center text-xs font-semibold text-emerald-600 hover:text-emerald-800 transition-colors">
+                                    <i data-lucide="plus" class="h-3 w-3 mr-1"></i> Add Task
+                                </button>
+                            </div>
+
+                            <!-- Tasks List (Vertical Backlog rows) -->
+                            <div class="divide-y divide-slate-100">
+                                @foreach (var task in projTasks)
+                                {
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-slate-50/40 transition-colors gap-3">
+                                        <!-- Left section -->
+                                        <div class="flex items-start space-x-3 flex-1 min-w-0">
+                                            <input type="checkbox" checked="@(task.StatusId == 3)" @onchange="() => ToggleTaskStatus(task)" class="h-4 w-4 rounded border-slate-300 text-violet-600 accent-violet-600 focus:ring-violet-500 mt-1 cursor-pointer shrink-0" />
+                                            <div class="min-w-0">
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-[10px] font-bold text-slate-400 font-mono tracking-wider font-semibold">TASK-#@task.Id</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold @GetStatusBadge(task.StatusId)">
+                                                        @GetStatusLabel(task.StatusId)
+                                                    </span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold @GetPriorityBadge(task.PriorityId)">
+                                                        @GetPriorityLabel(task.PriorityId)
+                                                    </span>
+                                                </div>
+                                                <h4 class="text-sm font-bold text-slate-800 mt-1 truncate @(task.StatusId == 3 ? "line-through text-slate-400" : "")">@task.Title</h4>
+                                                @if (!string.IsNullOrEmpty(task.Description))
+                                                {
+                                                    <p class="text-xs text-slate-400 mt-0.5 truncate max-w-xl">@task.Description</p>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <!-- Right section -->
+                                        <div class="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+                                            <span class="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
+                                                Due @task.DueDate.ToString("dd-MMM-yyyy")
+                                            </span>
+                                            
+                                            <div class="flex items-center space-x-1">
+                                                <button @onclick="() => OpenEditModal(task)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                                    <i data-lucide="pencil" class="h-3.5 w-3.5"></i>
+                                                </button>
+                                                <button @onclick="() => RequestDeleteConfirmation(task.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                                    <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                @if (!taskList.Any(t => filterProjectId == 0 || t.ProjectId == filterProjectId))
+                {
+                    <div class="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+                        <i data-lucide="check-square" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
+                        <h4 class="text-sm font-bold text-slate-800">No tasks in backlog</h4>
+                        <p class="text-xs text-slate-400 mt-1">Select another project or create your first task!</p>
+                    </div>
+                }
+            </div>
+        }
+        else if (currentView == "board")
+        {
+            <!-- Board View: Kanban Column view -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                @foreach (var column in columns)
+                {
+                    var tasksInColumn = FilteredTasks.Where(t => t.StatusId == column.StatusId).ToList();
+                    <div class="flex flex-col rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden min-h-[450px]">
+                        <!-- Column Header -->
+                        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
+                            <div class="flex items-center space-x-2">
+                                <span class="h-2.5 w-2.5 rounded-full @column.DotColor"></span>
+                                <h3 class="text-sm font-semibold text-slate-900">@column.Name</h3>
+                            </div>
+                            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">@tasksInColumn.Count</span>
+                        </div>
+
+                        <!-- Cards -->
+                        <div class="flex-1 p-3 space-y-3 overflow-y-auto"
+                             @ondrop="() => HandleDrop(column.StatusId)"
+                             @ondragover="HandleDragOver"
+                             @ondragover:preventDefault="true">
+                            @if (tasksInColumn.Any())
+                            {
+                                @foreach (var task in tasksInColumn)
+                                {
+                                    <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
+                                         draggable="true" 
+                                         @ondragstart="() => HandleDragStart(task)">
+                                        <div class="flex items-start justify-between">
+                                            <h4 class="text-sm font-semibold text-slate-900">@task.Title</h4>
+                                            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium @GetPriorityBadge(task.PriorityId)">@GetPriorityLabel(task.PriorityId)</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(task.Description))
+                                        {
+                                            <p class="text-xs text-slate-505 mt-1.5 line-clamp-2">@task.Description</p>
+                                        }
+                                        <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
+                                            <span class="text-[10px] text-slate-400">Due @task.DueDate.ToString("MMM dd")</span>
+                                            @{ var user = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo); }
+                                            @if (user != null)
+                                            {
+                                                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[8px] font-bold" title="@user.FirstName @user.LastName">
+                                                    @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="flex items-center justify-center py-8 h-full">
+                                    <p class="text-xs text-slate-400">Drop tasks here</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- Tasks Table (List View) -->
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden mt-4">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/60">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Title</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                         @if (PagedTasks.Any())
+                        {
+                            @foreach (var task in PagedTasks)
+                            {
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <span class="text-sm font-semibold text-slate-900">@task.Title</span>
+                                        @if (!string.IsNullOrEmpty(task.Description))
+                                        {
+                                            <p class="text-xs text-slate-400 mt-0.5 truncate max-w-xs">@task.Description</p>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(task.StatusId)">
+                                            @GetStatusLabel(task.StatusId)
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(task.PriorityId)">
+                                            @GetPriorityLabel(task.PriorityId)
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">@task.DueDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">
+                                        @{ var proj = projects.FirstOrDefault(p => p.Id == task.ProjectId); }
+                                        @(proj?.Name ?? $"#{task.ProjectId}")
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-500 font-medium">
+                                        @{ var user = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo); }
+                                        @if (user != null)
+                                        {
+                                            <div class="flex items-center gap-2">
+                                                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
+                                                    @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                                </span>
+                                                <span class="text-xs text-slate-700 font-semibold">@user.FirstName @user.LastName</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-xs text-slate-400 italic">Unassigned</span>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end space-x-2">
+                                            <button @onclick="() => OpenEditModal(task)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                                <i data-lucide="pencil" class="h-4 w-4"></i>
+                                            </button>
+                                            <button @onclick="() => RequestDeleteConfirmation(task.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <EmptyState ColSpan="6" Icon="check-square" Title="No tasks yet" Subtitle="Create your first task to get started." />
+                        }
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <Pagination CurrentPage="currentPage"
+                            TotalPages="TotalPages"
+                            PageSize="pageSize"
+                            TotalCount="FilteredTasks.Count()"
+                            OnPageChanged="HandlePageChanged"
+                            OnPageSizeChanged="HandlePageSizeChanged" />
+            </div>
+        }
+    }
+</div>
+
+@* ===== Create / Edit Modal ===== *@
+@if (showModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <h3 class="text-lg font-semibold text-slate-900">@(isEditing ? "Edit Task" : "New Task")</h3>
+                <button @onclick="CloseModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Title <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <input @bind="formTitle" type="text" placeholder="Task title" class="w-full rounded-lg border @(isTitleError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all @(isTitleError ? "pr-10" : "")" />
+                        @if (isTitleError)
+                        {
+                            <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        }
+                    </div>
+                    @if (isTitleError)
+                    {
+                        <p class="mt-1 text-xs text-red-500">@titleErrorMessage</p>
+                    }
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+                    <textarea @bind="formDescription" rows="3" placeholder="Description" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Project <span class="text-red-500">*</span></label>
+                        <select @bind="formProjectId" class="w-full rounded-lg border @(isProjectError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:border-transparent transition-all">
+                            <option value="0">Select project...</option>
+                            @foreach (var p in projects)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                        @if (isProjectError)
+                        {
+                            <p class="mt-1 text-xs text-red-500">@projectErrorMessage</p>
+                        }
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+                        <select @bind="formStatusId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                            <option value="1">To Do</option>
+                            <option value="2">In Progress</option>
+                            <option value="3">Done</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
+                        <select @bind="formPriorityId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                            <option value="1">Low</option>
+                            <option value="2">Medium</option>
+                            <option value="3">High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
+                        <input @bind="formDueDate" type="date" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Assignee</label>
+                        <select @bind="formAssignedTo" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                            <option value="">Unassigned</option>
+                            @foreach (var u in allUsers)
+                            {
+                                <option value="@u.Id">@u.FirstName @u.LastName (@@@u.Username)</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Estimated Hours</label>
+                        <input @bind="formEstimatedHours" type="number" placeholder="Estimated Hours" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="rounded-lg bg-rose-50 p-3 border border-rose-200">
+                        <p class="text-xs text-rose-600 font-medium flex items-center gap-1.5">
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            @errorMessage
+                        </p>
+                    </div>
+                }
+            </div>
+            <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                <button @onclick="RequestSaveConfirmation" disabled="@isSaving" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                    @(isSaving ? "Saving..." : (isEditing ? "Update" : "Create"))
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ===== Confirm Dialog ===== *@
+<ConfirmDialog IsVisible="showConfirmDialog"
+               Title="@confirmTitle"
+               Message="@confirmMessage"
+               ConfirmText="@confirmButtonText"
+               Icon="@confirmIcon"
+               IconBgClass="@confirmIconBg"
+               IconTextClass="@confirmIconText"
+               ButtonClass="@confirmButtonClass"
+               OnConfirm="HandleConfirmAction"
+               OnCancel="CloseConfirmDialog" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "taskId")]
+    public long? TaskIdParam { get; set; }
+
+    private bool isLoading = true;
+    private bool isAdmin = false;
+    private long currentUserId = 0;
+    private bool showModal = false;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    // Per-field validation
+    private bool isTitleError = false;
+    private string titleErrorMessage = "";
+    private bool isProjectError = false;
+    private string projectErrorMessage = "";
+
+    // Confirm dialog state
+    private bool showConfirmDialog = false;
+    private string confirmTitle = "";
+    private string confirmMessage = "";
+    private string confirmButtonText = "";
+    private string confirmIcon = "";
+    private string confirmIconBg = "";
+    private string confirmIconText = "";
+    private string confirmButtonClass = "";
+    private Func<Task>? confirmAction;
+    private List<TaskDto> taskList = new();
+    private List<ProjectDto> projects = new();
+    private List<UserDto> allUsers = new();
+
+    // Backlog vs List vs Board View state
+    private string currentView = "list";
+
+    private string? successMessage;
+
+    // Search and Filters state
+    private string searchInput = "";
+    private string searchQuery = "";
+    private long filterProjectIdInput = 0;
+    private long filterStatusIdInput = 0;
+    private long filterPriorityIdInput = 0;
+    private long filterProjectId = 0;
+    private long filterStatusId = 0;
+    private long filterPriorityId = 0;
+
+    // Pagination state
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private List<KanbanColumn> columns = new()
+    {
+        new(1, "To Do", "bg-slate-400"),
+        new(2, "In Progress", "bg-blue-500"),
+        new(3, "Done", "bg-emerald-500")
+    };
+
+    private TaskDto? draggedTask;
+
+    private void SetView(string view)
+    {
+        currentView = view;
+        StateHasChanged();
+    }
+
+    private void HandleDragStart(TaskDto task)
+    {
+        draggedTask = task;
+    }
+
+    private void HandleDragOver()
+    {
+        // Allow dropping
+    }
+
+    private async Task HandleDrop(long newStatusId)
+    {
+        if (draggedTask != null && draggedTask.StatusId != newStatusId)
+        {
+            await MoveTask(draggedTask.Id, newStatusId);
+        }
+        draggedTask = null;
+    }
+
+    private async Task MoveTask(long taskId, long newStatusId)
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.PatchAsync($"Task/{taskId}/status?statusId={newStatusId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var task = taskList.FirstOrDefault(t => t.Id == taskId);
+                if (task != null) task.StatusId = newStatusId;
+                await LoadTasks();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Move task error: {ex.Message}");
+        }
+    }
+
+    private void ApplySearch()
+    {
+        searchQuery = searchInput;
+        filterProjectId = filterProjectIdInput;
+        filterStatusId = filterStatusIdInput;
+        filterPriorityId = filterPriorityIdInput;
+        currentPage = 1;
+    }
+
+    private void ResetSearch()
+    {
+        searchInput = "";
+        searchQuery = "";
+        filterProjectIdInput = 0;
+        filterProjectId = 0;
+        filterStatusIdInput = 0;
+        filterStatusId = 0;
+        filterPriorityIdInput = 0;
+        filterPriorityId = 0;
+        currentPage = 1;
+    }
+
+    private void OpenCreateModalForProject(long projectId)
+    {
+        OpenCreateModal();
+        formProjectId = projectId;
+    }
+
+    private async Task ToggleTaskStatus(TaskDto task)
+    {
+        var newStatusId = task.StatusId == 3 ? 1 : 3;
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.PatchAsync($"Task/{task.Id}/status?statusId={newStatusId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                task.StatusId = newStatusId;
+                await LoadTasks();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Toggle task error: {ex.Message}");
+        }
+    }
+
+    private IEnumerable<TaskDto> FilteredTasks
+    {
+        get
+        {
+            var result = taskList.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                var q = searchQuery.Trim().ToLower();
+                result = result.Where(t => t.Title.ToLower().Contains(q) 
+                    || (t.Description != null && t.Description.ToLower().Contains(q)));
+            }
+            if (filterProjectId > 0)
+            {
+                result = result.Where(t => t.ProjectId == filterProjectId);
+            }
+            if (filterStatusId > 0)
+            {
+                result = result.Where(t => t.StatusId == filterStatusId);
+            }
+            if (filterPriorityId > 0)
+            {
+                result = result.Where(t => t.PriorityId == filterPriorityId);
+            }
+            return result;
+        }
+    }
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredTasks.Count() / pageSize);
+
+    private IEnumerable<TaskDto> PagedTasks =>
+        FilteredTasks.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    // Form fields
+    private long editingId;
+    private string formTitle = "";
+    private string? formDescription;
+    private long formProjectId;
+    private long formStatusId = 1;
+    private long formPriorityId = 2;
+    private DateTime formDueDate = DateTime.Today.AddDays(7);
+    private long? formAssignedTo;
+    private int? formEstimatedHours;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAdmin = user.IsInRole("Admin");
+        var idStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (idStr != null) long.TryParse(idStr, out currentUserId);
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+            await System.Threading.Tasks.Task.WhenAll(tasksTask, projectsTask, usersTask);
+
+            var allTasks = tasksTask.Result ?? new();
+            // Non-admin: only show tasks assigned to them
+            taskList = (!isAdmin && currentUserId > 0)
+                ? allTasks.Where(t => t.AssignedTo == currentUserId).ToList()
+                : allTasks;
+            projects = projectsTask.Result ?? new();
+            allUsers = usersTask.Result ?? new();
+
+            if (TaskIdParam.HasValue && TaskIdParam > 0)
+            {
+                var t = taskList.FirstOrDefault(x => x.Id == TaskIdParam.Value);
+                if (t != null)
+                {
+                    searchInput = t.Title;
+                    searchQuery = t.Title;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Load error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task LoadTasks()
+    {
+        var client = ApiClient.CreateClient();
+        var allTasks = await client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive) ?? new();
+        taskList = (!isAdmin && currentUserId > 0)
+            ? allTasks.Where(t => t.AssignedTo == currentUserId).ToList()
+            : allTasks;
+    }
+
+    // Pagination handlers
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+    }
+
+    private void HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditing = false;
+        editingId = 0;
+        formTitle = "";
+        formDescription = null;
+        formProjectId = projects.FirstOrDefault()?.Id ?? 0;
+        formStatusId = 1;
+        formPriorityId = 2;
+        formDueDate = DateTime.Today.AddDays(7);
+        formAssignedTo = null;
+        formEstimatedHours = null;
+        errorMessage = null;
+        isTitleError = false; titleErrorMessage = "";
+        isProjectError = false; projectErrorMessage = "";
+        showModal = true;
+    }
+
+    private void OpenEditModal(TaskDto task)
+    {
+        isEditing = true;
+        editingId = task.Id;
+        formTitle = task.Title;
+        formDescription = task.Description;
+        formProjectId = task.ProjectId;
+        formStatusId = task.StatusId;
+        formPriorityId = task.PriorityId;
+        formDueDate = task.DueDate;
+        formAssignedTo = task.AssignedTo;
+        formEstimatedHours = task.EstimatedHours;
+        errorMessage = null;
+        isTitleError = false; titleErrorMessage = "";
+        isProjectError = false; projectErrorMessage = "";
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        errorMessage = null;
+        isTitleError = false; titleErrorMessage = "";
+        isProjectError = false; projectErrorMessage = "";
+    }
+
+    private void RequestSaveConfirmation()
+    {
+        isTitleError = false; titleErrorMessage = "";
+        isProjectError = false; projectErrorMessage = "";
+        bool hasError = false;
+
+        if (string.IsNullOrWhiteSpace(formTitle))
+        {
+            isTitleError = true;
+            titleErrorMessage = "Task title is required.";
+            hasError = true;
+        }
+        if (formProjectId == 0)
+        {
+            isProjectError = true;
+            projectErrorMessage = "Please select a project.";
+            hasError = true;
+        }
+        if (hasError) return;
+
+        if (isEditing)
+        {
+            confirmTitle = "Update Task?";
+            confirmMessage = "Are you sure you want to update this task?";
+            confirmButtonText = "Update";
+            confirmIcon = "pencil";
+            confirmIconBg = "bg-amber-50";
+            confirmIconText = "text-amber-500";
+            confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        }
+        else
+        {
+            confirmTitle = "Create Task?";
+            confirmMessage = "Are you sure you want to create this task?";
+            confirmButtonText = "Create";
+            confirmIcon = "plus-circle";
+            confirmIconBg = "bg-emerald-50";
+            confirmIconText = "text-emerald-500";
+            confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        }
+        confirmAction = SaveTask;
+        showConfirmDialog = true;
+    }
+
+    private void RequestDeleteConfirmation(long id)
+    {
+        confirmTitle = "Delete Task?";
+        confirmMessage = "Are you sure you want to delete this task? This action cannot be undone.";
+        confirmButtonText = "Delete";
+        confirmIcon = "trash-2";
+        confirmIconBg = "bg-rose-50";
+        confirmIconText = "text-rose-500";
+        confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
+        confirmAction = () => DeleteTask(id);
+        showConfirmDialog = true;
+    }
+
+    private async Task HandleConfirmAction()
+    {
+        showConfirmDialog = false;
+        if (confirmAction != null)
+            await confirmAction();
+    }
+
+    private void CloseConfirmDialog()
+    {
+        showConfirmDialog = false;
+    }
+
+    private async Task SaveTask()
+    {
+        if (string.IsNullOrWhiteSpace(formTitle))
+        {
+            errorMessage = ResultMessages.TaskTitleRequired;
+            return;
+        }
+        if (formProjectId == 0)
+        {
+            errorMessage = ResultMessages.SelectProjectRequired;
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        var client = ApiClient.CreateClient();
+
+        try
+        {
+            if (isEditing)
+            {
+                var dto = new UpdateTaskDto
+                {
+                    Title = formTitle,
+                    Description = formDescription,
+                    StatusId = formStatusId,
+                    PriorityId = formPriorityId,
+                    DueDate = formDueDate,
+                    AssignedTo = formAssignedTo,
+                    EstimatedHours = formEstimatedHours
+                };
+                var response = await client.PutAsJsonAsync($"Task/{editingId}", dto);
+                var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+                if (res == null || !res.IsSuccess)
+                {
+                    errorMessage = res?.ErrorMessage ?? ResultMessages.FailedToUpdateTask;
+                    return;
+                }
+            }
+            else
+            {
+                var dto = new CreateTaskDto
+                {
+                    Title = formTitle,
+                    Description = formDescription,
+                    ProjectId = formProjectId,
+                    StatusId = formStatusId,
+                    PriorityId = formPriorityId,
+                    DueDate = formDueDate,
+                    AssignedTo = formAssignedTo,
+                    EstimatedHours = formEstimatedHours
+                };
+                var response = await client.PostAsJsonAsync("Task", dto);
+                var res = await response.Content.ReadFromJsonAsync<Result<TaskDto>>(Serialization.CaseInsensitive);
+                if (res == null || !res.IsSuccess)
+                {
+                    errorMessage = res?.ErrorMessage ?? ResultMessages.FailedToCreateTask;
+                    return;
+                }
+            }
+
+            CloseModal();
+            await LoadTasks();
+            currentView = "list";
+            successMessage = isEditing ? "Task updated successfully!" : "Task created successfully!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteTask(long id)
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.DeleteAsync($"Task/{id}");
+            var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+            if (res == null || !res.IsSuccess)
+            {
+                await JS.InvokeVoidAsync("alert", res?.ErrorMessage ?? "Failed to delete task.");
+                return;
+            }
+            await LoadTasks();
+            currentView = "list";
+            if (currentPage > TotalPages && TotalPages > 0)
+                currentPage = TotalPages;
+            successMessage = "Task deleted successfully!";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Delete error: {ex.Message}");
+        }
+    }
+
+    private string GetStatusBadge(long statusId) => statusId switch
+    {
+        1 => "bg-slate-100 text-slate-700",
+        2 => "bg-blue-100 text-blue-700",
+        3 => "bg-emerald-100 text-emerald-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private string GetStatusLabel(long statusId) => statusId switch
+    {
+        1 => "To Do",
+        2 => "In Progress",
+        3 => "Done",
+        _ => "Unknown"
+    };
+
+    private string GetPriorityBadge(long priorityId) => priorityId switch
+    {
+        1 => "bg-slate-100 text-slate-600",
+        2 => "bg-amber-100 text-amber-700",
+        3 => "bg-red-100 text-red-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private string GetPriorityLabel(long priorityId) => priorityId switch
+    {
+        1 => "Low",
+        2 => "Medium",
+        3 => "High",
+        _ => "—"
+    };
+
+    private sealed record KanbanColumn(long StatusId, string Name, string DotColor);
+}

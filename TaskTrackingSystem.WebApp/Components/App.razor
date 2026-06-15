@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="TaskTrackingSystem.WebApp.styles.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#F4F3FA",          
+                        foreground: "#1E1B4B",          
+                        card: "#FFFFFF",                
+                        "card-foreground": "#1E1B4B",   
+                        popover: "#FFFFFF",
+                        "popover-foreground": "#1E1B4B",
+
+                        primary: "#7C3AED",              
+                        "primary-foreground": "#FFFFFF",
+
+                        secondary: "#EEF2F6",            
+                        "secondary-foreground": "#1E1B4B",
+
+                        muted: "#F3F4F6",                
+                        "muted-foreground": "#6B7280",
+
+                        accent: "#8B5CF6",               
+                        "accent-foreground": "#FFFFFF",
+
+                        border: "#E5E7EB",               
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+    <script>
+        function initIcons() {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+            if (typeof initFlatpickr === 'function') {
+                initFlatpickr();
+            }
+        }
+        function downloadFile(filename, contentType, content) {
+            const file = new Blob([content], {type: contentType});
+            const exportUrl = URL.createObjectURL(file);
+            const a = document.createElement("a");
+            a.href = exportUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(exportUrl);
+        }
+        function initFlatpickr() {
+            if (window.flatpickr) {
+                flatpickr("input[type='date']", {
+                    altInput: true,
+                    altFormat: "d-M-Y",
+                    dateFormat: "Y-m-d",
+                    allowInput: true
+                });
+            }
+        }
+        // Run once loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            initIcons();
+            initFlatpickr();
+        });
+        // Blazor enhanced page updates trigger
+        Blazor.addEventListener('enhancedload', () => {
+            initIcons();
+            initFlatpickr();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+@TaskTrackingSystem.WebApi_HostAddress = http://localhost:5018
+
+GET {{TaskTrackingSystem.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

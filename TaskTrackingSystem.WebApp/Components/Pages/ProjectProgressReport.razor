@@ -1,0 +1,365 @@
+@page "/reports/projects"
+@using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared.Models.Project
+@using TaskTrackingSystem.Shared.Models.Task
+@using System.Text
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
+
+<PageTitle>Project Progress Report</PageTitle>
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Project Progress</h2>
+            <p class="text-slate-500 mt-1">View project completion status, timelines, and progress charts.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                </button>
+                <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                </button>
+            </div>
+            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Project</label>
+                <input @bind="searchInput" type="text" placeholder="Search by name..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Period (Project Start Date)</label>
+                <select @bind="filterPeriod" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="all">All Time</option>
+                    <option value="daily">Daily (Today)</option>
+                    <option value="monthly">Monthly (This Month)</option>
+                    <option value="yearly">Yearly (This Year)</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            @if (filterPeriod == "custom")
+            {
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Start Date</label>
+                    <input @bind="filterStartDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">End Date</label>
+                    <input @bind="filterEndDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+            }
+
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Task Status Completion</label>
+                <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="0">All Tasks</option>
+                    <option value="1">To Do</option>
+                    <option value="2">In Progress</option>
+                    <option value="3">Done</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+            <button @onclick="ApplyAllFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+            </button>
+            <button @onclick="ResetAllFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    @if (isLoading)
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="flex items-center space-x-3 text-slate-500">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span class="text-sm font-medium">Loading data...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (isChartView)
+        {
+            <!-- Chart View: SVG Project Progress Bars -->
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 class="font-semibold text-slate-900 mb-4 font-sans text-md">Project Completion Chart</h3>
+                @if (!PagedList.Any())
+                {
+                    <p class="text-slate-400 text-center py-8">No data available.</p>
+                }
+                else
+                {
+                    <div class="space-y-4 max-w-2xl">
+                        @foreach (var proj in PagedList)
+                        {
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                                    <span>@proj.ProjectName</span>
+                                    <span>@proj.CompletedTasks / @proj.TotalTasks tasks (@proj.Progress.ToString("F0")% completed)</span>
+                                </div>
+                                <div class="h-4 rounded-full bg-slate-100 overflow-hidden flex">
+                                    <div class="h-full bg-emerald-500 rounded-full transition-all" style="width: @(Math.Min(proj.Progress, 100))%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- List View -->
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/60">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">End Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Tasks</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed Tasks</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completeness</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @if (PagedList.Any())
+                        {
+                            @foreach (var proj in PagedList)
+                            {
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-900">@proj.ProjectName</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">@proj.StartDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">@proj.EndDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-4 text-sm text-slate-900">@proj.TotalTasks</td>
+                                    <td class="px-6 py-4 text-sm text-emerald-600">@proj.CompletedTasks</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden max-w-[120px]">
+                                                <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: @(Math.Min(proj.Progress, 100))%"></div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-slate-700">@proj.Progress.ToString("F0")%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <p class="text-sm text-slate-400">No project data found matching criteria.</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <Pagination CurrentPage="currentPage"
+                            TotalPages="TotalPages"
+                            PageSize="pageSize"
+                            TotalCount="FilteredList.Count()"
+                            OnPageChanged="HandlePageChanged"
+                            OnPageSizeChanged="HandlePageSizeChanged" />
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private bool isChartView = false;
+    private List<ProjectDto> projects = new();
+    private List<TaskDto> tasks = new();
+    private List<ProjectMetric> displayList = new();
+
+    // Filters
+    private string filterPeriod = "all";
+    private DateTime? filterStartDate;
+    private DateTime? filterEndDate;
+    private string filterStatus = "0";
+
+    // Search and Pagination
+    private string searchInput = "";
+    private string searchQuery = "";
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private void ApplyAllFilters()
+    {
+        ApplyPeriodPreset();
+        searchQuery = searchInput;
+        currentPage = 1;
+        CalculateMetrics();
+    }
+
+    private void ResetAllFilters()
+    {
+        searchInput = "";
+        searchQuery = "";
+        filterPeriod = "all";
+        filterStartDate = null;
+        filterEndDate = null;
+        filterStatus = "0";
+        currentPage = 1;
+        CalculateMetrics();
+    }
+
+    private void HandlePageChanged(int page) { currentPage = page; }
+    private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
+
+    private IEnumerable<ProjectMetric> FilteredList =>
+        string.IsNullOrWhiteSpace(searchQuery)
+            ? displayList
+            : displayList.Where(p => p.ProjectName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredList.Count() / pageSize);
+
+    private IEnumerable<ProjectMetric> PagedList =>
+        FilteredList.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project");
+            var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task");
+            await Task.WhenAll(projectsTask, tasksTask);
+
+            projects = projectsTask.Result ?? new();
+            tasks = tasksTask.Result ?? new();
+            CalculateMetrics();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private void SetView(bool chartView)
+    {
+        isChartView = chartView;
+    }
+
+    private void ApplyPeriodPreset()
+    {
+        var today = DateTime.Today;
+        if (filterPeriod == "daily")
+        {
+            filterStartDate = today;
+            filterEndDate = today;
+        }
+        else if (filterPeriod == "monthly")
+        {
+            filterStartDate = new DateTime(today.Year, today.Month, 1);
+            filterEndDate = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+        }
+        else if (filterPeriod == "yearly")
+        {
+            filterStartDate = new DateTime(today.Year, 1, 1);
+            filterEndDate = new DateTime(today.Year, 12, 31);
+        }
+        else
+        {
+            filterStartDate = null;
+            filterEndDate = null;
+        }
+    }
+
+    private void CalculateMetrics()
+    {
+        var metrics = new List<ProjectMetric>();
+        var filteredProjects = projects.ToList();
+
+        // Apply period filter to projects by StartDate
+        if (filterStartDate.HasValue)
+        {
+            filteredProjects = filteredProjects.Where(p => p.StartDate >= filterStartDate.Value).ToList();
+        }
+        if (filterEndDate.HasValue)
+        {
+            filteredProjects = filteredProjects.Where(p => p.StartDate <= filterEndDate.Value.AddDays(1)).ToList();
+        }
+
+        foreach (var p in filteredProjects)
+        {
+            var projectTasks = tasks.Where(t => t.ProjectId == p.Id).ToList();
+
+            // Apply filter status on tasks if matching
+            if (filterStatus == "overdue")
+            {
+                projectTasks = projectTasks.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != 3).ToList();
+            }
+            else if (long.TryParse(filterStatus, out var statusId) && statusId > 0)
+            {
+                projectTasks = projectTasks.Where(t => t.StatusId == statusId).ToList();
+            }
+
+            int totalTasks = projectTasks.Count;
+            int completedTasks = projectTasks.Count(t => t.StatusId == 3); // Done = 3
+            double progress = totalTasks > 0 ? ((double)completedTasks / totalTasks) * 100 : 0;
+
+            metrics.Add(new ProjectMetric
+            {
+                ProjectName = p.Name,
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+                TotalTasks = totalTasks,
+                CompletedTasks = completedTasks,
+                Progress = progress
+            });
+        }
+
+        displayList = metrics.OrderByDescending(m => m.Progress).ToList();
+    }
+
+    private async Task DownloadCsv()
+    {
+        var csv = new StringBuilder();
+        csv.AppendLine("Project Name,Start Date,End Date,Total Tasks,Completed Tasks,Completeness %");
+
+        foreach (var proj in displayList)
+        {
+            csv.AppendLine($"\"{proj.ProjectName}\",\"{proj.StartDate:yyyy-MM-dd}\",\"{proj.EndDate:yyyy-MM-dd}\",\"{proj.TotalTasks}\",\"{proj.CompletedTasks}\",\"{proj.Progress:F0}%\"");
+        }
+
+        await JS.InvokeVoidAsync("downloadFile", "ProjectProgressReport.csv", "text/csv;charset=utf-8;", csv.ToString());
+    }
+
+    private class ProjectMetric
+    {
+        public string ProjectName { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public int TotalTasks { get; set; }
+        public int CompletedTasks { get; set; }
+        public double Progress { get; set; }
+    }
+}

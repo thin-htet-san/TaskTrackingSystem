@@ -1,0 +1,509 @@
+@page "/reports/tasks"
+@using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared.Models.Report
+@using TaskTrackingSystem.Shared.Models.Project
+@using System.Text
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
+
+<PageTitle>Task Report</PageTitle>
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Task Report</h2>
+            <p class="text-slate-500 mt-1">Detailed analysis and metrics of project tasks.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                </button>
+                <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                </button>
+            </div>
+            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Task</label>
+                <input @bind="searchInput" type="text" placeholder="Search by title or project..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Period Filter</label>
+                <select @bind="filterPeriod" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="all">All Time</option>
+                    <option value="daily">Daily (Today)</option>
+                    <option value="monthly">Monthly (This Month)</option>
+                    <option value="yearly">Yearly (This Year)</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            @if (filterPeriod == "custom")
+            {
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Start Date</label>
+                    <input @bind="filterStartDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">End Date</label>
+                    <input @bind="filterEndDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+            }
+
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                    <option value="">All</option>
+                    <option value="1">To Do</option>
+                    <option value="2">In Progress</option>
+                    <option value="3">Done</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="relative min-w-[240px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Project</label>
+                <div class="relative">
+                    <input @bind="projectSearchInput"
+                           @onfocus="ShowProjectSuggestions"
+                           @onblur="HideProjectSuggestionsDelayed"
+                           type="text"
+                           placeholder="Search projects..."
+                           autocomplete="off"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                    @if (filterProjectId > 0 || !string.IsNullOrWhiteSpace(projectSearchInput))
+                    {
+                        <button type="button"
+                                @onmousedown="ClearProjectFilter"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                title="Clear project filter">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
+                    }
+                </div>
+                @if (showProjectSuggestions && FilteredProjects.Any())
+                {
+                    <ul class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                        <li>
+                            <button type="button"
+                                    @onmousedown="ClearProjectFilter"
+                                    class="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                                All Projects
+                            </button>
+                        </li>
+                        @foreach (var p in FilteredProjects.Take(10))
+                        {
+                            <li>
+                                <button type="button"
+                                        @onmousedown="() => SelectProject(p)"
+                                        class="w-full px-3 py-2 text-left text-sm text-slate-900 hover:bg-slate-50 transition-colors @(filterProjectId == p.Id ? "bg-slate-50 font-medium" : "")">
+                                    @p.Name
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <button @onclick="ApplyAllFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+            </button>
+            <button @onclick="ResetAllFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    @if (isLoading)
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="flex items-center space-x-3 text-slate-500">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span class="text-sm font-medium">Loading data...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (isChartView)
+        {
+            <!-- Chart View -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- SVG Status Chart Card -->
+                <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="font-semibold text-slate-900 mb-4">Tasks by Status</h3>
+                    <div class="flex items-center justify-center h-64">
+                        @if (!FilteredList.Any())
+                        {
+                            <span class="text-sm text-slate-400">No data available</span>
+                        }
+                        else
+                        {
+                            var todo = FilteredList.Count(t => t.StatusId == 1);
+                            var inProgress = FilteredList.Count(t => t.StatusId == 2);
+                            var done = FilteredList.Count(t => t.StatusId == 3);
+                            var max = Math.Max(1, Math.Max(todo, Math.Max(inProgress, done)));
+                            var hTodo = (todo * 160) / max;
+                            var hInProgress = (inProgress * 160) / max;
+                            var hDone = (done * 160) / max;
+
+                            <svg class="w-full max-w-[320px]" height="220" viewBox="0 0 320 220">
+                                <g transform="translate(0, 180)">
+                                    <!-- Axes -->
+                                    <line x1="40" y1="0" x2="280" y2="0" stroke="#cbd5e1" stroke-width="2" />
+                                    <!-- To Do Bar -->
+                                    <rect x="60" y="-@hTodo" width="40" height="@hTodo" rx="4" fill="#e2e8f0" />
+                                    <text x="80" y="20" font-size="12" fill="#64748b" text-anchor="middle">To Do</text>
+                                    <text x="80" y="-@(hTodo + 10)" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">@todo</text>
+
+                                    <!-- In Progress Bar -->
+                                    <rect x="140" y="-@hInProgress" width="40" height="@hInProgress" rx="4" fill="#3b82f6" />
+                                    <text x="160" y="20" font-size="12" fill="#64748b" text-anchor="middle">In Progress</text>
+                                    <text x="160" y="-@(hInProgress + 10)" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">@inProgress</text>
+
+                                    <!-- Done Bar -->
+                                    <rect x="220" y="-@hDone" width="40" height="@hDone" rx="4" fill="#10b981" />
+                                    <text x="240" y="20" font-size="12" fill="#64748b" text-anchor="middle">Done</text>
+                                    <text x="240" y="-@(hDone + 10)" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">@done</text>
+                                </g>
+                            </svg>
+                        }
+                    </div>
+                </div>
+
+                <!-- SVG Priority Chart Card -->
+                <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="font-semibold text-slate-900 mb-4">Tasks by Priority</h3>
+                    <div class="flex items-center justify-center h-64">
+                        @if (!FilteredList.Any())
+                        {
+                            <span class="text-sm text-slate-400">No data available</span>
+                        }
+                        else
+                        {
+                            var low = FilteredList.Count(t => t.PriorityId == 1);
+                            var med = FilteredList.Count(t => t.PriorityId == 2);
+                            var high = FilteredList.Count(t => t.PriorityId == 3);
+                            var total = Math.Max(1, low + med + high);
+                            var pctLow = (low * 100) / total;
+                            var pctMed = (med * 100) / total;
+                            var pctHigh = (high * 100) / total;
+
+                            <div class="w-full space-y-4 max-w-[320px]">
+                                <div>
+                                    <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                                        <span>High Priority</span>
+                                        <span>@high tasks (@pctHigh%)</span>
+                                    </div>
+                                    <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                                        <div class="h-full bg-rose-500 rounded-full" style="width: @pctHigh%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                                        <span>Medium Priority</span>
+                                        <span>@med tasks (@pctMed%)</span>
+                                    </div>
+                                    <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                                        <div class="h-full bg-amber-500 rounded-full" style="width: @pctMed%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                                        <span>Low Priority</span>
+                                        <span>@low tasks (@pctLow%)</span>
+                                    </div>
+                                    <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                                        <div class="h-full bg-slate-400 rounded-full" style="width: @pctLow%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- List View -->
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/60">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned To</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @if (PagedList.Any())
+                        {
+                            @foreach (var t in PagedList)
+                            {
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-3 text-sm font-medium text-slate-900">@t.Title</td>
+                                    <td class="px-6 py-3 text-sm text-slate-500">@t.ProjectName</td>
+                                    <td class="px-6 py-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(t.StatusId)">@t.StatusName</span>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(t.PriorityId)">@t.PriorityName</span>
+                                    </td>
+                                    <td class="px-6 py-3 text-sm text-slate-500">@(t.AssignedToUser ?? "Unassigned")</td>
+                                    <td class="px-6 py-3 text-sm text-slate-500">@t.DueDate.ToString("dd-MMM-yyyy")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <i data-lucide="file-search" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
+                                    <p class="text-sm text-slate-400">No tasks found matching criteria.</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <Pagination CurrentPage="currentPage"
+                            TotalPages="TotalPages"
+                            PageSize="pageSize"
+                            TotalCount="FilteredList.Count()"
+                            OnPageChanged="HandlePageChanged"
+                            OnPageSizeChanged="HandlePageSizeChanged" />
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private bool isChartView = false;
+    private List<TaskReportDto> taskReports = new();
+    private List<ProjectDto> projects = new();
+
+    // Filters
+    private string filterPeriod = "all";
+    private DateTime? filterStartDate;
+    private DateTime? filterEndDate;
+    private string? filterStatus;
+    private int filterProjectId;
+    private string projectSearchInput = string.Empty;
+    private string projectSearchQuery = string.Empty;
+    private bool showProjectSuggestions;
+
+    // Search and Pagination
+    private string searchInput = "";
+    private string searchQuery = "";
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private async Task ApplyAllFilters()
+    {
+        ApplyPeriodPreset();
+        searchQuery = searchInput;
+        projectSearchQuery = projectSearchInput;
+        var matched = projects.FirstOrDefault(p => p.Name.Equals(projectSearchInput, StringComparison.OrdinalIgnoreCase));
+        if (matched != null)
+            filterProjectId = (int)matched.Id;
+        else if (string.IsNullOrWhiteSpace(projectSearchInput))
+            filterProjectId = 0;
+        currentPage = 1;
+        await LoadTaskReport();
+    }
+
+    private async Task ResetAllFilters()
+    {
+        searchInput = "";
+        searchQuery = "";
+        filterPeriod = "all";
+        filterStartDate = null;
+        filterEndDate = null;
+        filterStatus = null;
+        filterProjectId = 0;
+        projectSearchInput = string.Empty;
+        projectSearchQuery = string.Empty;
+        showProjectSuggestions = false;
+        currentPage = 1;
+        await LoadTaskReport();
+    }
+
+    private void HandlePageChanged(int page) { currentPage = page; }
+    private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
+
+    private IEnumerable<TaskReportDto> FilteredList =>
+        string.IsNullOrWhiteSpace(searchQuery)
+            ? taskReports
+            : taskReports.Where(t => t.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || t.ProjectName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredList.Count() / pageSize);
+
+    private IEnumerable<TaskReportDto> PagedList =>
+        FilteredList.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project") ?? new();
+        }
+        catch { }
+
+        await LoadTaskReport();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private IEnumerable<ProjectDto> FilteredProjects =>
+        string.IsNullOrWhiteSpace(projectSearchQuery)
+            ? projects
+            : projects.Where(p => p.Name.Contains(projectSearchQuery.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private void SetView(bool chartView)
+    {
+        isChartView = chartView;
+    }
+
+    private void ShowProjectSuggestions()
+    {
+        projectSearchQuery = projectSearchInput;
+        showProjectSuggestions = true;
+    }
+
+    private async Task HideProjectSuggestionsDelayed()
+    {
+        await Task.Delay(150);
+        showProjectSuggestions = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SelectProject(ProjectDto project)
+    {
+        filterProjectId = (int)project.Id;
+        projectSearchInput = project.Name;
+        projectSearchQuery = project.Name;
+        showProjectSuggestions = false;
+    }
+
+    private void ClearProjectFilter()
+    {
+        filterProjectId = 0;
+        projectSearchInput = string.Empty;
+        projectSearchQuery = string.Empty;
+        showProjectSuggestions = false;
+    }
+
+    private void ApplyPeriodPreset()
+    {
+        var today = DateTime.Today;
+        if (filterPeriod == "daily")
+        {
+            filterStartDate = today;
+            filterEndDate = today;
+        }
+        else if (filterPeriod == "monthly")
+        {
+            filterStartDate = new DateTime(today.Year, today.Month, 1);
+            filterEndDate = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+        }
+        else if (filterPeriod == "yearly")
+        {
+            filterStartDate = new DateTime(today.Year, 1, 1);
+            filterEndDate = new DateTime(today.Year, 12, 31);
+        }
+        else
+        {
+            filterStartDate = null;
+            filterEndDate = null;
+        }
+    }
+
+    private async Task LoadTaskReport()
+    {
+        isLoading = true;
+        projectSearchQuery = projectSearchInput;
+        StateHasChanged();
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var query = "Report/tasks?";
+            if (filterStartDate.HasValue) query += $"startDate={filterStartDate:yyyy-MM-dd}&";
+            if (filterEndDate.HasValue) query += $"endDate={filterEndDate:yyyy-MM-dd}&";
+            if (!string.IsNullOrEmpty(filterStatus) && filterStatus != "overdue") query += $"status={filterStatus}&";
+            if (filterProjectId > 0) query += $"projectId={filterProjectId}&";
+
+            var result = await client.GetFromJsonAsync<Result<List<TaskReportDto>>>(query.TrimEnd('&', '?'));
+            if (result?.IsSuccess == true && result.Value != null)
+            {
+                taskReports = result.Value;
+                if (filterStatus == "overdue")
+                {
+                    taskReports = taskReports.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != 3).ToList();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Task report error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadCsv()
+    {
+        var csv = new StringBuilder();
+        csv.AppendLine("Task Title,Project,Status,Priority,Assigned To,Due Date");
+
+        foreach (var t in taskReports)
+        {
+            csv.AppendLine($"\"{t.Title}\",\"{t.ProjectName}\",\"{t.StatusName}\",\"{t.PriorityName}\",\"{t.AssignedToUser ?? "Unassigned"}\",\"{t.DueDate:yyyy-MM-dd}\"");
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("downloadFile", "TaskReport.csv", "text/csv;charset=utf-8;", csv.ToString());
+    }
+
+    private string GetStatusBadge(long statusId) => statusId switch
+    {
+        1 => "bg-slate-100 text-slate-700",
+        2 => "bg-blue-100 text-blue-700",
+        3 => "bg-emerald-100 text-emerald-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private string GetPriorityBadge(long priorityId) => priorityId switch
+    {
+        1 => "bg-slate-100 text-slate-600",
+        2 => "bg-amber-100 text-amber-700",
+        3 => "bg-red-100 text-red-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+}
