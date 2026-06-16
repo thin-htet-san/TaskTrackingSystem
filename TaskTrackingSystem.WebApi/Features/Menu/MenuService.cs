@@ -236,9 +236,14 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             var menuDtos = menuDtoLookup.Select(x => x.Dto).ToList();
             var dtoLookup = menuDtoLookup.ToDictionary(x => x.MenuId, x => x.Dto);
 
-            foreach (var permission in permissions)
+            foreach (var permissionGroup in permissions.GroupBy(p => p.MenuId))
             {
-                if (dtoLookup.TryGetValue(permission.MenuId, out var dto))
+                if (!dtoLookup.TryGetValue(permissionGroup.Key, out var dto))
+                {
+                    continue;
+                }
+
+                foreach (var permission in permissionGroup.OrderBy(p => p.OrderNo).ThenBy(p => p.ActionName, StringComparer.OrdinalIgnoreCase))
                 {
                     dto.Actions.Add(new MenuAdminDetailDto
                     {
