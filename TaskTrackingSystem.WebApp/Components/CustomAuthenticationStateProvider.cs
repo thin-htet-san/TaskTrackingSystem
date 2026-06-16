@@ -52,14 +52,15 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         var roleId = user.FindFirst("role_id")?.Value;
         if (!string.IsNullOrWhiteSpace(roleId))
         {
-            _sessionState.CachedMenuRoleId = $"id:{roleId}";
+            _sessionState.CachedAccessRoleId = $"id:{roleId}";
             return;
         }
 
         var roleName = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
         if (!string.IsNullOrWhiteSpace(roleName))
         {
-            _sessionState.CachedMenuRoleId = $"name:{roleName}";
+            _sessionState.CachedAccessRoleId = $"name:{roleName}";
         }
     }
 }
+

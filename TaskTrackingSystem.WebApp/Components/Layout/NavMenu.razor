@@ -51,7 +51,7 @@
     else
     {
         <div class="px-4 py-6 text-xs text-slate-400">
-            No menu items are available for this role.
+            No access items are available for this role.
         </div>
     }
 </nav>
@@ -126,7 +126,7 @@
                 }
                 else
                 {
-                    // Menus are the same — just refresh expanded state for the new route.
+                    // Access items are the same — just refresh expanded state for the new route.
                     foreach (var menu in menus)
                     {
                         if (menu.SubMenus != null && menu.SubMenus.Count > 0 && IsMenuExpanded(menu.MenuCode, menu.SubMenus))

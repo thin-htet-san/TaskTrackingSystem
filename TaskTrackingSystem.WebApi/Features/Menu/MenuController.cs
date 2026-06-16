@@ -50,6 +50,15 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             return Ok(menus);
         }
 
+        [HttpGet("access-codes")]
+        public async Task<ActionResult<IEnumerable<string>>> GetCurrentAccessCodes()
+        {
+            var roleId = User.GetRoleId();
+            var roleName = User.GetRoleName() ?? string.Empty;
+            var codes = await _menuService.GetCurrentAccessCodesAsync(roleId, roleName);
+            return Ok(codes);
+        }
+
         /// <summary>
         /// Returns a lightweight version string for the current user's role permissions.
         /// Clients poll this to detect when an admin has changed permissions without fetching the full menu list.

@@ -8,6 +8,8 @@
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 
 <PageTitle>Project Assignment</PageTitle>
 
@@ -186,11 +188,14 @@
                                 </p>
                             }
                         </div>
-                        <button @onclick="RequestSaveConfirmation" disabled="@(isSaving || isLoadingMembers)"
-                                class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm">
-                            <i data-lucide="user-check" class="h-4 w-4 mr-2"></i>
-                            @(isSaving ? "Saving changes..." : "Save Assignment Changes")
-                        </button>
+                        @if (canSaveAssignments)
+                        {
+                            <button @onclick="RequestSaveConfirmation" disabled="@(isSaving || isLoadingMembers)"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm">
+                                <i data-lucide="user-check" class="h-4 w-4 mr-2"></i>
+                                @(isSaving ? "Saving changes..." : "Save Assignment Changes")
+                            </button>
+                        }
                     </div>
                 }
             </div>
@@ -210,6 +215,7 @@
     private bool isLoading = true;
     private bool isLoadingMembers = false;
     private bool isSaving = false;
+    private bool canSaveAssignments = false;
     private bool showConfirmDialog = false;
     private string? statusMessage;
     private string? successMessage;
@@ -231,6 +237,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        canSaveAssignments = authState.User.IsInRole("Admin") || await MenuAuthorization.HasAccessCodeAsync(authState.User, "Projects_Update");
         var client = ApiClient.CreateClient();
         try
         {

@@ -4,8 +4,8 @@ namespace TaskTrackingSystem.Shared.Models.Menu
 {
     public class AccessPermissionDto
     {
-        public string MenuAdminDetailId { get; set; } = string.Empty;
-        public string MenuDetailCode { get; set; } = string.Empty;
+        public string PermissionId { get; set; } = string.Empty;
+        public string PermissionCode { get; set; } = string.Empty;
         public string ParentMenuCode { get; set; } = string.Empty;
         public string ActionName { get; set; } = string.Empty;
         public string ApiName { get; set; } = string.Empty;

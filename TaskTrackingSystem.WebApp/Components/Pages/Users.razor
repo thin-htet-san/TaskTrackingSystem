@@ -6,6 +6,7 @@
 @inject IJSRuntime JS
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 
 <PageTitle>Users</PageTitle>
 
@@ -18,10 +19,13 @@
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Users</h2>
             <p class="text-slate-500 mt-1">Manage system users and their roles.</p>
         </div>
-        <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-            <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
-            New User
-        </button>
+        @if (canCreateUser)
+        {
+            <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+                New User
+            </button>
+        }
     </div>
 
     <!-- Search and Filters -->
@@ -111,12 +115,18 @@
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <button @onclick="() => OpenEditModal(user)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
-                                            <i data-lucide="pencil" class="h-4 w-4"></i>
-                                        </button>
-                                        <button @onclick="() => RequestDeleteConfirmation(user.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
-                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                        </button>
+                                        @if (canEditUser)
+                                        {
+                                            <button @onclick="() => OpenEditModal(user)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                                <i data-lucide="pencil" class="h-4 w-4"></i>
+                                            </button>
+                                        }
+                                        @if (canDeleteUser)
+                                        {
+                                            <button @onclick="() => RequestDeleteConfirmation(user.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                            </button>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -264,6 +274,9 @@
     private bool showModal = false;
     private bool isEditing = false;
     private bool isSaving = false;
+    private bool canCreateUser = false;
+    private bool canEditUser = false;
+    private bool canDeleteUser = false;
     private string? errorMessage;
 
     // Per-field validation errors
@@ -368,6 +381,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        canCreateUser = await MenuAuthorization.HasAccessCodeAsync(user, "Users_Create");
+        canEditUser = await MenuAuthorization.HasAccessCodeAsync(user, "Users_Update");
+        canDeleteUser = await MenuAuthorization.HasAccessCodeAsync(user, "Users_Delete");
+
         var client = ApiClient.CreateClient();
         try
         {

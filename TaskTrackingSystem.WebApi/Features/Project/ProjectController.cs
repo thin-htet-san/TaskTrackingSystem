@@ -14,10 +14,12 @@ namespace TaskTrackingSystem.WebApi.Features.Project
     public class ProjectController : ControllerBase
     {
         private readonly ProjectService _projectService;
+        private readonly PermissionAuthorizationService _permissionAuthorizationService;
 
-        public ProjectController(ProjectService projectService)
+        public ProjectController(ProjectService projectService, PermissionAuthorizationService permissionAuthorizationService)
         {
             _projectService = projectService;
+            _permissionAuthorizationService = permissionAuthorizationService;
         }
 
         [HttpGet]
@@ -39,27 +41,39 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result<ProjectDto>>> CreateProject([FromBody] CreateProjectDto createProjectDto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Create"))
+            {
+                return Forbid();
+            }
+
             long? currentUserId = User.GetUserId();
             var result = await _projectService.CreateProjectAsync(createProjectDto, currentUserId);
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result>> UpdateProject(long id, [FromBody] UpdateProjectDto updateProjectDto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Update"))
+            {
+                return Forbid();
+            }
+
             long? currentUserId = User.GetUserId();
             var result = await _projectService.UpdateProjectAsync(id, updateProjectDto, currentUserId);
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Result>> DeleteProject(long id)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Delete"))
+            {
+                return Forbid();
+            }
+
             var result = await _projectService.SoftDeleteProjectAsync(id);
             return StatusCode(result.StatusCode, result);
         }
@@ -72,9 +86,13 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         }
 
         [HttpPost("{id}/members")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AssignProjectMembers(long id, [FromBody] AssignMembersDto dto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Update"))
+            {
+                return Forbid();
+            }
+
             var result = await _projectService.AssignMembersToProjectAsync(id, dto, User.GetUserId());
             if (!result.IsSuccess)
             {
@@ -84,9 +102,13 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         }
 
         [HttpDelete("{id}/members/{userId}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveProjectMember(long id, long userId)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Update"))
+            {
+                return Forbid();
+            }
+
             var result = await _projectService.RemoveMemberFromProjectAsync(id, userId, User.GetUserId());
             if (!result.IsSuccess)
             {

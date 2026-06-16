@@ -2,24 +2,32 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Role;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Role
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class RoleController : ControllerBase
     {
         private readonly RoleService _roleService;
+        private readonly PermissionAuthorizationService _permissionAuthorizationService;
 
-        public RoleController(RoleService roleService)
+        public RoleController(RoleService roleService, PermissionAuthorizationService permissionAuthorizationService)
         {
             _roleService = roleService;
+            _permissionAuthorizationService = permissionAuthorizationService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RoleDto>>> GetRoles()
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "List"))
+            {
+                return Forbid();
+            }
+
             var roles = await _roleService.GetAllRolesAsync();
             return Ok(roles);
         }
@@ -27,6 +35,11 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpGet("{id}")]
         public async Task<ActionResult<RoleDto>> GetRole(long id)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "List"))
+            {
+                return Forbid();
+            }
+
             var role = await _roleService.GetRoleByIdAsync(id);
             if (role == null)
             {
@@ -38,6 +51,11 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpPost]
         public async Task<ActionResult<Result<RoleDto>>> CreateRole([FromBody] CreateRoleDto createRoleDto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Create"))
+            {
+                return Forbid();
+            }
+
             long? currentUserId = null;
             var result = await _roleService.CreateRoleAsync(createRoleDto, currentUserId);
             return StatusCode(result.StatusCode, result);
@@ -46,6 +64,11 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpPut("{id}")]
         public async Task<ActionResult<Result>> UpdateRole(long id, [FromBody] UpdateRoleDto updateRoleDto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update"))
+            {
+                return Forbid();
+            }
+
             long? currentUserId = null;
             var result = await _roleService.UpdateRoleAsync(id, updateRoleDto, currentUserId);
             return StatusCode(result.StatusCode, result);
@@ -54,6 +77,11 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpDelete("{id}")]
         public async Task<ActionResult<Result>> DeleteRole(long id)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Delete"))
+            {
+                return Forbid();
+            }
+
             var result = await _roleService.SoftDeleteRoleAsync(id);
             return StatusCode(result.StatusCode, result);
         }
@@ -63,6 +91,11 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpGet("{id}/access")]
         public async Task<ActionResult<Result<List<string>>>> GetAssignedAccessCodes(long id)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update"))
+            {
+                return Forbid();
+            }
+
             var result = await _roleService.GetAssignedAccessCodesByRoleIdAsync(id);
             if (!result.IsSuccess)
             {
@@ -75,6 +108,11 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpPost("{id}/access")]
         public async Task<IActionResult> AssignAccess(long id, [FromBody] AssignAccessDto dto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update"))
+            {
+                return Forbid();
+            }
+
             var result = await _roleService.AssignAccessToRoleAsync(id, dto);
             if (!result.IsSuccess)
             {

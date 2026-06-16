@@ -17,7 +17,8 @@ public class MenuAuthorizationService
 
     private readonly ApiClientService _apiClient;
     private readonly UserSessionState _sessionState;
-    private Task<List<MenuDto>>? _loadingMenus;
+    private Task<List<MenuDto>>? _loadingAccessItems;
+    private Task<HashSet<string>>? _loadingAccessCodes;
 
     public MenuAuthorizationService(ApiClientService apiClient, UserSessionState sessionState)
     {
@@ -65,15 +66,15 @@ public class MenuAuthorizationService
 
         var roleKey = GetRoleCacheKey(user);
 
-        if (_sessionState.CachedMenuRoleId == roleKey && _sessionState.CachedMenus != null)
+        if (_sessionState.CachedAccessRoleId == roleKey && _sessionState.CachedAccessItems != null)
         {
-            return IsRouteAllowed(_sessionState.CachedMenus, relativePath);
+            return IsRouteAllowed(_sessionState.CachedAccessItems, relativePath);
         }
 
         return false;
     }
 
-    public bool IsRouteAllowed(IReadOnlyList<MenuDto> menus, string relativePath)
+    public bool IsRouteAllowed(IReadOnlyList<MenuDto> accessItems, string relativePath)
     {
         var firstSegment = GetFirstSegment(relativePath);
 
@@ -85,10 +86,10 @@ public class MenuAuthorizationService
         if (firstSegment.Equals("dashboard", StringComparison.OrdinalIgnoreCase) ||
             firstSegment.Equals("home", StringComparison.OrdinalIgnoreCase))
         {
-            return MenuCollectionMatchesSegment(menus, "dashboard");
+            return MenuCollectionMatchesSegment(accessItems, "dashboard");
         }
 
-        return MenuCollectionMatchesSegment(menus, firstSegment);
+        return MenuCollectionMatchesSegment(accessItems, firstSegment);
     }
 
     public Task<List<MenuDto>> GetUserMenusAsync(ClaimsPrincipal user)
@@ -100,13 +101,41 @@ public class MenuAuthorizationService
 
         var roleKey = GetRoleCacheKey(user);
 
-        if (_sessionState.CachedMenuRoleId == roleKey && _sessionState.CachedMenus != null)
+        if (_sessionState.CachedAccessRoleId == roleKey && _sessionState.CachedAccessItems != null)
         {
-            // Cache hit — but verify the permissions haven't been changed by an admin.
-            return LoadMenusWithVersionCheckAsync(user, roleKey);
+            // Cache hit, but verify the access has not been changed by an admin.
+            return LoadAccessItemsWithVersionCheckAsync(user, roleKey);
         }
 
-        return LoadMenusAsync(user, roleKey);
+        return LoadAccessItemsAsync(user, roleKey);
+    }
+
+    public async Task<bool> HasAccessCodeAsync(ClaimsPrincipal user, string accessCode)
+    {
+        if (string.IsNullOrWhiteSpace(accessCode))
+        {
+            return false;
+        }
+
+        var codes = await GetCurrentAccessCodesAsync(user);
+        return codes.Contains(accessCode.Trim());
+    }
+
+    public Task<HashSet<string>> GetCurrentAccessCodesAsync(ClaimsPrincipal user)
+    {
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            return Task.FromResult(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        var roleKey = GetRoleCacheKey(user);
+
+        if (_sessionState.CachedAccessRoleId == roleKey && _sessionState.CachedAccessCodes != null)
+        {
+            return LoadAccessCodesWithVersionCheckAsync(user, roleKey);
+        }
+
+        return LoadAccessCodesAsync(user, roleKey);
     }
 
     public void PreloadMenus(ClaimsPrincipal user)
@@ -117,20 +146,20 @@ public class MenuAuthorizationService
         }
 
         var roleKey = GetRoleCacheKey(user);
-        if (_sessionState.CachedMenuRoleId == roleKey && _sessionState.CachedMenus != null)
+        if (_sessionState.CachedAccessRoleId == roleKey && _sessionState.CachedAccessItems != null)
         {
             return;
         }
 
-        _ = LoadMenusAsync(user, roleKey);
+        _ = LoadAccessItemsAsync(user, roleKey);
     }
 
     /// <summary>
-    /// When menus are cached, quickly checks the server-side version to see if an admin changed permissions.
+    /// When access items are cached, quickly checks the server-side version to see if an admin changed permissions.
     /// If the version changed, busts the cache and re-fetches the full menu list.
-    /// Falls back to the cached menus if the version check itself fails (e.g. network error).
+    /// Falls back to the cached access items if the version check itself fails (e.g. network error).
     /// </summary>
-    private async Task<List<MenuDto>> LoadMenusWithVersionCheckAsync(ClaimsPrincipal user, string roleKey)
+    private async Task<List<MenuDto>> LoadAccessItemsWithVersionCheckAsync(ClaimsPrincipal user, string roleKey)
     {
         try
         {
@@ -141,95 +170,173 @@ public class MenuAuthorizationService
             if (response.IsSuccessStatusCode)
             {
                 var serverVersion = await response.Content.ReadAsStringAsync(cts.Token);
-                // Strip surrounding quotes that JSON serialisation may add
                 serverVersion = serverVersion.Trim('"');
 
-                if (serverVersion != _sessionState.CachedMenuVersion)
+                if (serverVersion != _sessionState.CachedAccessVersion)
                 {
-                    // Access items have changed — bust cache and reload the menu tree.
-                    Console.WriteLine($"[MenuAuth] Access version changed ({_sessionState.CachedMenuVersion} -> {serverVersion}). Reloading menus.");
-                    _sessionState.ClearMenuCache();
-                    return await LoadMenusAsync(user, roleKey);
+                    Console.WriteLine($"[MenuAuth] Access version changed ({_sessionState.CachedAccessVersion} -> {serverVersion}). Reloading access items.");
+                    _sessionState.ClearAccessCache();
+                    return await LoadAccessItemsAsync(user, roleKey);
                 }
             }
         }
         catch (Exception ex)
         {
-                // If the version check fails, just use the cached menus to avoid breaking the UI.
             Console.WriteLine($"[MenuAuth] Access version check failed (using cache): {ex.Message}");
         }
 
-        return _sessionState.CachedMenus!;
+        return _sessionState.CachedAccessItems!;
     }
 
-    private Task<List<MenuDto>> LoadMenusAsync(ClaimsPrincipal user, string roleKey)
+    private Task<List<MenuDto>> LoadAccessItemsAsync(ClaimsPrincipal user, string roleKey)
     {
-        if (_loadingMenus is { IsCompleted: false })
+        if (_loadingAccessItems is { IsCompleted: false })
         {
-            return _loadingMenus;
+            return _loadingAccessItems;
         }
 
-        _loadingMenus = FetchMenusFromApiAsync(user, roleKey);
-        return _loadingMenus;
+        _loadingAccessItems = FetchAccessItemsFromApiAsync(user, roleKey);
+        return _loadingAccessItems;
     }
 
-    private async Task<List<MenuDto>> FetchMenusFromApiAsync(ClaimsPrincipal user, string roleKey)
+    private async Task<HashSet<string>> LoadAccessCodesWithVersionCheckAsync(ClaimsPrincipal user, string roleKey)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var client = _apiClient.CreateClient(user);
+            var response = await client.GetAsync("Menu/version", cts.Token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var serverVersion = await response.Content.ReadAsStringAsync(cts.Token);
+                serverVersion = serverVersion.Trim('"');
+
+                if (serverVersion != _sessionState.CachedAccessVersion)
+                {
+                    _sessionState.ClearAccessCache();
+                    return await LoadAccessCodesAsync(user, roleKey);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MenuAuth] Access code version check failed (using cache): {ex.Message}");
+        }
+
+        return _sessionState.CachedAccessCodes ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private Task<HashSet<string>> LoadAccessCodesAsync(ClaimsPrincipal user, string roleKey)
+    {
+        if (_loadingAccessCodes is { IsCompleted: false })
+        {
+            return _loadingAccessCodes;
+        }
+
+        _loadingAccessCodes = FetchAccessCodesFromApiAsync(user, roleKey);
+        return _loadingAccessCodes;
+    }
+
+    private async Task<HashSet<string>> FetchAccessCodesFromApiAsync(ClaimsPrincipal user, string roleKey)
     {
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             var client = _apiClient.CreateClient(user);
 
-            // Fetch menus and version in parallel for efficiency.
-            var menuTask = client.GetAsync("Menu", cts.Token);
+            var codesResponse = await client.GetAsync("Menu/access-codes", cts.Token);
+            if (!codesResponse.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Menu access-codes API failed: {(int)codesResponse.StatusCode} {codesResponse.ReasonPhrase}");
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var codes = await codesResponse.Content.ReadFromJsonAsync<List<string>>(cancellationToken: cts.Token)
+                ?? new List<string>();
+
+            var versionResponse = await client.GetAsync("Menu/version", cts.Token);
+            if (versionResponse.IsSuccessStatusCode)
+            {
+                var version = await versionResponse.Content.ReadAsStringAsync(cts.Token);
+                _sessionState.CachedAccessVersion = version.Trim('"');
+            }
+
+            var codeSet = new HashSet<string>(codes.Where(code => !string.IsNullOrWhiteSpace(code)).Select(code => code.Trim()), StringComparer.OrdinalIgnoreCase);
+            _sessionState.CachedAccessCodes = codeSet;
+            _sessionState.CachedAccessRoleId = roleKey;
+            return codeSet;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Menu access-codes API error: {ex.Message}");
+            var fallback = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _sessionState.CachedAccessCodes = fallback;
+            _sessionState.CachedAccessRoleId = roleKey;
+            return fallback;
+        }
+        finally
+        {
+            _loadingAccessCodes = null;
+        }
+    }
+
+    private async Task<List<MenuDto>> FetchAccessItemsFromApiAsync(ClaimsPrincipal user, string roleKey)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            var client = _apiClient.CreateClient(user);
+
+            // Fetch access items and version in parallel for efficiency.
+            var accessItemsTask = client.GetAsync("Menu", cts.Token);
             var versionTask = client.GetAsync("Menu/version", cts.Token);
 
-            await Task.WhenAll(menuTask, versionTask);
+            await Task.WhenAll(accessItemsTask, versionTask);
 
-            var menuResponse = await menuTask;
+            var menuResponse = await accessItemsTask;
             if (!menuResponse.IsSuccessStatusCode)
             {
                 Console.WriteLine($"Menu API failed: {(int)menuResponse.StatusCode} {menuResponse.ReasonPhrase}");
                 return new List<MenuDto>();
             }
 
-            var menus = await menuResponse.Content.ReadFromJsonAsync<List<MenuDto>>(cancellationToken: cts.Token)
+            var accessItems = await menuResponse.Content.ReadFromJsonAsync<List<MenuDto>>(cancellationToken: cts.Token)
                 ?? new List<MenuDto>();
 
-            if (menus.Count == 0)
+            if (accessItems.Count == 0)
             {
-                menus = BuildFallbackMenus(user);
+                accessItems = BuildFallbackMenus(user);
             }
 
-            // Store the version so we can detect future access changes.
             var versionResponse = await versionTask;
             if (versionResponse.IsSuccessStatusCode)
             {
                 var version = await versionResponse.Content.ReadAsStringAsync(cts.Token);
-                _sessionState.CachedMenuVersion = version.Trim('"');
+                _sessionState.CachedAccessVersion = version.Trim('"');
             }
 
-            _sessionState.CachedMenus = menus;
-            _sessionState.CachedMenuRoleId = roleKey;
-            return menus;
+            _sessionState.CachedAccessItems = accessItems;
+            _sessionState.CachedAccessRoleId = roleKey;
+            return accessItems;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Menu API error: {ex.Message}");
-            var fallbackMenus = BuildFallbackMenus(user);
-            _sessionState.CachedMenus = fallbackMenus;
-            _sessionState.CachedMenuRoleId = roleKey;
-            return fallbackMenus;
+            var fallbackAccessItems = BuildFallbackMenus(user);
+            _sessionState.CachedAccessItems = fallbackAccessItems;
+            _sessionState.CachedAccessRoleId = roleKey;
+            return fallbackAccessItems;
         }
         finally
         {
-            _loadingMenus = null;
+            _loadingAccessItems = null;
         }
     }
 
-    private static bool MenuCollectionMatchesSegment(IReadOnlyList<MenuDto> menus, string segment)
+    private static bool MenuCollectionMatchesSegment(IReadOnlyList<MenuDto> accessItems, string segment)
     {
-        foreach (var menu in menus)
+        foreach (var menu in accessItems)
         {
             if (MenuMatchesSegment(menu, segment))
             {
@@ -259,6 +366,11 @@ public class MenuAuthorizationService
         return menuSegment.Equals(segment, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static List<MenuDto> BuildFallbackMenus(ClaimsPrincipal user)
+    {
+        return new List<MenuDto>();
+    }
+
     private static string GetRoleCacheKey(ClaimsPrincipal user)
     {
         var roleId = user.FindFirst("role_id")?.Value;
@@ -273,50 +385,6 @@ public class MenuAuthorizationService
             return $"name:{roleName}";
         }
 
-        return string.Empty;
-    }
-
-    private static List<MenuDto> BuildFallbackMenus(ClaimsPrincipal user)
-    {
-        var roleName = user.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-
-        var menus = new List<MenuDto>
-        {
-            CreateMenu("dashboard", "Dashboard", "/dashboard", 1, "layout-dashboard")
-        };
-
-        if (roleName.Equals("Employee", StringComparison.OrdinalIgnoreCase))
-        {
-            menus.Add(CreateMenu("tasks", "Tasks", "/tasks", 2, "list-checks"));
-            return menus;
-        }
-
-        menus.Add(CreateMenu("tasks", "Tasks", "/tasks", 2, "list-checks"));
-        menus.Add(CreateMenu("projects", "Projects", "/projects", 3, "folder-kanban"));
-        menus.Add(CreateMenu("reports", "Reports", "/reports/tasks", 4, "bar-chart-3"));
-
-        if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase) ||
-            roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-        {
-            if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-            {
-                menus.Add(CreateMenu("users", "Users", "/users", 5, "users"));
-                menus.Add(CreateMenu("roles", "Roles", "/roles", 6, "shield"));
-            }
-        }
-
-        return menus;
-    }
-
-    private static MenuDto CreateMenu(string code, string name, string url, int orderNo, string icon)
-    {
-        return new MenuDto
-        {
-            MenuCode = code,
-            MenuName = name,
-            MenuUrl = url,
-            OrderNo = orderNo,
-            Icon = icon
-        };
+        return "unknown";
     }
 }

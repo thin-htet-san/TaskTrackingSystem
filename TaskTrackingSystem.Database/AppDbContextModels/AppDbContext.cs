@@ -23,10 +23,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Menu> Menus { get; set; }
 
-    public virtual DbSet<MenuAdmin> MenuAdmins { get; set; }
-
-    public virtual DbSet<MenuAdminDetail> MenuAdminDetails { get; set; }
-
     public virtual DbSet<Permission> Permissions { get; set; }
 
     public virtual DbSet<Project> Projects { get; set; }
@@ -36,8 +32,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<RoleMenu> RoleMenus { get; set; }
-
-    public virtual DbSet<RoleMenusLegacy> RoleMenusLegacies { get; set; }
 
     public virtual DbSet<RolePermission> RolePermissions { get; set; }
 
@@ -130,31 +124,6 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.ParentMenu).WithMany(p => p.InverseParentMenu)
                 .HasForeignKey(d => d.ParentMenuId)
                 .HasConstraintName("FK_Menus_ParentMenu");
-        });
-
-        modelBuilder.Entity<MenuAdmin>(entity =>
-        {
-            entity.HasKey(e => e.AdminMenuId);
-
-            entity.Property(e => e.AdminMenuId).HasMaxLength(50);
-            entity.Property(e => e.CreatedUserId).HasMaxLength(50);
-            entity.Property(e => e.Icon).HasMaxLength(50);
-            entity.Property(e => e.MenuCode).HasMaxLength(50);
-            entity.Property(e => e.MenuName).HasMaxLength(100);
-            entity.Property(e => e.MenuUrl).HasMaxLength(200);
-            entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
-            entity.Property(e => e.ParentCode).HasMaxLength(50);
-        });
-
-        modelBuilder.Entity<MenuAdminDetail>(entity =>
-        {
-            entity.Property(e => e.MenuAdminDetailId).HasMaxLength(50);
-            entity.Property(e => e.ActionName).HasMaxLength(50);
-            entity.Property(e => e.ApiName).HasMaxLength(100);
-            entity.Property(e => e.CreatedUserId).HasMaxLength(50);
-            entity.Property(e => e.MenuDetailCode).HasMaxLength(50);
-            entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
-            entity.Property(e => e.ParentMenuCode).HasMaxLength(50);
         });
 
         modelBuilder.Entity<Permission>(entity =>
@@ -250,21 +219,6 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_RoleMenus_Roles");
-        });
-
-        modelBuilder.Entity<RoleMenusLegacy>(entity =>
-        {
-            entity.HasKey(e => e.RoleMenuId).HasName("PK_RoleMenus");
-
-            entity.ToTable("RoleMenus_Legacy");
-
-            entity.HasIndex(e => e.RoleId, "IX_RoleMenus_RoleId");
-
-            entity.Property(e => e.RoleMenuId).HasMaxLength(50);
-            entity.Property(e => e.CreatedUserId).HasMaxLength(50);
-            entity.Property(e => e.MenuCode).HasMaxLength(50);
-            entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
-            entity.Property(e => e.RoleCode).HasMaxLength(50);
         });
 
         modelBuilder.Entity<RolePermission>(entity =>

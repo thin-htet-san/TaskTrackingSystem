@@ -14,10 +14,12 @@ namespace TaskTrackingSystem.WebApi.Features.Task
     public class TaskController : ControllerBase
     {
         private readonly TaskService _taskService;
+        private readonly PermissionAuthorizationService _permissionAuthorizationService;
 
-        public TaskController(TaskService taskService)
+        public TaskController(TaskService taskService, PermissionAuthorizationService permissionAuthorizationService)
         {
             _taskService = taskService;
+            _permissionAuthorizationService = permissionAuthorizationService;
         }
 
         [HttpGet]
@@ -41,6 +43,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpPost]
         public async Task<ActionResult<Result<TaskDto>>> CreateTask([FromBody] CreateTaskDto createTaskDto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Create"))
+            {
+                return Forbid();
+            }
+
             long? currentUserId = User.GetUserId();
             var result = await _taskService.CreateTaskAsync(createTaskDto, currentUserId);
             return StatusCode(result.StatusCode, result);
@@ -49,6 +56,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpPut("{id}")]
         public async Task<ActionResult<Result>> UpdateTask(long id, [FromBody] UpdateTaskDto updateTaskDto)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Update"))
+            {
+                return Forbid();
+            }
+
             long? currentUserId = User.GetUserId();
             var result = await _taskService.UpdateTaskAsync(id, updateTaskDto, User.GetRoleName(), currentUserId);
             return StatusCode(result.StatusCode, result);
@@ -57,6 +69,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpDelete("{id}")]
         public async Task<ActionResult<Result>> DeleteTask(long id)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Delete"))
+            {
+                return Forbid();
+            }
+
             var result = await _taskService.SoftDeleteTaskAsync(id, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
@@ -71,6 +88,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateTaskStatus(long id, [FromQuery] long statusId)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Update"))
+            {
+                return Forbid();
+            }
+
             var result = await _taskService.UpdateTaskStatusAsync(id, statusId, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess)
             {

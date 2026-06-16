@@ -261,8 +261,8 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 {
                     dto.Permissions.Add(new AccessPermissionDto
                     {
-                        MenuAdminDetailId = permission.PermissionId.ToString(),
-                        MenuDetailCode = permission.PermissionCode,
+                        PermissionId = permission.PermissionId.ToString(),
+                        PermissionCode = permission.PermissionCode,
                         ParentMenuCode = menuLookup.TryGetValue(permission.MenuId, out var parentMenu) ? parentMenu.MenuCode : string.Empty,
                         ActionName = permission.ActionName,
                         ApiName = permission.ApiName,
@@ -273,6 +273,38 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             }
 
             return menuDtos;
+        }
+
+        public async Task<List<string>> GetCurrentAccessCodesAsync(long roleId, string roleName)
+        {
+            if (roleId <= 0 && !string.IsNullOrWhiteSpace(roleName))
+            {
+                var role = await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName && r.IsDeleted != true);
+                if (role != null)
+                {
+                    roleId = role.Id;
+                }
+            }
+
+            if (roleId <= 0)
+            {
+                return new List<string>();
+            }
+
+            var menuCodes = await _db.RoleMenus
+                .Where(rm => rm.RoleId == roleId && !rm.IsDeleted)
+                .Select(rm => rm.Menu.MenuCode)
+                .ToListAsync();
+
+            var permissionCodes = await _db.RolePermissions
+                .Where(rp => rp.RoleId == roleId && !rp.IsDeleted)
+                .Select(rp => rp.Permission.PermissionCode)
+                .ToListAsync();
+
+            return menuCodes
+                .Concat(permissionCodes)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
     }
 }

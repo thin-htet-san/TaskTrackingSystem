@@ -13,6 +13,7 @@
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 @inject NavigationManager Navigation
 
 <PageTitle>Dashboard</PageTitle>
@@ -39,9 +40,12 @@ else
                 <p class="text-slate-500 mt-1">Here's what's happening across your workspace today.</p>
             </div>
             <div class="flex gap-3">
-                <a href="/tasks" class="inline-flex items-center rounded-xl bg-violet-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm">
-                    <i data-lucide="plus" class="h-4 w-4 mr-2"></i> New Task
-                </a>
+                @if (canCreateTask)
+                {
+                    <a href="/tasks" class="inline-flex items-center rounded-xl bg-violet-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm">
+                        <i data-lucide="plus" class="h-4 w-4 mr-2"></i> New Task
+                    </a>
+                }
                 <a href="/reports/tasks" class="inline-flex items-center rounded-xl bg-violet-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm">
                     <i data-lucide="bar-chart-3" class="h-4 w-4 mr-2"></i> Reports
                 </a>
@@ -272,9 +276,12 @@ else
     private string currentUserName = "User";
     private string currentUserRole = "Member";
     private List<DateTime> weekDates = new();
+    private bool canCreateTask = false;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        canCreateTask = authState.User.IsInRole("Admin") || await MenuAuthorization.HasAccessCodeAsync(authState.User, "Tasks_Create");
         await LoadDashboardData();
     }
 

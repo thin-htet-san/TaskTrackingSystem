@@ -28,10 +28,13 @@
                 <p class="text-slate-500 mt-1">@(ProjectId > 0 ? $"Project #{ProjectId} — " : "Global View — ")Drag tasks between columns.</p>
             </div>
         </div>
-        <button @onclick="OpenCreateTaskModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-            <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
-            New Task
-        </button>
+        @if (canCreateTask)
+        {
+            <button @onclick="OpenCreateTaskModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+                New Task
+            </button>
+        }
     </div>
 
     @if (isLoading)
@@ -169,6 +172,7 @@
     private bool isLoading = true;
     private bool isAdmin = false;
     private bool isManager = false;
+    private bool canCreateTask = false;
     private long currentUserId = 0;
     private bool showTaskModal = false;
     private bool isSaving = false;
@@ -223,6 +227,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAdmin = user.IsInRole("Admin");
+        isManager = user.IsInRole("Manager");
+        canCreateTask = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Tasks_Create");
         await LoadTasks();
     }
 

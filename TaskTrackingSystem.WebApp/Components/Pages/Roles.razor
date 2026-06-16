@@ -1,10 +1,13 @@
 @page "/roles"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using TaskTrackingSystem.Shared.Models.Menu
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 
 
 
@@ -19,10 +22,13 @@
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Roles & Access</h2>
             <p class="text-slate-500 mt-1">Manage roles, assign access and permissions, and control visibility.</p>
         </div>
-        <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-            <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
-            New Role
-        </button>
+        @if (canCreateRole)
+        {
+            <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+                New Role
+            </button>
+        }
     </div>
 
     @if (isLoading)
@@ -77,18 +83,27 @@
                                 <td class="px-6 py-4 text-sm text-slate-400">@role.CreatedAt.ToString("dd-MMM-yyyy")</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <button @onclick="() => OpenAccessModal(role)"
-                                                class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all"
-                                                title="Manage Access">
-                                            <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                                            Access
-                                        </button>
-                                        <button @onclick="() => OpenEditModal(role)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
-                                            <i data-lucide="pencil" class="h-4 w-4"></i>
-                                        </button>
-                                        <button @onclick="() => RequestDeleteConfirmation(role.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
-                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                        </button>
+                                        @if (canManageAccess)
+                                        {
+                                            <button @onclick="() => OpenAccessModal(role)"
+                                                    class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all"
+                                                    title="Manage Access">
+                                                <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                                                Access
+                                            </button>
+                                        }
+                                        @if (canEditRole)
+                                        {
+                                            <button @onclick="() => OpenEditModal(role)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                                <i data-lucide="pencil" class="h-4 w-4"></i>
+                                            </button>
+                                        }
+                                        @if (canDeleteRole)
+                                        {
+                                            <button @onclick="() => RequestDeleteConfirmation(role.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                            </button>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -256,13 +271,13 @@
                                                             <div class="flex flex-wrap gap-2 pl-7 mt-1">
                                                                 @foreach (var action in child.Permissions)
                                                                 {
-                                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.MenuDetailCode);
+                                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.PermissionCode);
                                                                     <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
                                                                                   @(isActionChecked
                                                                                       ? "bg-violet-50 border-violet-200 text-violet-700"
                                                                                       : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                                                         <input type="checkbox" checked="@isActionChecked"
-                                                                               @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
+                                                                               @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: true)"
                                                                                class="h-3 w-3 rounded accent-violet-600" />
                                                                         <span class="text-xs">@action.ActionName</span>
                                                                     </label>
@@ -279,13 +294,13 @@
                                             <div class="px-5 py-2.5 bg-white flex flex-wrap gap-2">
                                                 @foreach (var action in parent.Permissions)
                                                 {
-                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.MenuDetailCode);
+                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.PermissionCode);
                                                     <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border cursor-pointer select-none transition-all
                                                                   @(isActionChecked
                                                                       ? "bg-violet-50 border-violet-200 text-violet-700 shadow-sm"
                                                                       : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                                         <input type="checkbox" checked="@isActionChecked"
-                                                               @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
+                                                               @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: true)"
                                                                class="h-3.5 w-3.5 rounded accent-violet-600" />
                                                         <span class="text-xs font-medium">@action.ActionName</span>
                                                     </label>
@@ -420,13 +435,13 @@
                                                 <div class="flex flex-wrap gap-2 pl-7 mt-1.5">
                                                     @foreach (var action in child.Permissions)
                                                     {
-                                                        var isActionChecked = selectedAccessCodes.Contains(action.MenuDetailCode);
+                                                        var isActionChecked = selectedAccessCodes.Contains(action.PermissionCode);
                                                         <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
                                                                       @(isActionChecked
                                                                           ? "bg-violet-50 border-violet-200 text-violet-700"
                                                                           : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                                             <input type="checkbox" checked="@isActionChecked"
-                                                                   @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
+                                                                   @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: false)"
                                                                    class="h-3 w-3 rounded accent-violet-600" />
                                                             <span class="text-xs">@action.ActionName</span>
                                                         </label>
@@ -443,13 +458,13 @@
                                 <div class="px-6 py-3.5 bg-white flex flex-wrap gap-2.5">
                                     @foreach (var action in parent.Permissions)
                                     {
-                                        var isActionChecked = selectedAccessCodes.Contains(action.MenuDetailCode);
+                                        var isActionChecked = selectedAccessCodes.Contains(action.PermissionCode);
                                         <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer select-none transition-all
                                                       @(isActionChecked
                                                           ? "bg-violet-50 border-violet-300 text-violet-700 shadow-sm"
                                                           : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                             <input type="checkbox" checked="@isActionChecked"
-                                                   @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
+                                                   @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: false)"
                                                    class="h-3.5 w-3.5 rounded accent-violet-600" />
                                             <span class="text-xs font-medium">@action.ActionName</span>
                                         </label>
@@ -520,6 +535,10 @@
     private bool showAccessModal = false;
     private bool isEditing = false;
     private bool isSaving = false;
+    private bool canCreateRole = false;
+    private bool canEditRole = false;
+    private bool canDeleteRole = false;
+    private bool canManageAccess = false;
     private string? roleError;
     private bool isRoleNameError = false;
     private string roleNameErrorMsg = "";
@@ -597,6 +616,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        canCreateRole = await MenuAuthorization.HasAccessCodeAsync(user, "Roles_Create");
+        canEditRole = await MenuAuthorization.HasAccessCodeAsync(user, "Roles_Update");
+        canDeleteRole = await MenuAuthorization.HasAccessCodeAsync(user, "Roles_Delete");
+        canManageAccess = canEditRole;
         await LoadRoles();
     }
 
@@ -700,7 +725,7 @@
             // Select direct actions
             foreach (var action in menu.Permissions)
             {
-                targetSet.Add(action.MenuDetailCode);
+                targetSet.Add(action.PermissionCode);
             }
             // Select child menus and their actions
             var children = allMenuSource.Where(c => c.ParentCode == menu.MenuCode).ToList();
@@ -709,7 +734,7 @@
                 targetSet.Add(child.MenuCode);
                 foreach (var action in child.Permissions)
                 {
-                    targetSet.Add(action.MenuDetailCode);
+                    targetSet.Add(action.PermissionCode);
                 }
             }
         }
@@ -719,7 +744,7 @@
             // Unselect direct actions
             foreach (var action in menu.Permissions)
             {
-                targetSet.Remove(action.MenuDetailCode);
+                targetSet.Remove(action.PermissionCode);
             }
             // Unselect child menus and their actions
             var children = allMenuSource.Where(c => c.ParentCode == menu.MenuCode).ToList();
@@ -728,7 +753,7 @@
                 targetSet.Remove(child.MenuCode);
                 foreach (var action in child.Permissions)
                 {
-                    targetSet.Remove(action.MenuDetailCode);
+                    targetSet.Remove(action.PermissionCode);
                 }
             }
         }
@@ -760,7 +785,7 @@
                 formSelectedAccessCodes.Add(menu.MenuCode);
                 foreach (var action in menu.Permissions)
                 {
-                    formSelectedAccessCodes.Add(action.MenuDetailCode);
+                    formSelectedAccessCodes.Add(action.PermissionCode);
                 }
             }
         }
@@ -951,7 +976,7 @@
                 selectedAccessCodes.Add(menu.MenuCode);
                 foreach (var action in menu.Permissions)
                 {
-                    selectedAccessCodes.Add(action.MenuDetailCode);
+                    selectedAccessCodes.Add(action.PermissionCode);
                 }
             }
         }

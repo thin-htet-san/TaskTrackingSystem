@@ -30,6 +30,7 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Task.TaskService>(
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Dashboard.DashboardService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Report.ReportService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Menu.MenuService>();
+builder.Services.AddScoped<TaskTrackingSystem.WebApi.Infrastructure.PermissionAuthorizationService>();
 builder.Services.AddScoped<IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>, PasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddAuthorization();
