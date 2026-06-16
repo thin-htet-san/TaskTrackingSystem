@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Role;
+using RoleEntity = TaskTrackingSystem.Database.AppDbContextModels.Role;
 
 namespace TaskTrackingSystem.WebApi.Features.Role
 {
@@ -71,7 +72,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 }
             }
 
-            var role = new Role
+            var role = new RoleEntity
             {
                 Name = dto.Name,
                 Description = dto.Description,
