@@ -14,6 +14,7 @@ namespace TaskTrackingSystem.Shared.Models.Role
         /// <summary>
         /// Optional: Menu and permission codes to assign to this role on creation.
         /// </summary>
-        public List<string> MenuCodes { get; set; } = new();
+        public List<string> AccessCodes { get; set; } = new();
     }
 }
+

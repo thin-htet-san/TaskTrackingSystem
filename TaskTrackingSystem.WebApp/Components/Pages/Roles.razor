@@ -8,7 +8,7 @@
 
 
 
-<PageTitle>Roles & Menu Permissions</PageTitle>
+<PageTitle>Roles & Access</PageTitle>
 
 <SuccessAlert Message="@successMessage" />
 
@@ -16,8 +16,8 @@
     <!-- Page Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Roles & Permissions</h2>
-            <p class="text-slate-500 mt-1">Manage roles, assign permissions, and control menu access.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Roles & Access</h2>
+            <p class="text-slate-500 mt-1">Manage roles, assign menu access and permissions, and control visibility.</p>
         </div>
         <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
             <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
@@ -77,11 +77,11 @@
                                 <td class="px-6 py-4 text-sm text-slate-400">@role.CreatedAt.ToString("dd-MMM-yyyy")</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <button @onclick="() => OpenMenuPermissionsModal(role)"
+                                        <button @onclick="() => OpenAccessModal(role)"
                                                 class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all"
-                                                title="Manage Permissions">
+                                                title="Manage Access">
                                             <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                                            Permissions
+                                            Access
                                         </button>
                                         <button @onclick="() => OpenEditModal(role)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
                                             <i data-lucide="pencil" class="h-4 w-4"></i>
@@ -172,12 +172,12 @@
                     {
                         <p class="text-xs text-slate-400 flex items-center gap-1">
                             <i data-lucide="info" class="h-3.5 w-3.5 shrink-0"></i>
-                            Pick permissions on the right — they will be assigned when you create.
+                            Pick access on the right — it will be assigned when you create.
                         </p>
                     }
                 </div>
 
-                <!-- RIGHT: Permissions (Create only) -->
+                <!-- RIGHT: Access (Create only) -->
                 @if (!isEditing)
                 {
                     <div class="w-7/12 flex flex-col min-h-0 border-l border-slate-100">
@@ -185,14 +185,14 @@
                         <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="shield-check" class="h-4 w-4 text-violet-500"></i>
-                                <span class="text-sm font-semibold text-slate-700">Assign Permissions</span>
+                                <span class="text-sm font-semibold text-slate-700">Assign Access</span>
                             </div>
-                            @if (formAllMenus.Any())
+                            @if (formAccessItems.Any())
                             {
                                 <label class="flex items-center gap-1.5 cursor-pointer group">
                                     <input type="checkbox"
-                                           checked="@IsAllFormMenusSelected"
-                                           @onchange="ToggleSelectAllFormMenus"
+                                           checked="@IsAllFormAccessSelected"
+                                           @onchange="ToggleSelectAllFormAccess"
                                            class="h-3.5 w-3.5 rounded accent-violet-600" />
                                     <span class="text-xs text-slate-500 group-hover:text-violet-600 transition-colors">Select All</span>
                                 </label>
@@ -201,7 +201,7 @@
 
                         <!-- Permission items -->
                         <div class="overflow-y-auto flex-1 px-5 py-4 space-y-4">
-                            @if (isLoadingFormMenus)
+                            @if (isLoadingFormAccessItems)
                             {
                                 <div class="flex items-center justify-center py-10">
                                     <svg class="animate-spin h-5 w-5 text-violet-500" viewBox="0 0 24 24">
@@ -210,22 +210,22 @@
                                     </svg>
                                 </div>
                             }
-                            else if (!formAllMenus.Any())
+                            else if (!formAccessItems.Any())
                             {
-                                <p class="text-sm text-slate-400 text-center py-8">No menus found in database.</p>
+                                <p class="text-sm text-slate-400 text-center py-8">No access items found in database.</p>
                             }
                             else
                             {
-                                @foreach (var parent in formAllMenus.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
+                                @foreach (var parent in formAccessItems.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
                                 {
-                                    var children = formAllMenus.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
-                                    var parentChecked = formSelectedMenuCodes.Contains(parent.MenuCode);
+                                    var children = formAccessItems.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
+                                    var parentChecked = formSelectedAccessCodes.Contains(parent.MenuCode);
 
                                     <div class="mb-3 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
                                         <!-- Parent Row -->
                                         <label class="flex items-center gap-3 px-4 py-2.5 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors">
                                             <input type="checkbox" checked="@parentChecked"
-                                                   @onchange="(e) => ToggleMenuSelection(parent, (bool)(e.Value ?? false), isForm: true)"
+                                                   @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: true)"
                                                    class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
                                             <div class="flex items-center gap-2 flex-1">
                                                 @if (!string.IsNullOrEmpty(parent.Icon))
@@ -242,27 +242,27 @@
                                             <div class="divide-y divide-slate-100 bg-white">
                                                 @foreach (var child in children)
                                                 {
-                                                    var childChecked = formSelectedMenuCodes.Contains(child.MenuCode);
+                                                    var childChecked = formSelectedAccessCodes.Contains(child.MenuCode);
                                                     <div class="pl-8 pr-4 py-2.5">
                                                         <label class="flex items-center gap-3 cursor-pointer hover:text-violet-600 transition-colors mb-1.5">
                                                             <input type="checkbox" checked="@childChecked"
-                                                                   @onchange="(e) => ToggleMenuSelection(child, (bool)(e.Value ?? false), isForm: true)"
+                                                                   @onchange="(e) => ToggleAccessSelection(child, (bool)(e.Value ?? false), isForm: true)"
                                                                    class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
                                                             <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
                                                         </label>
 
-                                                        @if (child.Actions.Any())
+                                                        @if (child.Permissions.Any())
                                                         {
                                                             <div class="flex flex-wrap gap-2 pl-7 mt-1">
-                                                                @foreach (var action in child.Actions)
+                                                                @foreach (var action in child.Permissions)
                                                                 {
-                                                                    var isActionChecked = formSelectedMenuCodes.Contains(action.MenuDetailCode);
+                                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.MenuDetailCode);
                                                                     <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
                                                                                   @(isActionChecked
                                                                                       ? "bg-violet-50 border-violet-200 text-violet-700"
                                                                                       : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                                                         <input type="checkbox" checked="@isActionChecked"
-                                                                               @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
+                                                                               @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
                                                                                class="h-3 w-3 rounded accent-violet-600" />
                                                                         <span class="text-xs">@action.ActionName</span>
                                                                     </label>
@@ -273,19 +273,19 @@
                                                 }
                                             </div>
                                         }
-                                        else if (parent.Actions.Any())
+                                        else if (parent.Permissions.Any())
                                         {
-                                            <!-- Direct Actions under Parent -->
+                                                    <!-- Direct Access under Parent -->
                                             <div class="px-5 py-2.5 bg-white flex flex-wrap gap-2">
-                                                @foreach (var action in parent.Actions)
+                                                @foreach (var action in parent.Permissions)
                                                 {
-                                                    var isActionChecked = formSelectedMenuCodes.Contains(action.MenuDetailCode);
+                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.MenuDetailCode);
                                                     <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border cursor-pointer select-none transition-all
                                                                   @(isActionChecked
                                                                       ? "bg-violet-50 border-violet-200 text-violet-700 shadow-sm"
                                                                       : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                                         <input type="checkbox" checked="@isActionChecked"
-                                                               @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
+                                                               @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: true)"
                                                                class="h-3.5 w-3.5 rounded accent-violet-600" />
                                                         <span class="text-xs font-medium">@action.ActionName</span>
                                                     </label>
@@ -303,9 +303,9 @@
             <!-- Footer -->
             <div class="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
                 <span class="text-xs text-slate-400">
-                    @if (!isEditing && formSelectedMenuCodes.Count > 0)
+                    @if (!isEditing && formSelectedAccessCodes.Count > 0)
                     {
-                        <span class="text-violet-600 font-medium">@formSelectedMenuCodes.Count access item(s)</span>
+                        <span class="text-violet-600 font-medium">@formSelectedAccessCodes.Count access item(s)</span>
                         <span> will be assigned</span>
                     }
                 </span>
@@ -327,9 +327,9 @@
     </div>
 }
 
-@* ===== Assign Permissions Modal ===== *@
-@* ===== Role Permissions Modal ===== *@
-@if (showMenuModal)
+@* ===== Assign Access Modal ===== *@
+@* ===== Role Access Modal ===== *@
+@if (showAccessModal)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col" style="max-height: 85vh;">
@@ -341,11 +341,11 @@
                         <i data-lucide="shield-check" class="h-4 w-4"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-semibold text-slate-900">Role Permissions — <span class="text-violet-700">@selectedRoleName</span></h3>
-                        <p class="text-xs text-slate-500">Configure menu access and action permissions</p>
+                        <h3 class="text-base font-semibold text-slate-900">Role Access — <span class="text-violet-700">@selectedRoleName</span></h3>
+                        <p class="text-xs text-slate-500">Configure menu access and permissions</p>
                     </div>
                 </div>
-                <button @onclick="CloseMenuModal" class="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-600 transition-all">
+                <button @onclick="CloseAccessModal" class="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-600 transition-all">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
@@ -353,16 +353,16 @@
             <!-- Select All Bar -->
             <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked="@IsAllMenusSelected" @onchange="ToggleSelectAllMenus"
+                    <input type="checkbox" checked="@IsAllAccessSelected" @onchange="ToggleSelectAllAccess"
                            class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                    <span class="text-sm font-medium text-slate-700">Select All Permissions</span>
+                    <span class="text-sm font-medium text-slate-700">Select All Access</span>
                 </label>
-                <span class="text-xs text-slate-400">@selectedMenuCodes.Count access item(s) selected</span>
+                <span class="text-xs text-slate-400">@selectedAccessCodes.Count access item(s) selected</span>
             </div>
 
             <!-- Menu Items Body -->
             <div class="overflow-y-auto flex-1 px-6 py-4">
-                @if (isLoadingMenus)
+                @if (isLoadingAccessItems)
                 {
                     <div class="flex items-center justify-center py-12">
                         <svg class="animate-spin h-6 w-6 text-violet-500" viewBox="0 0 24 24">
@@ -371,25 +371,25 @@
                         </svg>
                     </div>
                 }
-                else if (!allMenus.Any())
+                else if (!accessItems.Any())
                 {
                     <div class="text-center py-12">
                         <i data-lucide="shield-check" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
-                        <p class="text-sm text-slate-500">No menus found in database.</p>
+                        <p class="text-sm text-slate-500">No access items found in database.</p>
                     </div>
                 }
                 else
                 {
-                    @foreach (var parent in allMenus.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
+                    @foreach (var parent in accessItems.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
                     {
-                        var children = allMenus.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
-                        var parentChecked = selectedMenuCodes.Contains(parent.MenuCode);
+                        var children = accessItems.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
+                        var parentChecked = selectedAccessCodes.Contains(parent.MenuCode);
 
                         <div class="mb-4 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
                             <!-- Parent Row -->
                             <label class="flex items-center gap-3 px-4 py-3 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors">
                                 <input type="checkbox" checked="@parentChecked"
-                                       @onchange="(e) => ToggleMenuSelection(parent, (bool)(e.Value ?? false), isForm: false)"
+                                       @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: false)"
                                        class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
                                 <div class="flex items-center gap-2 flex-1">
                                     @if (!string.IsNullOrEmpty(parent.Icon))
@@ -406,27 +406,27 @@
                                 <div class="divide-y divide-slate-100 bg-white">
                                     @foreach (var child in children)
                                     {
-                                        var childChecked = selectedMenuCodes.Contains(child.MenuCode);
+                                        var childChecked = selectedAccessCodes.Contains(child.MenuCode);
                                         <div class="pl-8 pr-4 py-3">
                                             <label class="flex items-center gap-3 cursor-pointer hover:text-violet-600 transition-colors mb-2">
                                                 <input type="checkbox" checked="@childChecked"
-                                                       @onchange="(e) => ToggleMenuSelection(child, (bool)(e.Value ?? false), isForm: false)"
+                                                       @onchange="(e) => ToggleAccessSelection(child, (bool)(e.Value ?? false), isForm: false)"
                                                        class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
                                                 <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
                                             </label>
 
-                                            @if (child.Actions.Any())
+                                            @if (child.Permissions.Any())
                                             {
                                                 <div class="flex flex-wrap gap-2 pl-7 mt-1.5">
-                                                    @foreach (var action in child.Actions)
+                                                    @foreach (var action in child.Permissions)
                                                     {
-                                                        var isActionChecked = selectedMenuCodes.Contains(action.MenuDetailCode);
+                                                        var isActionChecked = selectedAccessCodes.Contains(action.MenuDetailCode);
                                                         <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
                                                                       @(isActionChecked
                                                                           ? "bg-violet-50 border-violet-200 text-violet-700"
                                                                           : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                                             <input type="checkbox" checked="@isActionChecked"
-                                                                   @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
+                                                                   @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
                                                                    class="h-3 w-3 rounded accent-violet-600" />
                                                             <span class="text-xs">@action.ActionName</span>
                                                         </label>
@@ -437,19 +437,19 @@
                                     }
                                 </div>
                             }
-                            else if (parent.Actions.Any())
+                            else if (parent.Permissions.Any())
                             {
-                                <!-- Direct Actions under Parent -->
+                                            <!-- Direct Access under Parent -->
                                 <div class="px-6 py-3.5 bg-white flex flex-wrap gap-2.5">
-                                    @foreach (var action in parent.Actions)
+                                    @foreach (var action in parent.Permissions)
                                     {
-                                        var isActionChecked = selectedMenuCodes.Contains(action.MenuDetailCode);
+                                        var isActionChecked = selectedAccessCodes.Contains(action.MenuDetailCode);
                                         <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer select-none transition-all
                                                       @(isActionChecked
                                                           ? "bg-violet-50 border-violet-300 text-violet-700 shadow-sm"
                                                           : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                             <input type="checkbox" checked="@isActionChecked"
-                                                   @onchange="(e) => ToggleActionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
+                                                   @onchange="(e) => TogglePermissionSelection(action.MenuDetailCode, (bool)(e.Value ?? false), isForm: false)"
                                                    class="h-3.5 w-3.5 rounded accent-violet-600" />
                                             <span class="text-xs font-medium">@action.ActionName</span>
                                         </label>
@@ -462,19 +462,19 @@
             </div>
 
             <!-- Footer -->
-            @if (!string.IsNullOrEmpty(menuSaveError))
+            @if (!string.IsNullOrEmpty(accessSaveError))
             {
                 <div class="px-6 pb-2">
                     <div class="p-3 rounded-lg bg-red-50 border border-red-100">
-                        <p class="text-sm text-red-600">@menuSaveError</p>
+                        <p class="text-sm text-red-600">@accessSaveError</p>
                     </div>
                 </div>
             }
-            @if (!string.IsNullOrEmpty(menuSaveSuccess))
+            @if (!string.IsNullOrEmpty(accessSaveSuccess))
             {
                 <div class="px-6 pb-2">
                     <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                        <p class="text-sm text-emerald-700">@menuSaveSuccess</p>
+                        <p class="text-sm text-emerald-700">@accessSaveSuccess</p>
                     </div>
                 </div>
             }
@@ -485,16 +485,16 @@
                     Changes apply immediately after saving.
                 </span>
                 <div class="flex items-center gap-3">
-                    <button @onclick="CloseMenuModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                    <button @onclick="CloseAccessModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
                         Cancel
                     </button>
-                    <button @onclick="SaveMenuPermissions" disabled="@isSavingMenus"
+                    <button @onclick="SaveAccess" disabled="@isSavingAccess"
                             class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm">
-                        <svg class="animate-spin h-4 w-4 @(isSavingMenus ? "" : "hidden")" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                        <span class="@(isSavingMenus ? "" : "hidden")">Saving...</span>
+                        <svg class="animate-spin h-4 w-4 @(isSavingAccess ? "" : "hidden")" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        <span class="@(isSavingAccess ? "" : "hidden")">Saving...</span>
                         
-                        <i data-lucide="save" class="h-4 w-4 @(isSavingMenus ? "hidden" : "")"></i>
-                        <span class="@(isSavingMenus ? "hidden" : "")">Save Permissions</span>
+                        <i data-lucide="save" class="h-4 w-4 @(isSavingAccess ? "hidden" : "")"></i>
+                        <span class="@(isSavingAccess ? "hidden" : "")">Save Access</span>
                     </button>
                 </div>
             </div>
@@ -517,7 +517,7 @@
 @code {
     private bool isLoading = true;
     private bool showRoleModal = false;
-    private bool showMenuModal = false;
+    private bool showAccessModal = false;
     private bool isEditing = false;
     private bool isSaving = false;
     private string? roleError;
@@ -574,26 +574,26 @@
     private string formName = "";
     private string? formDescription;
 
-    // Inline permissions in Create form
-    private List<MenuAdminDto> formAllMenus = new();
-    private HashSet<string> formSelectedMenuCodes = new();
-    private bool isLoadingFormMenus = false;
+    // Inline access items in Create form
+    private List<AccessMenuDto> formAccessItems = new();
+    private HashSet<string> formSelectedAccessCodes = new();
+    private bool isLoadingFormAccessItems = false;
 
-    private bool IsAllFormMenusSelected
-        => formAllMenus.Count > 0 && formSelectedMenuCodes.Count == (formAllMenus.Count + formAllMenus.Sum(m => m.Actions.Count));
+    private bool IsAllFormAccessSelected
+        => formAccessItems.Count > 0 && formSelectedAccessCodes.Count == (formAccessItems.Count + formAccessItems.Sum(m => m.Permissions.Count));
 
-    // Menu permissions modal (for editing existing role)
+    // Access modal (for editing existing role)
     private long selectedRoleId;
     private string selectedRoleName = "";
-    private List<MenuAdminDto> allMenus = new();
-    private HashSet<string> selectedMenuCodes = new();
-    private bool isLoadingMenus = false;
-    private bool isSavingMenus = false;
-    private string? menuSaveError;
-    private string? menuSaveSuccess;
+    private List<AccessMenuDto> accessItems = new();
+    private HashSet<string> selectedAccessCodes = new();
+    private bool isLoadingAccessItems = false;
+    private bool isSavingAccess = false;
+    private string? accessSaveError;
+    private string? accessSaveSuccess;
 
-    private bool IsAllMenusSelected 
-        => allMenus.Count > 0 && selectedMenuCodes.Count == (allMenus.Count + allMenus.Sum(m => m.Actions.Count));
+    private bool IsAllAccessSelected 
+        => accessItems.Count > 0 && selectedAccessCodes.Count == (accessItems.Count + accessItems.Sum(m => m.Permissions.Count));
 
     protected override async Task OnInitializedAsync()
     {
@@ -645,16 +645,16 @@
         roleError = null;
         isRoleNameError = false;
         roleNameErrorMsg = "";
-        formSelectedMenuCodes = new(StringComparer.OrdinalIgnoreCase);
-        formAllMenus = new();
-        isLoadingFormMenus = true;
+        formSelectedAccessCodes = new(StringComparer.OrdinalIgnoreCase);
+        formAccessItems = new();
+        isLoadingFormAccessItems = true;
         showRoleModal = true;
         StateHasChanged();
 
         try
         {
             var client = ApiClient.CreateClient();
-            formAllMenus = await client.GetFromJsonAsync<List<MenuAdminDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
+            formAccessItems = await client.GetFromJsonAsync<List<AccessMenuDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {
@@ -662,7 +662,7 @@
         }
         finally
         {
-            isLoadingFormMenus = false;
+            isLoadingFormAccessItems = false;
             StateHasChanged();
         }
     }
@@ -685,20 +685,20 @@
         roleError = null;
         isRoleNameError = false;
         roleNameErrorMsg = "";
-        formAllMenus = new();
-        formSelectedMenuCodes = new(StringComparer.OrdinalIgnoreCase);
+        formAccessItems = new();
+        formSelectedAccessCodes = new(StringComparer.OrdinalIgnoreCase);
     }
 
-    private void ToggleMenuSelection(MenuAdminDto menu, bool isChecked, bool isForm)
+    private void ToggleAccessSelection(AccessMenuDto menu, bool isChecked, bool isForm)
     {
-        var targetSet = isForm ? formSelectedMenuCodes : selectedMenuCodes;
-        var allMenuSource = isForm ? formAllMenus : allMenus;
+        var targetSet = isForm ? formSelectedAccessCodes : selectedAccessCodes;
+        var allMenuSource = isForm ? formAccessItems : accessItems;
 
         if (isChecked)
         {
             targetSet.Add(menu.MenuCode);
             // Select direct actions
-            foreach (var action in menu.Actions)
+            foreach (var action in menu.Permissions)
             {
                 targetSet.Add(action.MenuDetailCode);
             }
@@ -707,7 +707,7 @@
             foreach (var child in children)
             {
                 targetSet.Add(child.MenuCode);
-                foreach (var action in child.Actions)
+                foreach (var action in child.Permissions)
                 {
                     targetSet.Add(action.MenuDetailCode);
                 }
@@ -717,7 +717,7 @@
         {
             targetSet.Remove(menu.MenuCode);
             // Unselect direct actions
-            foreach (var action in menu.Actions)
+            foreach (var action in menu.Permissions)
             {
                 targetSet.Remove(action.MenuDetailCode);
             }
@@ -726,7 +726,7 @@
             foreach (var child in children)
             {
                 targetSet.Remove(child.MenuCode);
-                foreach (var action in child.Actions)
+                foreach (var action in child.Permissions)
                 {
                     targetSet.Remove(action.MenuDetailCode);
                 }
@@ -735,9 +735,9 @@
         StateHasChanged();
     }
 
-    private void ToggleActionSelection(string actionCode, bool isChecked, bool isForm)
+    private void TogglePermissionSelection(string actionCode, bool isChecked, bool isForm)
     {
-        var targetSet = isForm ? formSelectedMenuCodes : selectedMenuCodes;
+        var targetSet = isForm ? formSelectedAccessCodes : selectedAccessCodes;
         if (isChecked)
         {
             targetSet.Add(actionCode);
@@ -749,24 +749,24 @@
         StateHasChanged();
     }
 
-    private void ToggleSelectAllFormMenus(ChangeEventArgs e)
+    private void ToggleSelectAllFormAccess(ChangeEventArgs e)
     {
         var selectAll = (bool)(e.Value ?? false);
         if (selectAll)
         {
-            formSelectedMenuCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var menu in formAllMenus)
+            formSelectedAccessCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var menu in formAccessItems)
             {
-                formSelectedMenuCodes.Add(menu.MenuCode);
-                foreach (var action in menu.Actions)
+                formSelectedAccessCodes.Add(menu.MenuCode);
+                foreach (var action in menu.Permissions)
                 {
-                    formSelectedMenuCodes.Add(action.MenuDetailCode);
+                    formSelectedAccessCodes.Add(action.MenuDetailCode);
                 }
             }
         }
         else
         {
-            formSelectedMenuCodes.Clear();
+            formSelectedAccessCodes.Clear();
         }
     }
 
@@ -861,7 +861,7 @@
                 {
                     Name = formName,
                     Description = formDescription,
-                    MenuCodes = formSelectedMenuCodes.ToList()
+                    AccessCodes = formSelectedAccessCodes.ToList()
                 };
                 var response = await client.PostAsJsonAsync("Role", dto);
                 var res = await response.Content.ReadFromJsonAsync<Result<RoleDto>>(Serialization.CaseInsensitive);
@@ -899,95 +899,97 @@
     }
 
     // ===== Menu & Permission Access =====
-    private async Task OpenMenuPermissionsModal(RoleDto role)
+    private async Task OpenAccessModal(RoleDto role)
     {
         selectedRoleId = role.Id;
         selectedRoleName = role.Name;
-        menuSaveError = null;
-        menuSaveSuccess = null;
-        isLoadingMenus = true;
-        showMenuModal = true;
+        accessSaveError = null;
+        accessSaveSuccess = null;
+        isLoadingAccessItems = true;
+        showAccessModal = true;
         StateHasChanged();
 
         var client = ApiClient.CreateClient();
         try
         {
-            // Load all available menus with their nested actions
-            allMenus = await client.GetFromJsonAsync<List<MenuAdminDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
+            // Load all available access items with their nested permissions
+            accessItems = await client.GetFromJsonAsync<List<AccessMenuDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
 
             // Load currently assigned access items for this role
             var assignedResult = await client.GetFromJsonAsync<Result<List<string>>>($"Role/{role.Id}/menus", Serialization.CaseInsensitive);
-            selectedMenuCodes = new HashSet<string>(assignedResult?.Value ?? new(), StringComparer.OrdinalIgnoreCase);
+            selectedAccessCodes = new HashSet<string>(assignedResult?.Value ?? new(), StringComparer.OrdinalIgnoreCase);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Load menus error: {ex.Message}");
-            menuSaveError = "Failed to load menus. Please try again.";
+            Console.WriteLine($"Load access items error: {ex.Message}");
+            accessSaveError = "Failed to load access items. Please try again.";
         }
         finally
         {
-            isLoadingMenus = false;
+            isLoadingAccessItems = false;
             StateHasChanged();
         }
     }
 
-    private void CloseMenuModal()
+    private void CloseAccessModal()
     {
-        showMenuModal = false;
-        allMenus = new();
-        selectedMenuCodes = new(StringComparer.OrdinalIgnoreCase);
-        menuSaveError = null;
-        menuSaveSuccess = null;
+        showAccessModal = false;
+        accessItems = new();
+        selectedAccessCodes = new(StringComparer.OrdinalIgnoreCase);
+        accessSaveError = null;
+        accessSaveSuccess = null;
     }
 
-    private void ToggleSelectAllMenus(ChangeEventArgs e)
+    private void ToggleSelectAllAccess(ChangeEventArgs e)
     {
         var selectAll = (bool)(e.Value ?? false);
         if (selectAll)
         {
-            selectedMenuCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var menu in allMenus)
+            selectedAccessCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var menu in accessItems)
             {
-                selectedMenuCodes.Add(menu.MenuCode);
-                foreach (var action in menu.Actions)
+                selectedAccessCodes.Add(menu.MenuCode);
+                foreach (var action in menu.Permissions)
                 {
-                    selectedMenuCodes.Add(action.MenuDetailCode);
+                    selectedAccessCodes.Add(action.MenuDetailCode);
                 }
             }
         }
         else
         {
-            selectedMenuCodes.Clear();
+            selectedAccessCodes.Clear();
         }
     }
 
-    private async Task SaveMenuPermissions()
+    private async Task SaveAccess()
     {
-        isSavingMenus = true;
-        menuSaveError = null;
-        menuSaveSuccess = null;
+        isSavingAccess = true;
+        accessSaveError = null;
+        accessSaveSuccess = null;
         var client = ApiClient.CreateClient();
         try
         {
-            var dto = new AssignMenusDto { MenuCodes = selectedMenuCodes.ToList() };
+            var dto = new AssignAccessDto { AccessCodes = selectedAccessCodes.ToList() };
             var response = await client.PostAsJsonAsync($"Role/{selectedRoleId}/menus", dto);
             if (response.IsSuccessStatusCode)
             {
-                menuSaveSuccess = $"Access for '{selectedRoleName}' saved successfully!";
+                accessSaveSuccess = $"Access for '{selectedRoleName}' saved successfully!";
             }
             else
             {
-                menuSaveError = "Failed to save access. Please try again.";
+                accessSaveError = "Failed to save access. Please try again.";
             }
         }
         catch (Exception ex)
         {
-            menuSaveError = ex.Message;
+            accessSaveError = ex.Message;
         }
         finally
         {
-            isSavingMenus = false;
+            isSavingAccess = false;
             StateHasChanged();
         }
     }
 }
+
+

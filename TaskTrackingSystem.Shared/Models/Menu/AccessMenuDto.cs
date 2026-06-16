@@ -1,6 +1,6 @@
 namespace TaskTrackingSystem.Shared.Models.Menu
 {
-    public class MenuAdminDto
+    public class AccessMenuDto
     {
         public string MenuCode { get; set; } = string.Empty;
         public string ParentCode { get; set; } = string.Empty;
@@ -9,6 +9,7 @@ namespace TaskTrackingSystem.Shared.Models.Menu
         public int OrderNo { get; set; }
         public string? Icon { get; set; }
         public bool Visible { get; set; }
-        public System.Collections.Generic.List<MenuAdminDetailDto> Actions { get; set; } = new();
+        public System.Collections.Generic.List<AccessPermissionDto> Permissions { get; set; } = new();
     }
 }
+

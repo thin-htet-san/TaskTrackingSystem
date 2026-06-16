@@ -2,7 +2,7 @@ using System;
 
 namespace TaskTrackingSystem.Shared.Models.Menu
 {
-    public class MenuAdminDetailDto
+    public class AccessPermissionDto
     {
         public string MenuAdminDetailId { get; set; } = string.Empty;
         public string MenuDetailCode { get; set; } = string.Empty;
@@ -13,3 +13,4 @@ namespace TaskTrackingSystem.Shared.Models.Menu
         public int OrderNo { get; set; }
     }
 }
+

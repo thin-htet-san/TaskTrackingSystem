@@ -184,6 +184,20 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
 
         public async Task<string> GetMenuVersionAsync(long roleId, string roleName)
         {
+            if (roleId <= 0 && !string.IsNullOrWhiteSpace(roleName))
+            {
+                var role = await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName && r.IsDeleted != true);
+                if (role != null)
+                {
+                    roleId = role.Id;
+                }
+            }
+
+            if (roleId <= 0)
+            {
+                return "0";
+            }
+
             var latestMenuChange = await _db.RoleMenus
                 .Where(rm => rm.RoleId == roleId && !rm.IsDeleted)
                 .Select(rm => (DateTime?)(rm.UpdatedAt ?? rm.CreatedAt))
@@ -203,7 +217,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             return latest.HasValue ? latest.Value.Ticks.ToString() : "0";
         }
 
-        public async Task<List<MenuAdminDto>> GetAllMenusAsync()
+        public async Task<List<AccessMenuDto>> GetAllAccessItemsAsync()
         {
             var menus = await _db.Menus
                 .Where(m => !m.IsDeleted)
@@ -220,7 +234,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 .Select(m => new
                 {
                     m.MenuId,
-                    Dto = new MenuAdminDto
+                    Dto = new AccessMenuDto
                     {
                         MenuCode = m.MenuCode,
                         ParentCode = GetParentCode(m, menuLookup),
@@ -245,7 +259,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
 
                 foreach (var permission in permissionGroup.OrderBy(p => p.OrderNo).ThenBy(p => p.ActionName, StringComparer.OrdinalIgnoreCase))
                 {
-                    dto.Actions.Add(new MenuAdminDetailDto
+                    dto.Permissions.Add(new AccessPermissionDto
                     {
                         MenuAdminDetailId = permission.PermissionId.ToString(),
                         MenuDetailCode = permission.PermissionCode,
@@ -262,3 +276,5 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         }
     }
 }
+
+

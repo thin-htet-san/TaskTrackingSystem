@@ -146,7 +146,7 @@ public class MenuAuthorizationService
 
                 if (serverVersion != _sessionState.CachedMenuVersion)
                 {
-                    // Permissions have changed — bust cache and reload full menus.
+                    // Access items have changed — bust cache and reload the menu tree.
                     Console.WriteLine($"[MenuAuth] Access version changed ({_sessionState.CachedMenuVersion} -> {serverVersion}). Reloading menus.");
                     _sessionState.ClearMenuCache();
                     return await LoadMenusAsync(user, roleKey);

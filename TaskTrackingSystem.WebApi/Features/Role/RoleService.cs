@@ -63,9 +63,9 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result<RoleDto>.Failure("Role name is already taken.", 400);
             }
 
-            if (dto.MenuCodes != null && dto.MenuCodes.Any())
+            if (dto.AccessCodes != null && dto.AccessCodes.Any())
             {
-                var validCodesResult = await ValidatePermissionCodesAsync(dto.MenuCodes);
+                var validCodesResult = await ValidatePermissionCodesAsync(dto.AccessCodes);
                 if (!validCodesResult.IsSuccess)
                 {
                     return Result<RoleDto>.Failure(validCodesResult.ErrorMessage ?? ResultMessages.FailedToCreateRole, validCodesResult.StatusCode);
@@ -83,7 +83,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             _db.Roles.Add(role);
             await _db.SaveChangesAsync();
 
-            var assignResult = await AssignMenusToRoleAsync(role.Id, new AssignMenusDto { MenuCodes = dto.MenuCodes ?? new List<string>() });
+            var assignResult = await AssignAccessToRoleAsync(role.Id, new AssignAccessDto { AccessCodes = dto.AccessCodes ?? new List<string>() });
             if (!assignResult.IsSuccess)
             {
                 return Result<RoleDto>.Failure(assignResult.ErrorMessage ?? ResultMessages.FailedToCreateRole, assignResult.StatusCode);
@@ -167,7 +167,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             return Result<List<string>>.Success(assignedCodes);
         }
 
-        public async Task<Result> AssignMenusToRoleAsync(long roleId, AssignMenusDto dto)
+        public async Task<Result> AssignAccessToRoleAsync(long roleId, AssignAccessDto dto)
         {
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.IsDeleted != true);
             if (role == null)
@@ -175,12 +175,12 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result.Failure(ResultMessages.RoleNotFound(roleId), 404);
             }
 
-            if (dto.MenuCodes == null)
+            if (dto.AccessCodes == null)
             {
-                return Result.Failure("MenuCodes cannot be null", 400);
+                return Result.Failure("AccessCodes cannot be null", 400);
             }
 
-            var selectedCodes = dto.MenuCodes
+            var selectedCodes = dto.AccessCodes
                 .Where(code => !string.IsNullOrWhiteSpace(code))
                 .Select(code => code.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -286,7 +286,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 .Select(code => code.Trim())
                 .ToList();
 
-            var validMenuCodes = await _db.Menus
+            var validAccessCodes = await _db.Menus
                 .Where(m => !m.IsDeleted)
                 .Select(m => m.MenuCode)
                 .ToListAsync();
@@ -296,7 +296,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 .Select(p => p.PermissionCode)
                 .ToListAsync();
 
-            var validCodes = validMenuCodes
+            var validCodes = validAccessCodes
                 .Concat(validPermissionCodes)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -314,3 +314,5 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
     }
 }
+
+

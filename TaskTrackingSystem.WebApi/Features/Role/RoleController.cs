@@ -71,9 +71,9 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
 
         [HttpPost("{id}/menus")]
-        public async Task<IActionResult> AssignMenus(long id, [FromBody] AssignMenusDto dto)
+        public async Task<IActionResult> AssignAccess(long id, [FromBody] AssignAccessDto dto)
         {
-            var result = await _roleService.AssignMenusToRoleAsync(id, dto);
+            var result = await _roleService.AssignAccessToRoleAsync(id, dto);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
@@ -82,3 +82,5 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
     }
 }
+
+

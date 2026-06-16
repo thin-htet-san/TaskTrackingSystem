@@ -42,9 +42,9 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
 
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
-        public async Task<ActionResult<IEnumerable<MenuAdminDto>>> GetAllMenus()
+        public async Task<ActionResult<IEnumerable<AccessMenuDto>>> GetAllAccessItems()
         {
-            var menus = await _menuService.GetAllMenusAsync();
+            var menus = await _menuService.GetAllAccessItemsAsync();
             return Ok(menus);
         }
 
@@ -62,3 +62,5 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         }
     }
 }
+
+
