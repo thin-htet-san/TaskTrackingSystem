@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared.Models.Menu;
+using MenuEntity = TaskTrackingSystem.Database.AppDbContextModels.Menu;
 
 namespace TaskTrackingSystem.WebApi.Features.Menu
 {
@@ -82,7 +83,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             return BuildHierarchy(filteredMenus);
         }
 
-        private static List<MenuDto> BuildHierarchy(List<Menu> menus)
+        private static List<MenuDto> BuildHierarchy(List<MenuEntity> menus)
         {
             if (menus.Count == 0)
             {
@@ -127,7 +128,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             return roots;
         }
 
-        private static string GetParentCode(Menu menu, IReadOnlyDictionary<long, Menu> menuLookup)
+        private static string GetParentCode(MenuEntity menu, IReadOnlyDictionary<long, MenuEntity> menuLookup)
         {
             if (!menu.ParentMenuId.HasValue)
             {
@@ -139,7 +140,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 : string.Empty;
         }
 
-        private static HashSet<long> ExpandWithAncestors(IEnumerable<long> menuIds, IReadOnlyDictionary<long, Menu> menuLookup)
+        private static HashSet<long> ExpandWithAncestors(IEnumerable<long> menuIds, IReadOnlyDictionary<long, MenuEntity> menuLookup)
         {
             var expanded = new HashSet<long>();
 
