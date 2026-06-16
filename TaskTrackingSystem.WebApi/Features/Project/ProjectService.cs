@@ -96,7 +96,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result<ProjectDto>.Success(resultDto, 201);
         }
 
-        public async Task<Result> UpdateProjectAsync(long id, UpdateProjectDto dto, long? currentUserId = null)
+        public async Task<Result> UpdateProjectAsync(long id, UpdateProjectDto dto, string roleName, long currentUserId)
         {
             if (string.IsNullOrWhiteSpace(dto.Name))
             {
@@ -105,6 +105,11 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted != true);
             if (project == null) return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
+
+            if (!await IsProjectAccessibleAsync(id, roleName, currentUserId))
+            {
+                return Result.Failure("You do not have access to this project.", 403);
+            }
 
             project.Name = dto.Name;
             project.Description = dto.Description;
@@ -119,10 +124,15 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result.Success(200);
         }
 
-        public async Task<Result> SoftDeleteProjectAsync(long id)
+        public async Task<Result> SoftDeleteProjectAsync(long id, string roleName, long currentUserId)
         {
             var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted != true);
             if (project == null) return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
+
+            if (!await IsProjectAccessibleAsync(id, roleName, currentUserId))
+            {
+                return Result.Failure("You do not have access to this project.", 403);
+            }
 
             project.IsDeleted = true;
             _db.Projects.Update(project);
@@ -159,12 +169,17 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result<IEnumerable<UserDto>>.Success(members);
         }
 
-        public async Task<Result> AssignMembersToProjectAsync(long projectId, AssignMembersDto dto, long? currentUserId = null)
+        public async Task<Result> AssignMembersToProjectAsync(long projectId, AssignMembersDto dto, string roleName, long currentUserId)
         {
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
             {
                 return Result.Failure(ResultMessages.ProjectNotFound(projectId), 404);
+            }
+
+            if (!await IsProjectAccessibleAsync(projectId, roleName, currentUserId))
+            {
+                return Result.Failure("You do not have access to this project.", 403);
             }
 
             if (dto.UserIds == null)
@@ -212,12 +227,17 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result.Success(200);
         }
 
-        public async Task<Result> RemoveMemberFromProjectAsync(long projectId, long userId, long? currentUserId = null)
+        public async Task<Result> RemoveMemberFromProjectAsync(long projectId, long userId, string roleName, long currentUserId)
         {
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
             {
                 return Result.Failure(ResultMessages.ProjectNotFound(projectId), 404);
+            }
+
+            if (!await IsProjectAccessibleAsync(projectId, roleName, currentUserId))
+            {
+                return Result.Failure("You do not have access to this project.", 403);
             }
 
             var member = await _db.ProjectMembers
@@ -271,7 +291,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             var query = _db.Projects.Where(p => p.IsDeleted != true);
 
-            if (IsElevated(roleName))
+            if (IsAdmin(roleName))
             {
                 return query;
             }
@@ -283,7 +303,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
         private async Task<bool> IsProjectAccessibleAsync(long projectId, string roleName, long currentUserId)
         {
-            if (IsElevated(roleName))
+            if (IsAdmin(roleName))
             {
                 return await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             }
@@ -294,10 +314,9 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 (p.CreatedById == currentUserId || p.ProjectMembers.Any(pm => pm.UserId == currentUserId)));
         }
 
-        private static bool IsElevated(string roleName)
+        private static bool IsAdmin(string roleName)
         {
-            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
-                   roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase);
+            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

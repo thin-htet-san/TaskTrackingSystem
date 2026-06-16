@@ -61,8 +61,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Forbid();
             }
 
-            long? currentUserId = User.GetUserId();
-            var result = await _projectService.UpdateProjectAsync(id, updateProjectDto, currentUserId);
+            var currentUserId = User.GetUserId();
+            var result = await _projectService.UpdateProjectAsync(id, updateProjectDto, User.GetRoleName(), currentUserId);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -74,7 +74,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Forbid();
             }
 
-            var result = await _projectService.SoftDeleteProjectAsync(id);
+            var result = await _projectService.SoftDeleteProjectAsync(id, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -93,7 +93,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Forbid();
             }
 
-            var result = await _projectService.AssignMembersToProjectAsync(id, dto, User.GetUserId());
+            var result = await _projectService.AssignMembersToProjectAsync(id, dto, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
@@ -109,7 +109,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Forbid();
             }
 
-            var result = await _projectService.RemoveMemberFromProjectAsync(id, userId, User.GetUserId());
+            var result = await _projectService.RemoveMemberFromProjectAsync(id, userId, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });

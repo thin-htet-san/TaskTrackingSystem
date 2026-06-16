@@ -22,12 +22,68 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             _db = db;
         }
 
+        private static bool IsAdmin(string roleName)
+        {
+            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
+        {
+            var query = _db.Tasks.Where(t => t.IsDeleted != true);
+
+            if (IsAdmin(roleName))
+            {
+                return query;
+            }
+
+            if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase))
+            {
+                return query.Where(t =>
+                    t.AssignedTo == currentUserId ||
+                    t.CreatedBy == currentUserId ||
+                    t.Project.ProjectMembers.Any(pm => pm.UserId == currentUserId));
+            }
+
+            return query.Where(t =>
+                t.AssignedTo == currentUserId ||
+                t.CreatedBy == currentUserId);
+        }
+
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(string roleName, long currentUserId)
+        {
+            var query = _db.Projects.Where(p => p.IsDeleted != true);
+
+            if (IsAdmin(roleName))
+            {
+                return query;
+            }
+
+            return query.Where(p =>
+                p.CreatedById == currentUserId ||
+                p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
+        }
+
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.User> BuildAccessibleUserQuery(string roleName, long currentUserId)
+        {
+            var users = _db.Users.Where(u => !u.IsDeleted);
+
+            if (IsAdmin(roleName))
+            {
+                return users;
+            }
+
+            var accessibleUserIds = BuildAccessibleProjectQuery(roleName, currentUserId)
+                .SelectMany(p => p.ProjectMembers.Select(pm => pm.UserId))
+                .Distinct();
+
+            return users.Where(u => u.Id == currentUserId || accessibleUserIds.Contains(u.Id));
+        }
         // ─── Legacy endpoints (kept for backward compatibility) ───────────────────
 
         public async Task<Result<IEnumerable<TaskReportDto>>> GetTasksReportAsync(
-            DateTime? startDate, DateTime? endDate, string? status, int? projectId)
+            DateTime? startDate, DateTime? endDate, string? status, int? projectId, string roleName, long currentUserId)
         {
-            var query = _db.Tasks
+            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Include(t => t.AssignedByNavigation)
@@ -76,19 +132,19 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return Result<IEnumerable<TaskReportDto>>.Success(list);
         }
 
-        public async Task<Result<IEnumerable<UserProductivityDto>>> GetUserProductivityReportAsync()
+        public async Task<Result<IEnumerable<UserProductivityDto>>> GetUserProductivityReportAsync(string roleName, long currentUserId)
         {
-            var users = await _db.Users.Where(u => !u.IsDeleted).ToListAsync();
+            var users = await BuildAccessibleUserQuery(roleName, currentUserId).ToListAsync();
+            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
+                .Include(t => t.TaskHistories)
+                .ToListAsync();
             var list = new List<UserProductivityDto>();
             foreach (var user in users)
             {
-                var tasks = await _db.Tasks
-                    .Include(t => t.TaskHistories)
-                    .Where(t => t.AssignedTo == user.Id && t.IsDeleted != true)
-                    .ToListAsync();
+                var userTasks = tasks.Where(t => t.AssignedTo == user.Id).ToList();
                 
-                int total = tasks.Count;
-                var completedTasks = tasks.Where(t => t.StatusId == 3).ToList();
+                int total = userTasks.Count;
+                var completedTasks = userTasks.Where(t => t.StatusId == 3).ToList();
                 int done = completedTasks.Count;
                 
                 int onTimeCount = completedTasks.Count(t => 
@@ -114,9 +170,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         // ─── Report 1: Task Status Summary ────────────────────────────────────────
 
         public async Task<Result<IEnumerable<TaskStatusSummaryDto>>> GetTaskStatusSummaryAsync(
-            string? search, long? statusId, long? projectId)
+            string? search, long? statusId, long? projectId, string roleName, long currentUserId)
         {
-            var query = _db.Tasks
+            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Where(t => t.IsDeleted != true);
@@ -189,10 +245,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
         // ─── Report 2: Team Productivity ──────────────────────────────────────────
 
-        public async Task<Result<IEnumerable<TeamProductivityReportDto>>> GetTeamProductivityAsync(string? search)
+        public async Task<Result<IEnumerable<TeamProductivityReportDto>>> GetTeamProductivityAsync(string? search, string roleName, long currentUserId)
         {
-            var users = await _db.Users.Where(u => !u.IsDeleted).ToListAsync();
-            var allTasks = await _db.Tasks.Where(t => t.IsDeleted != true && t.AssignedTo != null).ToListAsync();
+            var users = await BuildAccessibleUserQuery(roleName, currentUserId).ToListAsync();
+            var allTasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
+                .Where(t => t.AssignedTo != null)
+                .ToListAsync();
             var now = DateTime.UtcNow;
 
             var list = users.Select(u =>
@@ -256,10 +314,10 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
         // ─── Report 3: Overdue & Critical Tasks ───────────────────────────────────
 
-        public async Task<Result<IEnumerable<OverdueCriticalTaskDto>>> GetOverdueCriticalTasksAsync(string? search, long? projectId)
+        public async Task<Result<IEnumerable<OverdueCriticalTaskDto>>> GetOverdueCriticalTasksAsync(string? search, long? projectId, string roleName, long currentUserId)
         {
             var now = DateTime.UtcNow;
-            var query = _db.Tasks
+            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Where(t => t.IsDeleted != true && t.StatusId != 3 &&
@@ -330,9 +388,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         }
 
         public async Task<Result<TimeTrackingReportDto>> GetTimeTrackingReportAsync(
-            string? search, long? projectId, long? statusId)
+            string? search, long? projectId, long? statusId, string roleName, long currentUserId)
         {
-            var query = _db.Tasks
+            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Include(t => t.TimeLogs.Where(tl => !tl.IsDeleted))
@@ -463,3 +521,4 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         }
     }
 }
+

@@ -48,8 +48,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Forbid();
             }
 
-            long? currentUserId = User.GetUserId();
-            var result = await _taskService.CreateTaskAsync(createTaskDto, currentUserId);
+            var currentUserId = User.GetUserId();
+            var result = await _taskService.CreateTaskAsync(createTaskDto, User.GetRoleName(), currentUserId);
             return StatusCode(result.StatusCode, result);
         }
 

@@ -20,13 +20,17 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
 
         public async Task<Result<DashboardSummaryDto>> GetSummaryAsync(string roleName, long currentUserId)
         {
-            var elevated = IsElevated(roleName);
             var projects = BuildAccessibleProjectQuery(roleName, currentUserId);
             var tasks = BuildAccessibleTaskQuery(roleName, currentUserId);
 
-            var totalUsers = elevated
+            var totalUsers = IsAdmin(roleName)
                 ? await _db.Users.CountAsync(u => !u.IsDeleted)
-                : await _db.Users.CountAsync(u => u.Id == currentUserId && !u.IsDeleted);
+                : await _db.Users
+                    .Where(u => !u.IsDeleted &&
+                                projects.SelectMany(p => p.ProjectMembers.Select(pm => pm.UserId))
+                                    .Distinct()
+                                    .Contains(u.Id))
+                    .CountAsync();
 
             var activeProjectsCount = await projects.CountAsync();
             var pendingTasksCount = await tasks.CountAsync(t => t.StatusId != 3);
@@ -119,9 +123,17 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
         {
             var query = _db.Tasks.Where(t => t.IsDeleted != true);
 
-            if (IsElevated(roleName))
+            if (IsAdmin(roleName))
             {
                 return query;
+            }
+
+            if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase))
+            {
+                return query.Where(t =>
+                    t.AssignedTo == currentUserId ||
+                    t.CreatedBy == currentUserId ||
+                    t.Project.ProjectMembers.Any(pm => pm.UserId == currentUserId));
             }
 
             return query.Where(t =>
@@ -133,7 +145,7 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
         {
             var query = _db.Projects.Where(p => p.IsDeleted != true);
 
-            if (IsElevated(roleName))
+            if (IsAdmin(roleName))
             {
                 return query;
             }
@@ -143,10 +155,9 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
                 p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
         }
 
-        private static bool IsElevated(string roleName)
+        private static bool IsAdmin(string roleName)
         {
-            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
-                   roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase);
+            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

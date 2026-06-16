@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Report;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Report
 {
@@ -29,14 +30,14 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] string? status,
             [FromQuery] int? projectId)
         {
-            var result = await _reportService.GetTasksReportAsync(startDate, endDate, status, projectId);
+            var result = await _reportService.GetTasksReportAsync(startDate, endDate, status, projectId, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("user-productivity")]
         public async Task<ActionResult<Result<IEnumerable<UserProductivityDto>>>> GetUserProductivityReport()
         {
-            var result = await _reportService.GetUserProductivityReportAsync();
+            var result = await _reportService.GetUserProductivityReportAsync(User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -48,7 +49,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] long? statusId,
             [FromQuery] long? projectId)
         {
-            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId);
+            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -58,7 +59,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] long? statusId,
             [FromQuery] long? projectId)
         {
-            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId);
+            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess || result.Value == null)
                 return BadRequest(new { message = result.ErrorMessage });
             var bytes = _reportService.ExportTaskStatusSummaryToExcel(result.Value);
@@ -72,14 +73,14 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         public async Task<ActionResult<Result<IEnumerable<TeamProductivityReportDto>>>> GetTeamProductivity(
             [FromQuery] string? search)
         {
-            var result = await _reportService.GetTeamProductivityAsync(search);
+            var result = await _reportService.GetTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("team-productivity/excel")]
         public async Task<IActionResult> DownloadTeamProductivityExcel([FromQuery] string? search)
         {
-            var result = await _reportService.GetTeamProductivityAsync(search);
+            var result = await _reportService.GetTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess || result.Value == null)
                 return BadRequest(new { message = result.ErrorMessage });
             var bytes = _reportService.ExportTeamProductivityToExcel(result.Value);
@@ -94,7 +95,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] string? search,
             [FromQuery] long? projectId)
         {
-            var result = await _reportService.GetOverdueCriticalTasksAsync(search, projectId);
+            var result = await _reportService.GetOverdueCriticalTasksAsync(search, projectId, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -103,7 +104,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] string? search,
             [FromQuery] long? projectId)
         {
-            var result = await _reportService.GetOverdueCriticalTasksAsync(search, projectId);
+            var result = await _reportService.GetOverdueCriticalTasksAsync(search, projectId, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess || result.Value == null)
                 return BadRequest(new { message = result.ErrorMessage });
             var bytes = _reportService.ExportOverdueCriticalToExcel(result.Value);
@@ -119,7 +120,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] long? projectId,
             [FromQuery] long? statusId)
         {
-            var result = await _reportService.GetTimeTrackingReportAsync(search, projectId, statusId);
+            var result = await _reportService.GetTimeTrackingReportAsync(search, projectId, statusId, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
     }

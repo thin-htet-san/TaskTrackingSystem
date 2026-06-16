@@ -148,11 +148,11 @@
                     </div>
 
                     <!-- Filter & User Selection -->
-                    <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="relative max-w-xs flex-1 flex gap-2">
-                            <div class="relative flex-1">
-                                <input @bind="userSearchInput" type="text" placeholder="Search team members..."
-                                       class="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="relative max-w-xs flex-1 flex gap-2">
+                        <div class="relative flex-1">
+                            <input @bind="userSearchInput" type="text" placeholder="Search team members..."
+                                   class="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                                 <i data-lucide="search" class="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400"></i>
                             </div>
                             <button @onclick="ApplyUserSearch" class="inline-flex items-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 transition-colors shrink-0">
@@ -162,15 +162,24 @@
                                 <i data-lucide="rotate-ccw" class="h-3.5 w-3.5 mr-1.5 text-slate-500"></i> Reset
                             </button>
                         </div>
-                        <div class="w-40 shrink-0">
-                            <select @bind="selectedRoleId" class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                                <option value="0">All Roles</option>
-                                @foreach (var r in roles)
-                                {
-                                    <option value="@r.Id">@r.Name</option>
-                                }
-                            </select>
-                        </div>
+                        @if (isAdminUser)
+                        {
+                            <div class="w-40 shrink-0">
+                                <select @bind="selectedRoleId" class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                                    <option value="0">All Roles</option>
+                                    @foreach (var r in roles)
+                                    {
+                                        <option value="@r.Id">@r.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-xs font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-3 py-1.5 rounded-lg shrink-0">
+                                Employees in this project
+                            </div>
+                        }
                         <div class="text-xs font-semibold text-slate-600 shrink-0">
                             Selected: <span class="text-violet-700 font-bold">@(TargetAssigneeId.HasValue ? allUsers.FirstOrDefault(u => u.Id == TargetAssigneeId)?.Username ?? "Selected" : "Unassigned")</span>
                         </div>
@@ -258,8 +267,11 @@
     private List<TaskDto> tasks = new();
     private List<ProjectDto> projects = new();
     private List<UserDto> allUsers = new();
+    private List<UserDto> projectMembers = new();
     private List<RoleDto> roles = new();
     private long? adminRoleId;
+    private long? employeeRoleId;
+    private bool isAdminUser;
 
     private long selectedProjectId = 0;
     private long selectedProjectIdInput = 0;
@@ -275,6 +287,7 @@
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isAdminUser = authState.User.IsInRole("Admin");
         canSaveAssignments = authState.User.IsInRole("Admin") || await MenuAuthorization.HasAccessCodeAsync(authState.User, "Tasks_Update");
         var client = ApiClient.CreateClient();
         try
@@ -291,8 +304,14 @@
             
             var allLoadedRoles = rolesTask.Result ?? new();
             var adminRole = allLoadedRoles.FirstOrDefault(r => string.Equals(r.Name, "Admin", StringComparison.OrdinalIgnoreCase));
+            var employeeRole = allLoadedRoles.FirstOrDefault(r => string.Equals(r.Name, "Employee", StringComparison.OrdinalIgnoreCase));
             adminRoleId = adminRole?.Id;
+            employeeRoleId = employeeRole?.Id;
             roles = allLoadedRoles.Where(r => !string.Equals(r.Name, "Admin", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (!isAdminUser && employeeRoleId.HasValue)
+            {
+                selectedRoleId = employeeRoleId.Value;
+            }
         }
         catch (Exception ex)
         {
@@ -331,14 +350,18 @@
     {
         get
         {
-            var result = allUsers.Where(u => u.IsActive);
+            var result = projectMembers.Where(u => u.IsActive);
             if (adminRoleId.HasValue)
             {
                 result = result.Where(u => u.RoleId != adminRoleId.Value);
             }
-            if (selectedRoleId > 0)
+            if (isAdminUser && selectedRoleId > 0)
             {
                 result = result.Where(u => u.RoleId == selectedRoleId);
+            }
+            else if (!isAdminUser && employeeRoleId.HasValue)
+            {
+                result = result.Where(u => u.RoleId == employeeRoleId.Value);
             }
             if (!string.IsNullOrWhiteSpace(userSearch))
             {
@@ -364,6 +387,7 @@
         selectedProjectId = selectedProjectIdInput;
         SelectedTask = null;
         TargetAssigneeId = null;
+        projectMembers.Clear();
         statusMessage = null;
     }
 
@@ -373,6 +397,7 @@
         selectedProjectId = 0;
         SelectedTask = null;
         TargetAssigneeId = null;
+        projectMembers.Clear();
         statusMessage = null;
     }
 
@@ -389,11 +414,12 @@
         selectedRoleId = 0;
     }
 
-    private void SelectTask(TaskDto task)
+    private async Task SelectTask(TaskDto task)
     {
         SelectedTask = task;
         TargetAssigneeId = task.AssignedTo;
         statusMessage = null;
+        await LoadProjectMembersAsync(task.ProjectId);
     }
 
     private void SetTargetAssignee(long? userId)
@@ -417,6 +443,37 @@
     {
         showConfirmDialog = false;
         await SaveAssignment();
+    }
+
+    private async Task LoadProjectMembersAsync(long projectId)
+    {
+        projectMembers.Clear();
+
+        if (projectId <= 0)
+        {
+            return;
+        }
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var membersResult = await client.GetFromJsonAsync<Result<IEnumerable<UserDto>>>($"Project/{projectId}/members", Serialization.CaseInsensitive);
+            if (membersResult?.IsSuccess == true && membersResult.Value != null)
+            {
+                projectMembers = membersResult.Value.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading project members: {ex.Message}");
+            statusMessage = "Failed to load project members.";
+            isError = true;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("initIcons");
+        }
     }
 
     private async Task SaveAssignment()

@@ -75,7 +75,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             };
         }
 
-        public async Task<Result<TaskDto>> CreateTaskAsync(CreateTaskDto dto, long? currentUserId = null)
+        public async Task<Result<TaskDto>> CreateTaskAsync(CreateTaskDto dto, string roleName, long currentUserId)
         {
             if (string.IsNullOrWhiteSpace(dto.Title))
             {
@@ -90,6 +90,16 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             if (!projectExists)
             {
                 return Result<TaskDto>.Failure(ResultMessages.ProjectNotFound(dto.ProjectId), 404);
+            }
+
+            if (!await CanAccessProjectAsync(dto.ProjectId, roleName, currentUserId))
+            {
+                return Result<TaskDto>.Failure("You do not have access to this project.", 403);
+            }
+
+            if (dto.AssignedTo.HasValue && !await IsProjectMemberAsync(dto.ProjectId, dto.AssignedTo.Value))
+            {
+                return Result<TaskDto>.Failure("Task assignee must belong to the selected project.", 400);
             }
 
             var task = new TaskTrackingSystem.Database.AppDbContextModels.Task
@@ -140,9 +150,14 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
-            if (!IsElevated(roleName) && currentUserId.HasValue && !await CanEditTaskAsync(task, currentUserId.Value))
+            if (!currentUserId.HasValue || !await CanEditTaskAsync(task, roleName, currentUserId.Value))
             {
                 return Result.Failure("You do not have access to update this task.", 403);
+            }
+
+            if (dto.AssignedTo.HasValue && !await IsProjectMemberAsync(task.ProjectId, dto.AssignedTo.Value))
+            {
+                return Result.Failure("Task assignee must belong to the selected project.", 400);
             }
 
             task.Title = dto.Title;
@@ -166,7 +181,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
-            if (!IsElevated(roleName) && task.CreatedBy != currentUserId && task.AssignedTo != currentUserId)
+            if (!await CanEditTaskAsync(task, roleName, currentUserId))
             {
                 return Result.Failure("You do not have access to delete this task.", 403);
             }
@@ -179,19 +194,14 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
         public async Task<Result<IEnumerable<TaskDto>>> GetTasksByUserIdAsync(long userId, string roleName, long currentUserId)
         {
-            if (!IsElevated(roleName) && userId != currentUserId)
-            {
-                return Result<IEnumerable<TaskDto>>.Failure("You do not have access to view these tasks.", 403);
-            }
-
             var userExists = await _db.Users.AnyAsync(u => u.Id == userId && !u.IsDeleted);
             if (!userExists)
             {
                 return Result<IEnumerable<TaskDto>>.Failure(ResultMessages.UserNotFound(userId), 404);
             }
 
-            var tasks = await _db.Tasks
-                .Where(t => t.AssignedTo == userId && t.IsDeleted != true)
+            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
+                .Where(t => t.AssignedTo == userId)
                 .Select(t => new TaskDto
                 {
                     Id = t.Id,
@@ -224,7 +234,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Result.Failure(ResultMessages.TaskNotFound(id), 404);
             }
 
-            if (!IsElevated(roleName) && task.AssignedTo != currentUserId && task.CreatedBy != currentUserId)
+            if (!await CanEditTaskAsync(task, roleName, currentUserId))
             {
                 return Result.Failure("You do not have access to update this task.", 403);
             }
@@ -243,9 +253,17 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             var query = _db.Tasks.Where(t => t.IsDeleted != true);
 
-            if (IsElevated(roleName))
+            if (IsAdmin(roleName))
             {
                 return query;
+            }
+
+            if (IsManager(roleName))
+            {
+                return query.Where(t =>
+                    t.AssignedTo == currentUserId ||
+                    t.CreatedBy == currentUserId ||
+                    t.Project.ProjectMembers.Any(pm => pm.UserId == currentUserId));
             }
 
             return query.Where(t =>
@@ -253,20 +271,52 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 t.CreatedBy == currentUserId);
         }
 
-        private async Task<bool> CanEditTaskAsync(TaskTrackingSystem.Database.AppDbContextModels.Task task, long currentUserId)
+        private async Task<bool> CanEditTaskAsync(TaskTrackingSystem.Database.AppDbContextModels.Task task, string roleName, long currentUserId)
         {
+            if (IsAdmin(roleName))
+            {
+                return true;
+            }
+
             if (task.CreatedBy == currentUserId || task.AssignedTo == currentUserId)
             {
                 return true;
             }
 
-            return await _db.ProjectMembers.AnyAsync(pm => pm.ProjectId == task.ProjectId && pm.UserId == currentUserId);
+            if (IsManager(roleName))
+            {
+                return await _db.ProjectMembers.AnyAsync(pm => pm.ProjectId == task.ProjectId && pm.UserId == currentUserId);
+            }
+
+            return false;
         }
 
-        private static bool IsElevated(string roleName)
+        private async Task<bool> CanAccessProjectAsync(long projectId, string roleName, long currentUserId)
         {
-            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
-                   roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase);
+            if (IsAdmin(roleName))
+            {
+                return await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
+            }
+
+            return await _db.Projects.AnyAsync(p =>
+                p.Id == projectId &&
+                p.IsDeleted != true &&
+                (p.CreatedById == currentUserId || p.ProjectMembers.Any(pm => pm.UserId == currentUserId)));
+        }
+
+        private async Task<bool> IsProjectMemberAsync(long projectId, long userId)
+        {
+            return await _db.ProjectMembers.AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == userId);
+        }
+
+        private static bool IsAdmin(string roleName)
+        {
+            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsManager(string roleName)
+        {
+            return roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
