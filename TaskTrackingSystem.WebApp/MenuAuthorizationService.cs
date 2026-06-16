@@ -147,7 +147,7 @@ public class MenuAuthorizationService
                 if (serverVersion != _sessionState.CachedMenuVersion)
                 {
                     // Permissions have changed — bust cache and reload full menus.
-                    Console.WriteLine($"[MenuAuth] Permission version changed ({_sessionState.CachedMenuVersion} -> {serverVersion}). Reloading menus.");
+                    Console.WriteLine($"[MenuAuth] Access version changed ({_sessionState.CachedMenuVersion} -> {serverVersion}). Reloading menus.");
                     _sessionState.ClearMenuCache();
                     return await LoadMenusAsync(user, roleKey);
                 }
@@ -155,8 +155,8 @@ public class MenuAuthorizationService
         }
         catch (Exception ex)
         {
-            // If the version check fails, just use the cached menus to avoid breaking the UI.
-            Console.WriteLine($"[MenuAuth] Version check failed (using cache): {ex.Message}");
+                // If the version check fails, just use the cached menus to avoid breaking the UI.
+            Console.WriteLine($"[MenuAuth] Access version check failed (using cache): {ex.Message}");
         }
 
         return _sessionState.CachedMenus!;
@@ -201,7 +201,7 @@ public class MenuAuthorizationService
                 menus = BuildFallbackMenus(user);
             }
 
-            // Store the version so we can detect future permission changes.
+            // Store the version so we can detect future access changes.
             var versionResponse = await versionTask;
             if (versionResponse.IsSuccessStatusCode)
             {
