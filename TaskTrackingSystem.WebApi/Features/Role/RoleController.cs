@@ -61,9 +61,9 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
         [HttpGet("{id}/menus")]
         [HttpGet("{id}/access")]
-        public async Task<ActionResult<Result<List<string>>>> GetAssignedMenus(long id)
+        public async Task<ActionResult<Result<List<string>>>> GetAssignedAccessCodes(long id)
         {
-            var result = await _roleService.GetAssignedMenusByRoleIdAsync(id);
+            var result = await _roleService.GetAssignedAccessCodesByRoleIdAsync(id);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
@@ -84,5 +84,6 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
     }
 }
+
 
 

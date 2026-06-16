@@ -84,8 +84,8 @@ namespace TaskTrackingSystem.Shared
         public const string FailedToUpdateRole = "Failed to update role.";
         public const string FailedToCreateRole = "Failed to create role.";
         public static string RoleNotFound(long id) => $"Role with ID {id} not found.";
-        public const string PermissionIdsCannotBeNull = "Permission IDs cannot be null.";
-        public static string InvalidPermissionIds(string ids) => $"The following access codes are invalid or deleted: {ids}";
+        public const string AccessCodesCannotBeNull = "Access codes cannot be null.";
+        public static string InvalidAccessCodes(string ids) => $"The following access codes are invalid or deleted: {ids}";
 
         // User
         public const string FillAllFields = "Please fill in all required fields.";

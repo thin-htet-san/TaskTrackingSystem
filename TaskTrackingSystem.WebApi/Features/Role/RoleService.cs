@@ -65,7 +65,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             if (dto.AccessCodes != null && dto.AccessCodes.Any())
             {
-                var validCodesResult = await ValidatePermissionCodesAsync(dto.AccessCodes);
+                var validCodesResult = await ValidateAccessCodesAsync(dto.AccessCodes);
                 if (!validCodesResult.IsSuccess)
                 {
                     return Result<RoleDto>.Failure(validCodesResult.ErrorMessage ?? ResultMessages.FailedToCreateRole, validCodesResult.StatusCode);
@@ -141,7 +141,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             return Result.Success(200);
         }
 
-        public async Task<Result<List<string>>> GetAssignedMenusByRoleIdAsync(long roleId)
+        public async Task<Result<List<string>>> GetAssignedAccessCodesByRoleIdAsync(long roleId)
         {
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.IsDeleted != true);
             if (role == null)
@@ -177,7 +177,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             if (dto.AccessCodes == null)
             {
-                return Result.Failure("AccessCodes cannot be null", 400);
+                return Result.Failure(ResultMessages.AccessCodesCannotBeNull, 400);
             }
 
             var selectedCodes = dto.AccessCodes
@@ -186,7 +186,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var validCodesResult = await ValidatePermissionCodesAsync(selectedCodes);
+            var validCodesResult = await ValidateAccessCodesAsync(selectedCodes);
             if (!validCodesResult.IsSuccess)
             {
                 return Result.Failure(validCodesResult.ErrorMessage ?? ResultMessages.FailedToUpdateRole, validCodesResult.StatusCode);
@@ -279,7 +279,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             }
         }
 
-        private async Task<Result> ValidatePermissionCodesAsync(IEnumerable<string> codes)
+        private async Task<Result> ValidateAccessCodesAsync(IEnumerable<string> codes)
         {
             var normalizedCodes = codes
                 .Where(code => !string.IsNullOrWhiteSpace(code))
@@ -307,12 +307,13 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             if (invalidCodes.Any())
             {
-                return Result.Failure(ResultMessages.InvalidPermissionIds(string.Join(", ", invalidCodes)), 400);
+                return Result.Failure(ResultMessages.InvalidAccessCodes(string.Join(", ", invalidCodes)), 400);
             }
 
             return Result.Success(200);
         }
     }
 }
+
 
 
