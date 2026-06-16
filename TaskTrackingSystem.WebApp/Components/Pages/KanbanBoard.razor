@@ -72,8 +72,8 @@
                         {
                             @foreach (var task in tasksInColumn)
                             {
-                                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                                     draggable="true" 
+                                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow @(canUpdateTask ? "cursor-grab active:cursor-grabbing" : "cursor-default")"
+                                     draggable="@canUpdateTask" 
                                      @ondragstart="() => HandleDragStart(task)">
                                     <div class="flex items-start justify-between">
                                         <h4 class="text-sm font-semibold text-slate-900">@task.Title</h4>
@@ -173,6 +173,7 @@
     private bool isAdmin = false;
     private bool isManager = false;
     private bool canCreateTask = false;
+    private bool canUpdateTask = false;
     private long currentUserId = 0;
     private bool showTaskModal = false;
     private bool isSaving = false;
@@ -232,6 +233,7 @@
         isAdmin = user.IsInRole("Admin");
         isManager = user.IsInRole("Manager");
         canCreateTask = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Tasks_Create");
+        canUpdateTask = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Tasks_Update");
         await LoadTasks();
     }
 
@@ -283,6 +285,11 @@
 
     private async Task MoveTask(long taskId, long newStatusId)
     {
+        if (!canUpdateTask)
+        {
+            return;
+        }
+
         var client = ApiClient.CreateClient();
         try
         {
