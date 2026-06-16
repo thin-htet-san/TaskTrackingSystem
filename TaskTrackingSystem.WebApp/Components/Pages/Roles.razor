@@ -305,7 +305,7 @@
                 <span class="text-xs text-slate-400">
                     @if (!isEditing && formSelectedMenuCodes.Count > 0)
                     {
-                        <span class="text-violet-600 font-medium">@formSelectedMenuCodes.Count permission(s) / menu(s)</span>
+                        <span class="text-violet-600 font-medium">@formSelectedMenuCodes.Count access item(s)</span>
                         <span> will be assigned</span>
                     }
                 </span>
@@ -357,7 +357,7 @@
                            class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
                     <span class="text-sm font-medium text-slate-700">Select All Permissions</span>
                 </label>
-                <span class="text-xs text-slate-400">@selectedMenuCodes.Count selected</span>
+                <span class="text-xs text-slate-400">@selectedMenuCodes.Count access item(s) selected</span>
             </div>
 
             <!-- Menu Items Body -->
@@ -898,7 +898,7 @@
         }
     }
 
-    // ===== Menu & Action Permissions =====
+    // ===== Menu & Permission Access =====
     private async Task OpenMenuPermissionsModal(RoleDto role)
     {
         selectedRoleId = role.Id;
@@ -915,7 +915,7 @@
             // Load all available menus with their nested actions
             allMenus = await client.GetFromJsonAsync<List<MenuAdminDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
 
-            // Load currently assigned menus/actions for this role
+            // Load currently assigned access items for this role
             var assignedResult = await client.GetFromJsonAsync<Result<List<string>>>($"Role/{role.Id}/menus", Serialization.CaseInsensitive);
             selectedMenuCodes = new HashSet<string>(assignedResult?.Value ?? new(), StringComparer.OrdinalIgnoreCase);
         }
@@ -973,11 +973,11 @@
             var response = await client.PostAsJsonAsync($"Role/{selectedRoleId}/menus", dto);
             if (response.IsSuccessStatusCode)
             {
-                menuSaveSuccess = $"Permissions for '{selectedRoleName}' saved successfully!";
+                menuSaveSuccess = $"Access for '{selectedRoleName}' saved successfully!";
             }
             else
             {
-                menuSaveError = "Failed to save permissions. Please try again.";
+                menuSaveError = "Failed to save access. Please try again.";
             }
         }
         catch (Exception ex)
