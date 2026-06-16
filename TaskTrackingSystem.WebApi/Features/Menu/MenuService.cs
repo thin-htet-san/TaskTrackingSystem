@@ -18,7 +18,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             _db = db;
         }
 
-        public async Task<List<MenuDto>> GetMenusByRoleIdAsync(long roleId)
+        public async Task<List<MenuDto>> GetMenuTreeByRoleIdAsync(long roleId)
         {
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.IsDeleted != true);
             if (role == null)
@@ -26,10 +26,10 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 return new List<MenuDto>();
             }
 
-            return await GetMenusForRoleAsync(role.Id);
+            return await GetMenuTreeForRoleAsync(role.Id);
         }
 
-        public async Task<List<MenuDto>> GetMenusByRoleNameAsync(string roleName)
+        public async Task<List<MenuDto>> GetMenuTreeByRoleNameAsync(string roleName)
         {
             if (string.IsNullOrWhiteSpace(roleName))
             {
@@ -42,10 +42,10 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 return new List<MenuDto>();
             }
 
-            return await GetMenusForRoleAsync(role.Id);
+            return await GetMenuTreeForRoleAsync(role.Id);
         }
 
-        private async Task<List<MenuDto>> GetMenusForRoleAsync(long roleId)
+        private async Task<List<MenuDto>> GetMenuTreeForRoleAsync(long roleId)
         {
             var visibleMenus = await _db.Menus
                 .Where(m => !m.IsDeleted && m.Visible)
@@ -276,5 +276,6 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         }
     }
 }
+
 
 

@@ -60,6 +60,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
 
         [HttpGet("{id}/menus")]
+        [HttpGet("{id}/access")]
         public async Task<ActionResult<Result<List<string>>>> GetAssignedMenus(long id)
         {
             var result = await _roleService.GetAssignedMenusByRoleIdAsync(id);
@@ -71,6 +72,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
 
         [HttpPost("{id}/menus")]
+        [HttpPost("{id}/access")]
         public async Task<IActionResult> AssignAccess(long id, [FromBody] AssignAccessDto dto)
         {
             var result = await _roleService.AssignAccessToRoleAsync(id, dto);

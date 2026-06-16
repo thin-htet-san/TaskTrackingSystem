@@ -21,13 +21,14 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MenuDto>>> GetMenus()
+        [HttpGet("tree")]
+        public async Task<ActionResult<IEnumerable<MenuDto>>> GetMenuTree()
         {
             var roleId = User.GetRoleId();
             if (roleId > 0)
             {
-                var roleMenus = await _menuService.GetMenusByRoleIdAsync(roleId);
-                return Ok(roleMenus);
+                var menuTree = await _menuService.GetMenuTreeByRoleIdAsync(roleId);
+                return Ok(menuTree);
             }
 
             var roleName = User.GetRoleName();
@@ -36,12 +37,13 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 return Forbid();
             }
 
-            var roleMenusByName = await _menuService.GetMenusByRoleNameAsync(roleName);
-            return Ok(roleMenusByName);
+            var menuTreeByName = await _menuService.GetMenuTreeByRoleNameAsync(roleName);
+            return Ok(menuTreeByName);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
+        [HttpGet("access-items")]
         public async Task<ActionResult<IEnumerable<AccessMenuDto>>> GetAllAccessItems()
         {
             var menus = await _menuService.GetAllAccessItemsAsync();
@@ -62,5 +64,6 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         }
     }
 }
+
 
 

@@ -17,7 +17,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Roles & Access</h2>
-            <p class="text-slate-500 mt-1">Manage roles, assign menu access and permissions, and control visibility.</p>
+            <p class="text-slate-500 mt-1">Manage roles, assign access and permissions, and control visibility.</p>
         </div>
         <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
             <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
@@ -342,7 +342,7 @@
                     </div>
                     <div>
                         <h3 class="text-base font-semibold text-slate-900">Role Access — <span class="text-violet-700">@selectedRoleName</span></h3>
-                        <p class="text-xs text-slate-500">Configure menu access and permissions</p>
+                        <p class="text-xs text-slate-500">Configure access and permissions</p>
                     </div>
                 </div>
                 <button @onclick="CloseAccessModal" class="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-600 transition-all">
@@ -654,7 +654,7 @@
         try
         {
             var client = ApiClient.CreateClient();
-            formAccessItems = await client.GetFromJsonAsync<List<AccessMenuDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
+            formAccessItems = await client.GetFromJsonAsync<List<AccessMenuDto>>("Menu/access-items", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {
@@ -898,7 +898,7 @@
         }
     }
 
-    // ===== Menu & Permission Access =====
+    // ===== Access Management =====
     private async Task OpenAccessModal(RoleDto role)
     {
         selectedRoleId = role.Id;
@@ -913,10 +913,10 @@
         try
         {
             // Load all available access items with their nested permissions
-            accessItems = await client.GetFromJsonAsync<List<AccessMenuDto>>("Menu/all", Serialization.CaseInsensitive) ?? new();
+            accessItems = await client.GetFromJsonAsync<List<AccessMenuDto>>("Menu/access-items", Serialization.CaseInsensitive) ?? new();
 
             // Load currently assigned access items for this role
-            var assignedResult = await client.GetFromJsonAsync<Result<List<string>>>($"Role/{role.Id}/menus", Serialization.CaseInsensitive);
+            var assignedResult = await client.GetFromJsonAsync<Result<List<string>>>($"Role/{role.Id}/access", Serialization.CaseInsensitive);
             selectedAccessCodes = new HashSet<string>(assignedResult?.Value ?? new(), StringComparer.OrdinalIgnoreCase);
         }
         catch (Exception ex)
@@ -970,7 +970,7 @@
         try
         {
             var dto = new AssignAccessDto { AccessCodes = selectedAccessCodes.ToList() };
-            var response = await client.PostAsJsonAsync($"Role/{selectedRoleId}/menus", dto);
+            var response = await client.PostAsJsonAsync($"Role/{selectedRoleId}/access", dto);
             if (response.IsSuccessStatusCode)
             {
                 accessSaveSuccess = $"Access for '{selectedRoleName}' saved successfully!";
@@ -991,5 +991,6 @@
         }
     }
 }
+
 
 
