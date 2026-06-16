@@ -14,10 +14,12 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
     public class MenuController : ControllerBase
     {
         private readonly MenuService _menuService;
+        private readonly PermissionAuthorizationService _permissionAuthorizationService;
 
-        public MenuController(MenuService menuService)
+        public MenuController(MenuService menuService, PermissionAuthorizationService permissionAuthorizationService)
         {
             _menuService = menuService;
+            _permissionAuthorizationService = permissionAuthorizationService;
         }
 
         [HttpGet]
@@ -41,11 +43,17 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             return Ok(menuTreeByName);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         [HttpGet("access-items")]
         public async Task<ActionResult<IEnumerable<AccessMenuDto>>> GetAllAccessItems()
         {
+            var canCreate = await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Create");
+            var canUpdate = await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update");
+            if (!canCreate && !canUpdate && !User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+
             var menus = await _menuService.GetAllAccessItemsAsync();
             return Ok(menus);
         }
