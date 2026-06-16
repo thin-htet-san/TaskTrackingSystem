@@ -47,5 +47,18 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             var menus = await _menuService.GetAllMenusAsync();
             return Ok(menus);
         }
+
+        /// <summary>
+        /// Returns a lightweight version string for the current user's role permissions.
+        /// Clients poll this to detect when an admin has changed permissions without fetching the full menu list.
+        /// </summary>
+        [HttpGet("version")]
+        public async Task<ActionResult<string>> GetMenuVersion()
+        {
+            var roleId = User.GetRoleId();
+            var roleName = User.GetRoleName() ?? string.Empty;
+            var version = await _menuService.GetMenuVersionAsync(roleId, roleName);
+            return Ok(version);
+        }
     }
 }

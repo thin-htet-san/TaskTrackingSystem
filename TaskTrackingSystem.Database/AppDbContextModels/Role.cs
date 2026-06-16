@@ -21,5 +21,9 @@ public partial class Role
 
     public bool IsDeleted { get; set; }
 
+    public virtual ICollection<RoleMenu> RoleMenus { get; set; } = new List<RoleMenu>();
+
+    public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

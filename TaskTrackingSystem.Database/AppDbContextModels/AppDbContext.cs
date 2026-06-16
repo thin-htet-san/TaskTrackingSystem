@@ -21,9 +21,13 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<FileAttachment> FileAttachments { get; set; }
 
+    public virtual DbSet<Menu> Menus { get; set; }
+
     public virtual DbSet<MenuAdmin> MenuAdmins { get; set; }
 
     public virtual DbSet<MenuAdminDetail> MenuAdminDetails { get; set; }
+
+    public virtual DbSet<Permission> Permissions { get; set; }
 
     public virtual DbSet<Project> Projects { get; set; }
 
@@ -32,6 +36,10 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<RoleMenu> RoleMenus { get; set; }
+
+    public virtual DbSet<RoleMenusLegacy> RoleMenusLegacies { get; set; }
+
+    public virtual DbSet<RolePermission> RolePermissions { get; set; }
 
     public virtual DbSet<Task> Tasks { get; set; }
 
@@ -42,8 +50,8 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-    }
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=.;Database=TTS;User Id=sa;Password=sasa@123;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -103,6 +111,27 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK_FileAttachments_Tasks");
         });
 
+        modelBuilder.Entity<Menu>(entity =>
+        {
+            entity.HasIndex(e => e.ParentMenuId, "IX_Menus_ParentMenuId");
+
+            entity.HasIndex(e => e.MenuCode, "UQ_Menus_MenuCode").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.Icon).HasMaxLength(50);
+            entity.Property(e => e.MenuCode).HasMaxLength(50);
+            entity.Property(e => e.MenuName).HasMaxLength(100);
+            entity.Property(e => e.MenuUrl).HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.Visible).HasDefaultValue(true);
+
+            entity.HasOne(d => d.ParentMenu).WithMany(p => p.InverseParentMenu)
+                .HasForeignKey(d => d.ParentMenuId)
+                .HasConstraintName("FK_Menus_ParentMenu");
+        });
+
         modelBuilder.Entity<MenuAdmin>(entity =>
         {
             entity.HasKey(e => e.AdminMenuId);
@@ -126,6 +155,28 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.MenuDetailCode).HasMaxLength(50);
             entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
             entity.Property(e => e.ParentMenuCode).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasIndex(e => e.MenuId, "IX_Permissions_MenuId");
+
+            entity.HasIndex(e => e.PermissionCode, "UQ_Permissions_PermissionCode").IsUnique();
+
+            entity.Property(e => e.ActionName).HasMaxLength(100);
+            entity.Property(e => e.ApiName).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.HttpMethod).HasMaxLength(20);
+            entity.Property(e => e.PermissionCode).HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.Visible).HasDefaultValue(true);
+
+            entity.HasOne(d => d.Menu).WithMany(p => p.Permissions)
+                .HasForeignKey(d => d.MenuId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Permissions_Menu");
         });
 
         modelBuilder.Entity<Project>(entity =>
@@ -181,12 +232,63 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<RoleMenu>(entity =>
         {
+            entity.HasKey(e => e.RoleMenuId).HasName("PK_RoleMenus_New");
+
+            entity.HasIndex(e => new { e.RoleId, e.MenuId }, "UQ_RoleMenus_Role_Menu").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Menu).WithMany(p => p.RoleMenus)
+                .HasForeignKey(d => d.MenuId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RoleMenus_Menus");
+
+            entity.HasOne(d => d.Role).WithMany(p => p.RoleMenus)
+                .HasForeignKey(d => d.RoleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RoleMenus_Roles");
+        });
+
+        modelBuilder.Entity<RoleMenusLegacy>(entity =>
+        {
+            entity.HasKey(e => e.RoleMenuId).HasName("PK_RoleMenus");
+
+            entity.ToTable("RoleMenus_Legacy");
+
+            entity.HasIndex(e => e.RoleId, "IX_RoleMenus_RoleId");
+
             entity.Property(e => e.RoleMenuId).HasMaxLength(50);
             entity.Property(e => e.CreatedUserId).HasMaxLength(50);
             entity.Property(e => e.MenuCode).HasMaxLength(50);
-            entity.Property(e => e.RoleCode).HasMaxLength(50);
             entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
-            entity.HasIndex(e => e.RoleId, "IX_RoleMenus_RoleId");
+            entity.Property(e => e.RoleCode).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasIndex(e => e.PermissionId, "IX_RolePermissions_PermissionId");
+
+            entity.HasIndex(e => e.RoleId, "IX_RolePermissions_RoleId");
+
+            entity.HasIndex(e => new { e.RoleId, e.PermissionId }, "UQ_RolePermissions_Role_Permission").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Permission).WithMany(p => p.RolePermissions)
+                .HasForeignKey(d => d.PermissionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RolePermissions_Permissions");
+
+            entity.HasOne(d => d.Role).WithMany(p => p.RolePermissions)
+                .HasForeignKey(d => d.RoleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RolePermissions_Roles");
         });
 
         modelBuilder.Entity<Task>(entity =>

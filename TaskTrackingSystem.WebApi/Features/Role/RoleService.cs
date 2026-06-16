@@ -28,15 +28,17 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                     Name = r.Name,
                     Description = r.Description,
                     CreatedAt = r.CreatedAt ?? DateTime.UtcNow
-                }).ToListAsync();
+                })
+                .ToListAsync();
         }
 
         public async Task<RoleDto?> GetRoleByIdAsync(long id)
         {
-            var role = await _db.Roles
-                .FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted != true);
-
-            if (role == null) return null;
+            var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted != true);
+            if (role == null)
+            {
+                return null;
+            }
 
             return new RoleDto
             {
@@ -69,7 +71,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 }
             }
 
-            var role = new TaskTrackingSystem.Database.AppDbContextModels.Role
+            var role = new Role
             {
                 Name = dto.Name,
                 Description = dto.Description,
@@ -86,15 +88,13 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result<RoleDto>.Failure(assignResult.ErrorMessage ?? ResultMessages.FailedToCreateRole, assignResult.StatusCode);
             }
 
-            var resultDto = new RoleDto
+            return Result<RoleDto>.Success(new RoleDto
             {
                 Id = role.Id,
                 Name = role.Name,
                 Description = role.Description,
                 CreatedAt = role.CreatedAt ?? DateTime.UtcNow
-            };
-
-            return Result<RoleDto>.Success(resultDto, 201);
+            }, 201);
         }
 
         public async Task<Result> UpdateRoleAsync(long id, UpdateRoleDto dto, long? currentUserId = null)
@@ -105,7 +105,10 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             }
 
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted != true);
-            if (role == null) return Result.Failure(ResultMessages.RoleNotFound(id), 404);
+            if (role == null)
+            {
+                return Result.Failure(ResultMessages.RoleNotFound(id), 404);
+            }
 
             var nameExists = await _db.Roles.AnyAsync(r => r.Name == dto.Name && r.Id != id && r.IsDeleted != true);
             if (nameExists)
@@ -113,20 +116,10 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result.Failure("Role name is already taken by another role.", 400);
             }
 
-            var oldName = role.Name;
             role.Name = dto.Name;
             role.Description = dto.Description;
             role.UpdatedAt = DateTime.UtcNow;
             role.UpdatedBy = currentUserId;
-
-            var relatedRoleMenus = await _db.RoleMenus
-                .Where(rm => rm.RoleId == role.Id || rm.RoleCode == oldName)
-                .ToListAsync();
-
-            foreach (var roleMenu in relatedRoleMenus)
-            {
-                roleMenu.RoleCode = dto.Name;
-            }
 
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
@@ -136,14 +129,16 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         public async Task<Result> SoftDeleteRoleAsync(long id)
         {
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted != true);
-            if (role == null) return Result.Failure(ResultMessages.RoleNotFound(id), 404);
+            if (role == null)
+            {
+                return Result.Failure(ResultMessages.RoleNotFound(id), 404);
+            }
 
             role.IsDeleted = true;
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
             return Result.Success(200);
         }
-
 
         public async Task<Result<List<string>>> GetAssignedMenusByRoleIdAsync(long roleId)
         {
@@ -154,19 +149,21 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             }
 
             var menuCodes = await _db.RoleMenus
-                .Where(rm => rm.RoleId == role.Id && rm.DelFlag == 0)
-                .Select(rm => rm.MenuCode)
+                .Where(rm => rm.RoleId == role.Id && !rm.IsDeleted)
+                .Select(rm => rm.Menu.MenuCode)
                 .ToListAsync();
 
-            if (!menuCodes.Any())
-            {
-                menuCodes = await _db.RoleMenus
-                    .Where(rm => rm.RoleCode == role.Name && rm.DelFlag == 0)
-                    .Select(rm => rm.MenuCode)
-                    .ToListAsync();
-            }
+            var permissionCodes = await _db.RolePermissions
+                .Where(rp => rp.RoleId == role.Id && !rp.IsDeleted)
+                .Select(rp => rp.Permission.PermissionCode)
+                .ToListAsync();
 
-            return Result<List<string>>.Success(menuCodes);
+            var assignedCodes = menuCodes
+                .Concat(permissionCodes)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return Result<List<string>>.Success(assignedCodes);
         }
 
         public async Task<Result> AssignMenusToRoleAsync(long roleId, AssignMenusDto dto)
@@ -182,34 +179,83 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result.Failure("MenuCodes cannot be null", 400);
             }
 
-            var validCodesResult = await ValidatePermissionCodesAsync(dto.MenuCodes);
+            var selectedCodes = dto.MenuCodes
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Select(code => code.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var validCodesResult = await ValidatePermissionCodesAsync(selectedCodes);
             if (!validCodesResult.IsSuccess)
             {
                 return Result.Failure(validCodesResult.ErrorMessage ?? ResultMessages.FailedToUpdateRole, validCodesResult.StatusCode);
             }
 
-            // Remove existing role menus matching either the new RoleId link or the old RoleCode link.
-            var existingRoleMenus = await _db.RoleMenus
-                .Where(rm => rm.RoleId == role.Id || rm.RoleCode == role.Name)
+            var selectedMenus = await _db.Menus
+                .Where(m => !m.IsDeleted && selectedCodes.Contains(m.MenuCode))
+                .Select(m => new { m.MenuId, m.MenuCode, m.ParentMenuId })
                 .ToListAsync();
+
+            var selectedPermissions = await _db.Permissions
+                .Where(p => !p.IsDeleted && selectedCodes.Contains(p.PermissionCode))
+                .Select(p => new { p.PermissionId, p.PermissionCode, p.MenuId })
+                .ToListAsync();
+
+            var menuLookup = await _db.Menus
+                .Where(m => !m.IsDeleted)
+                .Select(m => new { m.MenuId, m.ParentMenuId })
+                .ToListAsync();
+
+            var menuIdLookup = menuLookup.ToDictionary(x => x.MenuId, x => x.ParentMenuId);
+            var menuIdsToPersist = new HashSet<long>();
+
+            foreach (var menu in selectedMenus)
+            {
+                AddWithAncestors(menu.MenuId, menuIdLookup, menuIdsToPersist);
+            }
+
+            foreach (var permission in selectedPermissions)
+            {
+                AddWithAncestors(permission.MenuId, menuIdLookup, menuIdsToPersist);
+            }
+
+            var permissionIdsToPersist = selectedPermissions
+                .Select(p => p.PermissionId)
+                .Distinct()
+                .ToList();
+
+            var existingRoleMenus = await _db.RoleMenus.Where(rm => rm.RoleId == role.Id).ToListAsync();
+            var existingRolePermissions = await _db.RolePermissions.Where(rp => rp.RoleId == role.Id).ToListAsync();
 
             if (existingRoleMenus.Any())
             {
                 _db.RoleMenus.RemoveRange(existingRoleMenus);
             }
 
-            // Bulk insert new RoleMenu links
-            int i = 1;
-            foreach (var menuCode in dto.MenuCodes)
+            if (existingRolePermissions.Any())
+            {
+                _db.RolePermissions.RemoveRange(existingRolePermissions);
+            }
+
+            foreach (var menuId in menuIdsToPersist)
             {
                 _db.RoleMenus.Add(new RoleMenu
                 {
-                    RoleMenuId = $"RM_{role.Id}_{i++}_{DateTime.UtcNow.Ticks}",
                     RoleId = role.Id,
-                    RoleCode = role.Name,
-                    MenuCode = menuCode,
-                    DelFlag = 0,
-                    CreatedDateTime = DateTime.UtcNow
+                    MenuId = menuId,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            foreach (var permissionId in permissionIdsToPersist)
+            {
+                _db.RolePermissions.Add(new RolePermission
+                {
+                    RoleId = role.Id,
+                    PermissionId = permissionId,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
                 });
             }
 
@@ -217,24 +263,43 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             return Result.Success(200);
         }
 
-        private async Task<Result> ValidatePermissionCodesAsync(IEnumerable<string> menuCodes)
+        private static void AddWithAncestors(long menuId, IReadOnlyDictionary<long, long?> parentLookup, ISet<long> target)
         {
-            var validMenuCodes = await _db.MenuAdmins
-                .Where(m => m.DelFlag == 0)
+            var current = menuId;
+
+            while (current > 0 && target.Add(current))
+            {
+                if (!parentLookup.TryGetValue(current, out var parentId) || !parentId.HasValue)
+                {
+                    break;
+                }
+
+                current = parentId.Value;
+            }
+        }
+
+        private async Task<Result> ValidatePermissionCodesAsync(IEnumerable<string> codes)
+        {
+            var normalizedCodes = codes
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Select(code => code.Trim())
+                .ToList();
+
+            var validMenuCodes = await _db.Menus
+                .Where(m => !m.IsDeleted)
                 .Select(m => m.MenuCode)
                 .ToListAsync();
 
-            var validActionCodes = await _db.MenuAdminDetails
-                .Where(d => d.DelFlag == 0)
-                .Select(d => d.MenuDetailCode)
+            var validPermissionCodes = await _db.Permissions
+                .Where(p => !p.IsDeleted)
+                .Select(p => p.PermissionCode)
                 .ToListAsync();
 
             var validCodes = validMenuCodes
-                .Concat(validActionCodes)
+                .Concat(validPermissionCodes)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var invalidCodes = menuCodes
-                .Where(code => !string.IsNullOrWhiteSpace(code))
+            var invalidCodes = normalizedCodes
                 .Where(code => !validCodes.Contains(code))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();

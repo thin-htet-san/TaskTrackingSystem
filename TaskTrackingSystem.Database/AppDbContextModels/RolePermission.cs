@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace TaskTrackingSystem.Database.AppDbContextModels;
 
-public partial class RoleMenu
+public partial class RolePermission
 {
-    public long RoleMenuId { get; set; }
+    public long RolePermissionId { get; set; }
 
     public long RoleId { get; set; }
 
-    public long MenuId { get; set; }
+    public long PermissionId { get; set; }
 
     public bool IsDeleted { get; set; }
 
@@ -21,7 +21,7 @@ public partial class RoleMenu
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual Menu Menu { get; set; } = null!;
+    public virtual Permission Permission { get; set; } = null!;
 
     public virtual Role Role { get; set; } = null!;
 }

@@ -102,7 +102,8 @@ public class MenuAuthorizationService
 
         if (_sessionState.CachedMenuRoleId == roleKey && _sessionState.CachedMenus != null)
         {
-            return Task.FromResult(_sessionState.CachedMenus);
+            // Cache hit — but verify the permissions haven't been changed by an admin.
+            return LoadMenusWithVersionCheckAsync(user, roleKey);
         }
 
         return LoadMenusAsync(user, roleKey);
@@ -124,6 +125,43 @@ public class MenuAuthorizationService
         _ = LoadMenusAsync(user, roleKey);
     }
 
+    /// <summary>
+    /// When menus are cached, quickly checks the server-side version to see if an admin changed permissions.
+    /// If the version changed, busts the cache and re-fetches the full menu list.
+    /// Falls back to the cached menus if the version check itself fails (e.g. network error).
+    /// </summary>
+    private async Task<List<MenuDto>> LoadMenusWithVersionCheckAsync(ClaimsPrincipal user, string roleKey)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var client = _apiClient.CreateClient(user);
+            var response = await client.GetAsync("Menu/version", cts.Token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var serverVersion = await response.Content.ReadAsStringAsync(cts.Token);
+                // Strip surrounding quotes that JSON serialisation may add
+                serverVersion = serverVersion.Trim('"');
+
+                if (serverVersion != _sessionState.CachedMenuVersion)
+                {
+                    // Permissions have changed — bust cache and reload full menus.
+                    Console.WriteLine($"[MenuAuth] Permission version changed ({_sessionState.CachedMenuVersion} -> {serverVersion}). Reloading menus.");
+                    _sessionState.ClearMenuCache();
+                    return await LoadMenusAsync(user, roleKey);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // If the version check fails, just use the cached menus to avoid breaking the UI.
+            Console.WriteLine($"[MenuAuth] Version check failed (using cache): {ex.Message}");
+        }
+
+        return _sessionState.CachedMenus!;
+    }
+
     private Task<List<MenuDto>> LoadMenusAsync(ClaimsPrincipal user, string roleKey)
     {
         if (_loadingMenus is { IsCompleted: false })
@@ -141,19 +179,34 @@ public class MenuAuthorizationService
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             var client = _apiClient.CreateClient(user);
-            var response = await client.GetAsync("Menu", cts.Token);
-            if (!response.IsSuccessStatusCode)
+
+            // Fetch menus and version in parallel for efficiency.
+            var menuTask = client.GetAsync("Menu", cts.Token);
+            var versionTask = client.GetAsync("Menu/version", cts.Token);
+
+            await Task.WhenAll(menuTask, versionTask);
+
+            var menuResponse = await menuTask;
+            if (!menuResponse.IsSuccessStatusCode)
             {
-                Console.WriteLine($"Menu API failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+                Console.WriteLine($"Menu API failed: {(int)menuResponse.StatusCode} {menuResponse.ReasonPhrase}");
                 return new List<MenuDto>();
             }
 
-            var menus = await response.Content.ReadFromJsonAsync<List<MenuDto>>(cancellationToken: cts.Token)
+            var menus = await menuResponse.Content.ReadFromJsonAsync<List<MenuDto>>(cancellationToken: cts.Token)
                 ?? new List<MenuDto>();
 
             if (menus.Count == 0)
             {
                 menus = BuildFallbackMenus(user);
+            }
+
+            // Store the version so we can detect future permission changes.
+            var versionResponse = await versionTask;
+            if (versionResponse.IsSuccessStatusCode)
+            {
+                var version = await versionResponse.Content.ReadAsStringAsync(cts.Token);
+                _sessionState.CachedMenuVersion = version.Trim('"');
             }
 
             _sessionState.CachedMenus = menus;

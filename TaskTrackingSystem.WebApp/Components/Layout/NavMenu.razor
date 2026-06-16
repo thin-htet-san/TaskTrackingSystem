@@ -94,16 +94,55 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentPath = Navigation.ToBaseRelativePath(e.Location).Trim('/');
+        InvokeAsync(RefreshMenusAsync);
+    }
 
-        foreach (var menu in menus)
+    private async Task RefreshMenusAsync()
+    {
+        try
         {
-            if (menu.SubMenus != null && menu.SubMenus.Count > 0 && IsMenuExpanded(menu.MenuCode, menu.SubMenus))
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
             {
-                expandedMenuGroups.Add(menu.MenuCode);
+                // GetUserMenusAsync will automatically bust the cache if an admin changed permissions.
+                var freshMenus = await MenuAuthorization.GetUserMenusAsync(user);
+
+                // Only update and re-render if the menu list actually changed.
+                if (freshMenus.Count != menus.Count ||
+                    freshMenus.Select(m => m.MenuCode).SequenceEqual(menus.Select(m => m.MenuCode)) == false)
+                {
+                    menus = freshMenus;
+                    BuildUrlHierarchy(menus);
+                    expandedMenuGroups.Clear();
+                    foreach (var menu in menus)
+                    {
+                        if (menu.SubMenus != null && menu.SubMenus.Count > 0 && IsMenuExpanded(menu.MenuCode, menu.SubMenus))
+                        {
+                            expandedMenuGroups.Add(menu.MenuCode);
+                        }
+                    }
+                }
+                else
+                {
+                    // Menus are the same — just refresh expanded state for the new route.
+                    foreach (var menu in menus)
+                    {
+                        if (menu.SubMenus != null && menu.SubMenus.Count > 0 && IsMenuExpanded(menu.MenuCode, menu.SubMenus))
+                        {
+                            expandedMenuGroups.Add(menu.MenuCode);
+                        }
+                    }
+                }
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error refreshing menus on navigation: {ex.Message}");
+        }
 
-        InvokeAsync(StateHasChanged);
+        StateHasChanged();
     }
 
     private void ToggleMenuGroup(string menuCode)
