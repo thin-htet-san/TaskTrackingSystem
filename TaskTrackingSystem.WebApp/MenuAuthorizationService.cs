@@ -11,16 +11,8 @@ public class MenuAuthorizationService
         string.Empty,
         "login",
         "register",
-        "error"
-    };
-
-    private static readonly HashSet<string> MemberRouteSegments = new(StringComparer.OrdinalIgnoreCase)
-    {
-        string.Empty,
-        "dashboard",
-        "home",
-        "projects",
-        "tasks"
+        "error",
+        "reset-password"
     };
 
     private readonly ApiClientService _apiClient;
@@ -71,14 +63,14 @@ public class MenuAuthorizationService
             return true;
         }
 
-        var role = user.FindFirst(ClaimTypes.Role)?.Value ?? "Member";
+        var roleKey = GetRoleCacheKey(user);
 
-        if (_sessionState.CachedMenuRole == role && _sessionState.CachedMenus != null)
+        if (_sessionState.CachedMenuRoleId == roleKey && _sessionState.CachedMenus != null)
         {
             return IsRouteAllowed(_sessionState.CachedMenus, relativePath);
         }
 
-        return IsRouteAllowedByRole(role, relativePath);
+        return false;
     }
 
     public bool IsRouteAllowed(IReadOnlyList<MenuDto> menus, string relativePath)
@@ -106,14 +98,14 @@ public class MenuAuthorizationService
             return Task.FromResult(new List<MenuDto>());
         }
 
-        var role = user.FindFirst(ClaimTypes.Role)?.Value ?? "Member";
+        var roleKey = GetRoleCacheKey(user);
 
-        if (_sessionState.CachedMenuRole == role && _sessionState.CachedMenus != null)
+        if (_sessionState.CachedMenuRoleId == roleKey && _sessionState.CachedMenus != null)
         {
             return Task.FromResult(_sessionState.CachedMenus);
         }
 
-        return LoadMenusAsync(user, role);
+        return LoadMenusAsync(user, roleKey);
     }
 
     public void PreloadMenus(ClaimsPrincipal user)
@@ -123,27 +115,27 @@ public class MenuAuthorizationService
             return;
         }
 
-        var role = user.FindFirst(ClaimTypes.Role)?.Value ?? "Member";
-        if (_sessionState.CachedMenuRole == role && _sessionState.CachedMenus != null)
+        var roleKey = GetRoleCacheKey(user);
+        if (_sessionState.CachedMenuRoleId == roleKey && _sessionState.CachedMenus != null)
         {
             return;
         }
 
-        _ = LoadMenusAsync(user, role);
+        _ = LoadMenusAsync(user, roleKey);
     }
 
-    private Task<List<MenuDto>> LoadMenusAsync(ClaimsPrincipal user, string role)
+    private Task<List<MenuDto>> LoadMenusAsync(ClaimsPrincipal user, string roleKey)
     {
         if (_loadingMenus is { IsCompleted: false })
         {
             return _loadingMenus;
         }
 
-        _loadingMenus = FetchMenusFromApiAsync(user, role);
+        _loadingMenus = FetchMenusFromApiAsync(user, roleKey);
         return _loadingMenus;
     }
 
-    private async Task<List<MenuDto>> FetchMenusFromApiAsync(ClaimsPrincipal user, string role)
+    private async Task<List<MenuDto>> FetchMenusFromApiAsync(ClaimsPrincipal user, string roleKey)
     {
         try
         {
@@ -159,41 +151,27 @@ public class MenuAuthorizationService
             var menus = await response.Content.ReadFromJsonAsync<List<MenuDto>>(cancellationToken: cts.Token)
                 ?? new List<MenuDto>();
 
+            if (menus.Count == 0)
+            {
+                menus = BuildFallbackMenus(user);
+            }
+
             _sessionState.CachedMenus = menus;
-            _sessionState.CachedMenuRole = role;
+            _sessionState.CachedMenuRoleId = roleKey;
             return menus;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Menu API error: {ex.Message}");
-            return new List<MenuDto>();
+            var fallbackMenus = BuildFallbackMenus(user);
+            _sessionState.CachedMenus = fallbackMenus;
+            _sessionState.CachedMenuRoleId = roleKey;
+            return fallbackMenus;
         }
         finally
         {
             _loadingMenus = null;
         }
-    }
-
-    private static bool IsRouteAllowedByRole(string role, string relativePath)
-    {
-        var segment = GetFirstSegment(relativePath);
-
-        if (PublicRouteSegments.Contains(segment))
-        {
-            return true;
-        }
-
-        if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        if (role.Equals("Member", StringComparison.OrdinalIgnoreCase))
-        {
-            return MemberRouteSegments.Contains(segment);
-        }
-
-        return MemberRouteSegments.Contains(segment);
     }
 
     private static bool MenuCollectionMatchesSegment(IReadOnlyList<MenuDto> menus, string segment)
@@ -226,5 +204,66 @@ public class MenuAuthorizationService
 
         var menuSegment = menu.MenuUrl.Split('?')[0].Trim('/').Split('/')[0];
         return menuSegment.Equals(segment, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetRoleCacheKey(ClaimsPrincipal user)
+    {
+        var roleId = user.FindFirst("role_id")?.Value;
+        if (!string.IsNullOrWhiteSpace(roleId))
+        {
+            return $"id:{roleId}";
+        }
+
+        var roleName = user.FindFirst(ClaimTypes.Role)?.Value;
+        if (!string.IsNullOrWhiteSpace(roleName))
+        {
+            return $"name:{roleName}";
+        }
+
+        return string.Empty;
+    }
+
+    private static List<MenuDto> BuildFallbackMenus(ClaimsPrincipal user)
+    {
+        var roleName = user.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+
+        var menus = new List<MenuDto>
+        {
+            CreateMenu("dashboard", "Dashboard", "/dashboard", 1, "layout-dashboard")
+        };
+
+        if (roleName.Equals("Employee", StringComparison.OrdinalIgnoreCase))
+        {
+            menus.Add(CreateMenu("tasks", "Tasks", "/tasks", 2, "list-checks"));
+            return menus;
+        }
+
+        menus.Add(CreateMenu("tasks", "Tasks", "/tasks", 2, "list-checks"));
+        menus.Add(CreateMenu("projects", "Projects", "/projects", 3, "folder-kanban"));
+        menus.Add(CreateMenu("reports", "Reports", "/reports/tasks", 4, "bar-chart-3"));
+
+        if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase) ||
+            roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                menus.Add(CreateMenu("users", "Users", "/users", 5, "users"));
+                menus.Add(CreateMenu("roles", "Roles", "/roles", 6, "shield"));
+            }
+        }
+
+        return menus;
+    }
+
+    private static MenuDto CreateMenu(string code, string name, string url, int orderNo, string icon)
+    {
+        return new MenuDto
+        {
+            MenuCode = code,
+            MenuName = name,
+            MenuUrl = url,
+            OrderNo = orderNo,
+            Icon = icon
+        };
     }
 }

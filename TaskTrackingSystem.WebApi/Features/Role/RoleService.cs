@@ -27,7 +27,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                     Id = r.Id,
                     Name = r.Name,
                     Description = r.Description,
-                    CreatedAt = (DateTime)r.CreatedAt
+                    CreatedAt = r.CreatedAt ?? DateTime.UtcNow
                 }).ToListAsync();
         }
 
@@ -43,7 +43,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 Id = role.Id,
                 Name = role.Name,
                 Description = role.Description,
-                CreatedAt = (DateTime)role.CreatedAt
+                CreatedAt = role.CreatedAt ?? DateTime.UtcNow
             };
         }
 
@@ -60,6 +60,15 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result<RoleDto>.Failure("Role name is already taken.", 400);
             }
 
+            if (dto.MenuCodes != null && dto.MenuCodes.Any())
+            {
+                var validCodesResult = await ValidatePermissionCodesAsync(dto.MenuCodes);
+                if (!validCodesResult.IsSuccess)
+                {
+                    return Result<RoleDto>.Failure(validCodesResult.ErrorMessage ?? ResultMessages.FailedToCreateRole, validCodesResult.StatusCode);
+                }
+            }
+
             var role = new TaskTrackingSystem.Database.AppDbContextModels.Role
             {
                 Name = dto.Name,
@@ -71,22 +80,10 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             _db.Roles.Add(role);
             await _db.SaveChangesAsync();
 
-            // Assign menus and actions if provided
-            if (dto.MenuCodes != null && dto.MenuCodes.Any())
+            var assignResult = await AssignMenusToRoleAsync(role.Id, new AssignMenusDto { MenuCodes = dto.MenuCodes ?? new List<string>() });
+            if (!assignResult.IsSuccess)
             {
-                int i = 1;
-                foreach (var menuCode in dto.MenuCodes)
-                {
-                    _db.RoleMenus.Add(new RoleMenu
-                    {
-                        RoleMenuId = $"RM_{role.Name}_{i++}_{DateTime.UtcNow.Ticks}",
-                        RoleCode = role.Name,
-                        MenuCode = menuCode,
-                        DelFlag = 0,
-                        CreatedDateTime = DateTime.UtcNow
-                    });
-                }
-                await _db.SaveChangesAsync();
+                return Result<RoleDto>.Failure(assignResult.ErrorMessage ?? ResultMessages.FailedToCreateRole, assignResult.StatusCode);
             }
 
             var resultDto = new RoleDto
@@ -116,10 +113,20 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result.Failure("Role name is already taken by another role.", 400);
             }
 
+            var oldName = role.Name;
             role.Name = dto.Name;
             role.Description = dto.Description;
             role.UpdatedAt = DateTime.UtcNow;
             role.UpdatedBy = currentUserId;
+
+            var relatedRoleMenus = await _db.RoleMenus
+                .Where(rm => rm.RoleId == role.Id || rm.RoleCode == oldName)
+                .ToListAsync();
+
+            foreach (var roleMenu in relatedRoleMenus)
+            {
+                roleMenu.RoleCode = dto.Name;
+            }
 
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
@@ -147,9 +154,17 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             }
 
             var menuCodes = await _db.RoleMenus
-                .Where(rm => rm.RoleCode == role.Name && rm.DelFlag == 0)
+                .Where(rm => rm.RoleId == role.Id && rm.DelFlag == 0)
                 .Select(rm => rm.MenuCode)
                 .ToListAsync();
+
+            if (!menuCodes.Any())
+            {
+                menuCodes = await _db.RoleMenus
+                    .Where(rm => rm.RoleCode == role.Name && rm.DelFlag == 0)
+                    .Select(rm => rm.MenuCode)
+                    .ToListAsync();
+            }
 
             return Result<List<string>>.Success(menuCodes);
         }
@@ -167,9 +182,15 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result.Failure("MenuCodes cannot be null", 400);
             }
 
-            // Remove existing role menus matching RoleCode
+            var validCodesResult = await ValidatePermissionCodesAsync(dto.MenuCodes);
+            if (!validCodesResult.IsSuccess)
+            {
+                return Result.Failure(validCodesResult.ErrorMessage ?? ResultMessages.FailedToUpdateRole, validCodesResult.StatusCode);
+            }
+
+            // Remove existing role menus matching either the new RoleId link or the old RoleCode link.
             var existingRoleMenus = await _db.RoleMenus
-                .Where(rm => rm.RoleCode == role.Name)
+                .Where(rm => rm.RoleId == role.Id || rm.RoleCode == role.Name)
                 .ToListAsync();
 
             if (existingRoleMenus.Any())
@@ -183,7 +204,8 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             {
                 _db.RoleMenus.Add(new RoleMenu
                 {
-                    RoleMenuId = $"RM_{role.Name}_{i++}_{DateTime.UtcNow.Ticks}",
+                    RoleMenuId = $"RM_{role.Id}_{i++}_{DateTime.UtcNow.Ticks}",
+                    RoleId = role.Id,
                     RoleCode = role.Name,
                     MenuCode = menuCode,
                     DelFlag = 0,
@@ -192,6 +214,36 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             }
 
             await _db.SaveChangesAsync();
+            return Result.Success(200);
+        }
+
+        private async Task<Result> ValidatePermissionCodesAsync(IEnumerable<string> menuCodes)
+        {
+            var validMenuCodes = await _db.MenuAdmins
+                .Where(m => m.DelFlag == 0)
+                .Select(m => m.MenuCode)
+                .ToListAsync();
+
+            var validActionCodes = await _db.MenuAdminDetails
+                .Where(d => d.DelFlag == 0)
+                .Select(d => d.MenuDetailCode)
+                .ToListAsync();
+
+            var validCodes = validMenuCodes
+                .Concat(validActionCodes)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var invalidCodes = menuCodes
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Where(code => !validCodes.Contains(code))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (invalidCodes.Any())
+            {
+                return Result.Failure(ResultMessages.InvalidPermissionIds(string.Join(", ", invalidCodes)), 400);
+            }
+
             return Result.Success(200);
         }
     }

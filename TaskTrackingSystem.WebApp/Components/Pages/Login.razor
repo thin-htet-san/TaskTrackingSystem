@@ -19,6 +19,9 @@
                 Or
                 <a href="/register" class="font-medium text-slate-900 hover:underline">register a new account</a>
             </p>
+            <p class="mt-2 text-center text-sm text-slate-600">
+                <a href="/reset-password" class="font-medium text-violet-600 hover:underline">reset your password</a>
+            </p>
         </div>
 
         <form method="post" action="/account/login" class="mt-8 space-y-6">
@@ -68,6 +71,12 @@
                     <p class="text-sm text-emerald-700 text-center">You have been signed out successfully.</p>
                 </div>
             }
+            else if (ShowResetMessage)
+            {
+                <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+                    <p class="text-sm text-emerald-700 text-center">Password updated successfully. Please sign in with your new password.</p>
+                </div>
+            }
 
             <div>
                 <button type="submit" class="group relative flex w-full justify-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
@@ -88,9 +97,13 @@
     [SupplyParameterFromQuery(Name = "loggedOut")]
     private string? LoggedOut { get; set; }
 
+    [SupplyParameterFromQuery(Name = "reset")]
+    private string? Reset { get; set; }
+
     private bool ShowError => string.Equals(Error, "invalid", StringComparison.OrdinalIgnoreCase);
     private bool ShowUnavailableError => string.Equals(Error, "unavailable", StringComparison.OrdinalIgnoreCase);
     private bool ShowLoggedOutMessage => string.Equals(LoggedOut, "true", StringComparison.OrdinalIgnoreCase);
+    private bool ShowResetMessage => string.Equals(Reset, "true", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

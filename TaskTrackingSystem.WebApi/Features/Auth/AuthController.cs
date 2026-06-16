@@ -52,5 +52,17 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
                 return BadRequest(Result<AuthResponseDto>.Failure(ex.Message, 400));
             }
         }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+        {
+            var result = await _authService.ResetPasswordAsync(resetPasswordDto);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
+
+            return Ok(result);
+        }
     }
 }

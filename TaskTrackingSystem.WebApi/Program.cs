@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
@@ -29,6 +30,7 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Task.TaskService>(
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Dashboard.DashboardService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Report.ReportService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Menu.MenuService>();
+builder.Services.AddScoped<IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>, PasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
@@ -40,7 +42,7 @@ builder.Services.AddAuthentication(options =>
 }).AddJwtBearer(options =>
 {
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-    var key = jwtSettings["Key"];
+    var key = jwtSettings["Key"] ?? "SUPER_SECRET_KEY_THAT_IS_LONG_ENOUGH_12345";
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,

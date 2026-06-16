@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,13 +18,18 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             _db = db;
         }
 
-        public async Task<Result<DashboardSummaryDto>> GetSummaryAsync(bool v)
+        public async Task<Result<DashboardSummaryDto>> GetSummaryAsync(string roleName, long currentUserId)
         {
-            var totalUsers = await _db.Users.CountAsync(u => true);
-            var activeProjectsCount = await _db.Projects.CountAsync(p => p.IsDeleted != true);
-            // Assumed PendingTasksCount = tasks where status is NOT Done (StatusId != 3, or we check common pending status logic)
-            // Let's assume StatusId != 3 represents Pending tasks (e.g. 1 = To Do, 2 = In Progress, 3 = Done)
-            var pendingTasksCount = await _db.Tasks.CountAsync(t => t.IsDeleted != true && t.StatusId != 3);
+            var elevated = IsElevated(roleName);
+            var projects = BuildAccessibleProjectQuery(roleName, currentUserId);
+            var tasks = BuildAccessibleTaskQuery(roleName, currentUserId);
+
+            var totalUsers = elevated
+                ? await _db.Users.CountAsync(u => !u.IsDeleted)
+                : await _db.Users.CountAsync(u => u.Id == currentUserId && !u.IsDeleted);
+
+            var activeProjectsCount = await projects.CountAsync();
+            var pendingTasksCount = await tasks.CountAsync(t => t.StatusId != 3);
 
             var summary = new DashboardSummaryDto
             {
@@ -35,11 +41,9 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             return Result<DashboardSummaryDto>.Success(summary);
         }
 
-        public async Task<Result<IEnumerable<TaskStatusOverviewDto>>> GetTasksOverviewAsync()
+        public async Task<Result<IEnumerable<TaskStatusOverviewDto>>> GetTasksOverviewAsync(string roleName, long currentUserId)
         {
-            // Group by StatusId
-            var groupedTasks = await _db.Tasks
-                .Where(t => t.IsDeleted != true)
+            var groupedTasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
                 .GroupBy(t => t.StatusId)
                 .Select(g => new
                 {
@@ -80,10 +84,9 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             return Result<IEnumerable<TaskStatusOverviewDto>>.Success(overview.OrderBy(o => o.StatusId));
         }
 
-        public async Task<Result<IEnumerable<ProjectProgressDto>>> GetProjectProgressAsync()
+        public async Task<Result<IEnumerable<ProjectProgressDto>>> GetProjectProgressAsync(string roleName, long currentUserId)
         {
-            var activeProjects = await _db.Projects
-                .Where(p => p.IsDeleted != true)
+            var activeProjects = await BuildAccessibleProjectQuery(roleName, currentUserId)
                 .ToListAsync();
 
             var progressList = new List<ProjectProgressDto>();
@@ -112,9 +115,38 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             return Result<IEnumerable<ProjectProgressDto>>.Success(progressList);
         }
 
-        internal async System.Threading.Tasks.Task GetSummaryAsync(object value)
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
         {
-            throw new NotImplementedException();
+            var query = _db.Tasks.Where(t => t.IsDeleted != true);
+
+            if (IsElevated(roleName))
+            {
+                return query;
+            }
+
+            return query.Where(t =>
+                t.AssignedTo == currentUserId ||
+                t.CreatedBy == currentUserId);
+        }
+
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(string roleName, long currentUserId)
+        {
+            var query = _db.Projects.Where(p => p.IsDeleted != true);
+
+            if (IsElevated(roleName))
+            {
+                return query;
+            }
+
+            return query.Where(p =>
+                p.CreatedById == currentUserId ||
+                p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
+        }
+
+        private static bool IsElevated(string roleName)
+        {
+            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                   roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

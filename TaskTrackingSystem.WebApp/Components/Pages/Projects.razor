@@ -391,23 +391,7 @@
         var client = ApiClient.CreateClient();
         try
         {
-            var all = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
-            if (!isAdmin && currentUserId > 0)
-            {
-                // Non-admin: only show projects they're a member of
-                var memberProjectIds = new HashSet<long>();
-                foreach (var p in all)
-                {
-                    var membersResult = await client.GetFromJsonAsync<Result<IEnumerable<UserDto>>>($"Project/{p.Id}/members", Serialization.CaseInsensitive);
-                    if (membersResult?.Value?.Any(m => m.Id == currentUserId) == true)
-                        memberProjectIds.Add(p.Id);
-                }
-                projects = all.Where(p => memberProjectIds.Contains(p.Id)).ToList();
-            }
-            else
-            {
-                projects = all;
-            }
+            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {

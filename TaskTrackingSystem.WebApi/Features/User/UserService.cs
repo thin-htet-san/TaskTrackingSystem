@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,10 +14,12 @@ namespace TaskTrackingSystem.WebApi.Features.User
     public class UserService
     {
         private readonly AppDbContext _db;
+        private readonly IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User> _passwordHasher;
 
-        public UserService(AppDbContext db)
+        public UserService(AppDbContext db, IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User> passwordHasher)
         {
             _db = db;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
@@ -33,7 +36,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
                     Phone = u.Phone,
                     RoleId = u.RoleId,
                     IsActive = u.IsActive,
-                    CreatedAt = (DateTime)u.CreatedAt
+                    CreatedAt = u.CreatedAt ?? DateTime.UtcNow
                 }).ToListAsync();
         }
 
@@ -54,7 +57,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
                 Phone = user.Phone,
                 RoleId = user.RoleId,
                 IsActive = user.IsActive,
-                CreatedAt = (DateTime)user.CreatedAt
+                CreatedAt = user.CreatedAt ?? DateTime.UtcNow
             };
         }
 
@@ -77,21 +80,21 @@ namespace TaskTrackingSystem.WebApi.Features.User
                 return Result<UserDto>.Failure("Email is already registered.", 400);
             }
 
-            string fakePasswordHash = "HASHED_" + dto.Password;
-
             var user = new TaskTrackingSystem.Database.AppDbContextModels.User
             {
                 Username = dto.Username, 
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Email = dto.Email,
-                PasswordHash = fakePasswordHash,
+                PasswordHash = string.Empty,
                 Phone = dto.Phone,
                 RoleId = dto.RoleId,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = currentUserId
             };
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
 
             _db.Users.Add(user);

@@ -15,8 +15,9 @@ public static class AccountEndpoints
     {
         app.MapPost("/account/login", LoginAsync);
         app.MapPost("/account/register", RegisterAsync);
-        app.MapGet("/account/logout", (Delegate)LogoutAsync);
-        app.MapPost("/account/logout", (Delegate)LogoutAsync);
+        app.MapPost("/account/reset-password", ResetPasswordAsync);
+        app.MapGet("/account/logout", LogoutAsync);
+        app.MapPost("/account/logout", LogoutAsync);
     }
 
     private static async Task<IResult> LoginAsync(
@@ -155,10 +156,57 @@ public static class AccountEndpoints
         return Results.Redirect($"/register?error={Uri.EscapeDataString(errorMessage)}");
     }
 
-    private static async Task<IResult> LogoutAsync(HttpContext context)
+    private static async Task<IResult> ResetPasswordAsync(
+        HttpContext context,
+        IHttpClientFactory httpClientFactory,
+        [FromForm] ResetPasswordDto resetPasswordDto)
+    {
+        HttpResponseMessage response;
+        try
+        {
+            var client = httpClientFactory.CreateClient("WebApi");
+            response = await client.PostAsJsonAsync("Auth/reset-password", resetPasswordDto);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or TimeoutException)
+        {
+            return Results.Redirect($"/reset-password?error={Uri.EscapeDataString("Unable to reach the API server. Please ensure TaskTrackingSystem.WebApi is running.")}");
+        }
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+            if (result?.IsSuccess == true)
+            {
+                return Results.Redirect("/login?reset=true");
+            }
+        }
+
+        var errorMessage = "Failed to reset password.";
+        if (response.Content != null)
+        {
+            try
+            {
+                var contentString = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<Result>(contentString, Serialization.CaseInsensitive);
+                if (result != null && !string.IsNullOrWhiteSpace(result.ErrorMessage))
+                {
+                    errorMessage = result.ErrorMessage;
+                }
+            }
+            catch
+            {
+                // Keep default error message.
+            }
+        }
+
+        return Results.Redirect($"/reset-password?error={Uri.EscapeDataString(errorMessage)}");
+    }
+
+    private static async Task<IResult> LogoutAsync(HttpContext context, UserSessionState sessionState)
     {
         await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         context.Response.Cookies.Delete(CookieAuthenticationDefaults.AuthenticationScheme);
+        sessionState.ClearSession();
         return Results.Redirect("/login?loggedOut=true");
     }
 
@@ -173,6 +221,11 @@ public static class AccountEndpoints
         if (!string.IsNullOrWhiteSpace(authResult.RoleName))
         {
             claims.Add(new Claim(ClaimTypes.Role, authResult.RoleName));
+        }
+
+        if (authResult.RoleId > 0)
+        {
+            claims.Add(new Claim("role_id", authResult.RoleId.ToString()));
         }
 
         var userId = TryGetUserIdFromJwt(authResult.Token);

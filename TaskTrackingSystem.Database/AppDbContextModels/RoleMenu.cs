@@ -7,7 +7,9 @@ public partial class RoleMenu
 {
     public string RoleMenuId { get; set; } = null!;
 
-    public string RoleCode { get; set; } = null!;
+    public long RoleId { get; set; }
+
+    public string? RoleCode { get; set; }
 
     public string MenuCode { get; set; } = null!;
 

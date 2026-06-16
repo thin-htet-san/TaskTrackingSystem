@@ -20,10 +20,9 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             _db = db;
         }
 
-        public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
+        public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync(string roleName, long currentUserId)
         {
-            return await _db.Projects
-                .Where(p => p.IsDeleted != true)
+            return await BuildAccessibleProjectQuery(roleName, currentUserId)
                 .OrderBy(p => p.EndDate)
                 .ThenByDescending(p => p.CreatedAt ?? DateTime.UtcNow)
                 .Select(p => new ProjectDto
@@ -39,10 +38,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 }).ToListAsync();
         }
 
-        public async Task<ProjectDto?> GetProjectByIdAsync(long id)
+        public async Task<ProjectDto?> GetProjectByIdAsync(long id, string roleName, long currentUserId)
         {
-            var project = await _db.Projects
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted != true);
+            var project = await BuildAccessibleProjectQuery(roleName, currentUserId)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
             if (project == null) return null;
 
@@ -131,12 +130,11 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result.Success(200);
         }
 
-        public async Task<Result<IEnumerable<UserDto>>> GetProjectMembersAsync(long projectId)
+        public async Task<Result<IEnumerable<UserDto>>> GetProjectMembersAsync(long projectId, string roleName, long currentUserId)
         {
-            var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
-            if (!projectExists)
+            if (!await IsProjectAccessibleAsync(projectId, roleName, currentUserId))
             {
-                return Result<IEnumerable<UserDto>>.Failure(ResultMessages.ProjectNotFound(projectId), 404);
+                return Result<IEnumerable<UserDto>>.Failure("You do not have access to this project.", 403);
             }
 
             var members = await _db.ProjectMembers
@@ -161,7 +159,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result<IEnumerable<UserDto>>.Success(members);
         }
 
-        public async Task<Result> AssignMembersToProjectAsync(long projectId, AssignMembersDto dto)
+        public async Task<Result> AssignMembersToProjectAsync(long projectId, AssignMembersDto dto, long? currentUserId = null)
         {
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
@@ -214,7 +212,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result.Success(200);
         }
 
-        public async Task<Result> RemoveMemberFromProjectAsync(long projectId, long userId)
+        public async Task<Result> RemoveMemberFromProjectAsync(long projectId, long userId, long? currentUserId = null)
         {
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
@@ -236,12 +234,11 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return Result.Success(204); // No Content success
         }
 
-        public async Task<Result<IEnumerable<TaskDto>>> GetProjectTasksAsync(long projectId)
+        public async Task<Result<IEnumerable<TaskDto>>> GetProjectTasksAsync(long projectId, string roleName, long currentUserId)
         {
-            var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
-            if (!projectExists)
+            if (!await IsProjectAccessibleAsync(projectId, roleName, currentUserId))
             {
-                return Result<IEnumerable<TaskDto>>.Failure(ResultMessages.ProjectNotFound(projectId), 404);
+                return Result<IEnumerable<TaskDto>>.Failure("You do not have access to this project.", 403);
             }
 
             var tasks = await _db.Tasks
@@ -268,6 +265,39 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 .ToListAsync();
 
             return Result<IEnumerable<TaskDto>>.Success(tasks);
+        }
+
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(string roleName, long currentUserId)
+        {
+            var query = _db.Projects.Where(p => p.IsDeleted != true);
+
+            if (IsElevated(roleName))
+            {
+                return query;
+            }
+
+            return query.Where(p =>
+                p.CreatedById == currentUserId ||
+                p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
+        }
+
+        private async Task<bool> IsProjectAccessibleAsync(long projectId, string roleName, long currentUserId)
+        {
+            if (IsElevated(roleName))
+            {
+                return await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
+            }
+
+            return await _db.Projects.AnyAsync(p =>
+                p.Id == projectId &&
+                p.IsDeleted != true &&
+                (p.CreatedById == currentUserId || p.ProjectMembers.Any(pm => pm.UserId == currentUserId)));
+        }
+
+        private static bool IsElevated(string roleName)
+        {
+            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                   roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

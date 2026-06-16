@@ -17,17 +17,43 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
             _db = db;
         }
 
-        public async Task<List<MenuDto>> GetMenusByRoleAsync(string roleName)
+        public async Task<List<MenuDto>> GetMenusByRoleIdAsync(long roleId)
         {
-            // 1. Get the MenuCodes configured for this Role
-            var allowedMenuCodes = await _db.RoleMenus
-                .Where(rm => rm.RoleCode == roleName && rm.DelFlag == 0)
-                .Select(rm => rm.MenuCode)
-                .ToListAsync();
+            var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.IsDeleted != true);
+            if (role == null)
+            {
+                return new List<MenuDto>();
+            }
 
-            // 2. Retrieve the active menu items matching those codes
-            var menus = await _db.MenuAdmins
-                .Where(m => allowedMenuCodes.Contains(m.MenuCode) && m.Visible && m.DelFlag == 0)
+            return await GetMenusForRoleAsync(role.Id, role.Name);
+        }
+
+        public async Task<List<MenuDto>> GetMenusByRoleNameAsync(string roleName)
+        {
+            if (string.IsNullOrWhiteSpace(roleName))
+            {
+                return new List<MenuDto>();
+            }
+
+            var role = await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName && r.IsDeleted != true);
+            if (role == null)
+            {
+                return new List<MenuDto>();
+            }
+
+            return await GetMenusForRoleAsync(role.Id, role.Name);
+        }
+
+        private async Task<List<MenuDto>> GetMenusForRoleAsync(long roleId, string roleName)
+        {
+            var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.IsDeleted != true);
+            if (role == null)
+            {
+                return new List<MenuDto>();
+            }
+
+            var allVisibleMenus = await _db.MenuAdmins
+                .Where(m => m.Visible && m.DelFlag == 0)
                 .OrderBy(m => m.OrderNo)
                 .Select(m => new MenuDto
                 {
@@ -40,19 +66,131 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 })
                 .ToListAsync();
 
-            // 3. Construct the menu hierarchy (Parents -> SubMenus)
-            var parentMenus = menus.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").ToList();
-            var childMenus = menus.Where(m => !string.IsNullOrEmpty(m.ParentCode) && m.ParentCode != "0").ToList();
+            // Keep compatibility with roles stored by either RoleId or the older RoleCode link.
+            var allowedMenuCodes = await GetAllowedMenuCodesAsync(role.Id, role.Name);
 
-            foreach (var parent in parentMenus)
+            if (allowedMenuCodes.Count == 0)
             {
-                parent.SubMenus = childMenus
-                    .Where(c => c.ParentCode == parent.MenuCode)
-                    .OrderBy(c => c.OrderNo)
-                    .ToList();
+                return new List<MenuDto>();
             }
 
-            return parentMenus.OrderBy(p => p.OrderNo).ToList();
+            var visibleMenuLookup = allVisibleMenus
+                .GroupBy(m => m.MenuCode, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+            var expandedMenuCodes = ExpandWithAncestors(allowedMenuCodes, visibleMenuLookup);
+            var menus = allVisibleMenus
+                .Where(m => expandedMenuCodes.Contains(m.MenuCode))
+                .OrderBy(m => m.OrderNo)
+                .ToList();
+
+            return BuildHierarchy(menus);
+        }
+
+        private static List<MenuDto> BuildHierarchy(List<MenuDto> menus)
+        {
+            if (menus.Count == 0)
+            {
+                return new List<MenuDto>();
+            }
+
+            var menuLookup = menus
+                .GroupBy(m => m.MenuCode, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var menu in menuLookup.Values)
+            {
+                menu.SubMenus = new List<MenuDto>();
+            }
+
+            var roots = new List<MenuDto>();
+
+            foreach (var menu in menuLookup.Values.OrderBy(m => m.OrderNo).ThenBy(m => m.MenuName))
+            {
+                var parentCode = NormalizeMenuCode(menu.ParentCode);
+                if (string.IsNullOrWhiteSpace(parentCode) ||
+                    parentCode == "0" ||
+                    !menuLookup.TryGetValue(parentCode, out var parent))
+                {
+                    roots.Add(menu);
+                    continue;
+                }
+
+                parent.SubMenus.Add(menu);
+            }
+
+            SortMenuTree(roots);
+            return roots;
+        }
+
+        private async Task<HashSet<string>> GetAllowedMenuCodesAsync(long roleId, string roleName)
+        {
+            var allowedMenuCodes = await _db.RoleMenus
+                .Where(rm => rm.RoleId == roleId && rm.DelFlag == 0)
+                .Select(rm => rm.MenuCode)
+                .ToListAsync();
+
+            if (allowedMenuCodes.Count > 0)
+            {
+                return allowedMenuCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (!string.IsNullOrWhiteSpace(roleName))
+            {
+                allowedMenuCodes = await _db.RoleMenus
+                    .Where(rm => rm.RoleCode == roleName && rm.DelFlag == 0)
+                    .Select(rm => rm.MenuCode)
+                    .ToListAsync();
+            }
+
+            return allowedMenuCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static HashSet<string> ExpandWithAncestors(IEnumerable<string> menuCodes, IReadOnlyDictionary<string, MenuDto> menuLookup)
+        {
+            var expanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var menuCode in menuCodes.Where(code => !string.IsNullOrWhiteSpace(code)))
+            {
+                var currentCode = menuCode.Trim();
+
+                while (!string.IsNullOrWhiteSpace(currentCode) && expanded.Add(currentCode))
+                {
+                    if (!menuLookup.TryGetValue(currentCode, out var currentMenu))
+                    {
+                        break;
+                    }
+
+                    currentCode = NormalizeMenuCode(currentMenu.ParentCode);
+                    if (string.IsNullOrWhiteSpace(currentCode) || currentCode == "0")
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return expanded;
+        }
+
+        private static void SortMenuTree(IList<MenuDto> menus)
+        {
+            var ordered = menus.OrderBy(m => m.OrderNo).ThenBy(m => m.MenuName, StringComparer.OrdinalIgnoreCase).ToList();
+            menus.Clear();
+
+            foreach (var menu in ordered)
+            {
+                if (menu.SubMenus.Count > 0)
+                {
+                    SortMenuTree(menu.SubMenus);
+                }
+
+                menus.Add(menu);
+            }
+        }
+
+        private static string NormalizeMenuCode(string? code)
+        {
+            return string.IsNullOrWhiteSpace(code) ? string.Empty : code.Trim();
         }
         public async Task<List<MenuAdminDto>> GetAllMenusAsync()
         {

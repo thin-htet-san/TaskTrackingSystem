@@ -48,5 +48,18 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         {
             _sessionState.Token = token;
         }
+
+        var roleId = user.FindFirst("role_id")?.Value;
+        if (!string.IsNullOrWhiteSpace(roleId))
+        {
+            _sessionState.CachedMenuRoleId = $"id:{roleId}";
+            return;
+        }
+
+        var roleName = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        if (!string.IsNullOrWhiteSpace(roleName))
+        {
+            _sessionState.CachedMenuRoleId = $"name:{roleName}";
+        }
     }
 }

@@ -8,12 +8,12 @@ public class UserSessionState
     public string? Token { get; set; }
     public ClaimsPrincipal? CachedUser { get; set; }
 
-    public string? CachedMenuRole { get; set; }
+    public string? CachedMenuRoleId { get; set; }
     public List<MenuDto>? CachedMenus { get; set; }
 
     public void ClearMenuCache()
     {
-        CachedMenuRole = null;
+        CachedMenuRoleId = null;
         CachedMenus = null;
     }
 

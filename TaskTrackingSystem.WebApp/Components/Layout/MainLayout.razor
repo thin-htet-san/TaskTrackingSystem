@@ -135,8 +135,8 @@
             return;
         }
 
-        await MenuAuthorization.GetUserMenusAsync(user);
-        isAuthorizedPage = MenuAuthorization.IsRouteAllowed(user, relativePath);
+        var menus = await MenuAuthorization.GetUserMenusAsync(user);
+        isAuthorizedPage = MenuAuthorization.IsRouteAllowed(menus, relativePath);
         await InvokeAsync(StateHasChanged);
     }
 

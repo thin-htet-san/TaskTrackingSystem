@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Shared.Models.Menu;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Menu
 {
@@ -22,15 +23,24 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MenuDto>>> GetMenus()
         {
-            var roleToQuery = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (string.IsNullOrWhiteSpace(roleToQuery))
+            var roleId = User.GetRoleId();
+            if (roleId > 0)
+            {
+                var roleMenus = await _menuService.GetMenusByRoleIdAsync(roleId);
+                return Ok(roleMenus);
+            }
+
+            var roleName = User.GetRoleName();
+            if (string.IsNullOrWhiteSpace(roleName))
             {
                 return Forbid();
             }
 
-            var menus = await _menuService.GetMenusByRoleAsync(roleToQuery);
-            return Ok(menus);
+            var roleMenusByName = await _menuService.GetMenusByRoleNameAsync(roleName);
+            return Ok(roleMenusByName);
         }
+
+        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public async Task<ActionResult<IEnumerable<MenuAdminDto>>> GetAllMenus()
         {
