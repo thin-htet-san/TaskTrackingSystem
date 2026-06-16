@@ -12,7 +12,7 @@ public class UserSessionState
     public List<MenuDto>? CachedMenus { get; set; }
 
     /// <summary>
-    /// The server-side permissions version (latest RoleMenu timestamp) when the menus were last fetched.
+    /// The server-side permissions version (latest role access timestamp) when the menus were last fetched.
     /// Used to detect when an admin has changed a role's permissions so the cache can be busted.
     /// </summary>
     public string? CachedMenuVersion { get; set; }
