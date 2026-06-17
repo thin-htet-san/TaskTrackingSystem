@@ -76,20 +76,40 @@ public class MenuAuthorizationService
 
     public bool IsRouteAllowed(IReadOnlyList<MenuDto> accessItems, string relativePath)
     {
-        var firstSegment = GetFirstSegment(relativePath);
+        var cleanRelative = relativePath.Split('?')[0].Trim('/');
+        var firstSegment = cleanRelative.Split('/')[0];
 
         if (PublicRouteSegments.Contains(firstSegment))
         {
             return true;
         }
 
-        if (firstSegment.Equals("dashboard", StringComparison.OrdinalIgnoreCase) ||
-            firstSegment.Equals("home", StringComparison.OrdinalIgnoreCase))
+        // Special case for Kanban Board page route parameter wildcard since MenuUrl is /board
+        if (cleanRelative.StartsWith("projects/", StringComparison.OrdinalIgnoreCase) && 
+            cleanRelative.EndsWith("/tasks", StringComparison.OrdinalIgnoreCase))
         {
-            return MenuCollectionMatchesSegment(accessItems, "dashboard");
+            var segments = cleanRelative.Split('/');
+            if (segments.Length == 3 && long.TryParse(segments[1], out _))
+            {
+                var hasBoardAccess = accessItems.Any(m => 
+                    m.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) ||
+                    m.SubMenus.Any(sm => sm.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase)));
+                if (hasBoardAccess)
+                {
+                    return true;
+                }
+            }
         }
 
-        return MenuCollectionMatchesSegment(accessItems, firstSegment);
+        if (string.IsNullOrEmpty(cleanRelative) || 
+            cleanRelative.Equals("dashboard", StringComparison.OrdinalIgnoreCase) ||
+            cleanRelative.Equals("home", StringComparison.OrdinalIgnoreCase))
+        {
+            return MenuCollectionMatchesRoute(accessItems, "dashboard") || 
+                   MenuCollectionMatchesRoute(accessItems, "");
+        }
+
+        return MenuCollectionMatchesRoute(accessItems, cleanRelative);
     }
 
     public Task<List<MenuDto>> GetUserMenusAsync(ClaimsPrincipal user)
@@ -334,18 +354,18 @@ public class MenuAuthorizationService
         }
     }
 
-    private static bool MenuCollectionMatchesSegment(IReadOnlyList<MenuDto> accessItems, string segment)
+    private static bool MenuCollectionMatchesRoute(IReadOnlyList<MenuDto> accessItems, string relativePath)
     {
         foreach (var menu in accessItems)
         {
-            if (MenuMatchesSegment(menu, segment))
+            if (MenuMatchesRoute(menu, relativePath))
             {
                 return true;
             }
 
             foreach (var subMenu in menu.SubMenus)
             {
-                if (MenuMatchesSegment(subMenu, segment))
+                if (MenuMatchesRoute(subMenu, relativePath))
                 {
                     return true;
                 }
@@ -355,15 +375,41 @@ public class MenuAuthorizationService
         return false;
     }
 
-    private static bool MenuMatchesSegment(MenuDto menu, string segment)
+    private static bool MenuMatchesRoute(MenuDto menu, string relativePath)
     {
         if (string.IsNullOrWhiteSpace(menu.MenuUrl))
         {
             return false;
         }
 
-        var menuSegment = menu.MenuUrl.Split('?')[0].Trim('/').Split('/')[0];
-        return menuSegment.Equals(segment, StringComparison.OrdinalIgnoreCase);
+        var cleanMenu = menu.MenuUrl.Split('?')[0].Trim('/');
+        var cleanRelative = relativePath.Split('?')[0].Trim('/');
+
+        var menuSegments = cleanMenu.Split('/');
+        var relativeSegments = cleanRelative.Split('/');
+
+        if (menuSegments.Length != relativeSegments.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < menuSegments.Length; i++)
+        {
+            var menuSeg = menuSegments[i];
+            var relSeg = relativeSegments[i];
+
+            if (menuSeg.StartsWith('{') && menuSeg.EndsWith('}'))
+            {
+                continue; // Route parameter wildcard
+            }
+
+            if (!menuSeg.Equals(relSeg, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static List<MenuDto> BuildFallbackMenus(ClaimsPrincipal user)

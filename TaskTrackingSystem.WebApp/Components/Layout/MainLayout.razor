@@ -119,10 +119,11 @@
         _ => "Workspace"
     };
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += OnLocationChanged;
-        UpdateAuthorization();
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        await UpdateAuthorizationAsync(relativePath);
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
@@ -156,7 +157,23 @@
         }
 
         var menus = await MenuAuthorization.GetUserMenusAsync(user);
-        isAuthorizedPage = MenuAuthorization.IsRouteAllowed(menus, relativePath);
+        var allowed = MenuAuthorization.IsRouteAllowed(menus, relativePath);
+        Console.WriteLine($"[DEBUG MainLayout] User: {user.Identity?.Name}, Path: {relativePath}, Allowed: {allowed}");
+        if (menus != null)
+        {
+            foreach (var m in menus)
+            {
+                Console.WriteLine($"  Menu: {m.MenuCode} (Url: {m.MenuUrl})");
+                if (m.SubMenus != null)
+                {
+                    foreach (var s in m.SubMenus)
+                    {
+                        Console.WriteLine($"    SubMenu: {s.MenuCode} (Url: {s.MenuUrl})");
+                    }
+                }
+            }
+        }
+        isAuthorizedPage = allowed;
         await InvokeAsync(StateHasChanged);
     }
 
