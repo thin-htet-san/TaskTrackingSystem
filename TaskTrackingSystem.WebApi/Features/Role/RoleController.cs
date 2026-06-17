@@ -23,11 +23,6 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RoleDto>>> GetRoles()
         {
-            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "List"))
-            {
-                return Forbid();
-            }
-
             var roles = await _roleService.GetAllRolesAsync();
             return Ok(roles);
         }
@@ -35,11 +30,6 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         [HttpGet("{id}")]
         public async Task<ActionResult<RoleDto>> GetRole(long id)
         {
-            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "List"))
-            {
-                return Forbid();
-            }
-
             var role = await _roleService.GetRoleByIdAsync(id);
             if (role == null)
             {
