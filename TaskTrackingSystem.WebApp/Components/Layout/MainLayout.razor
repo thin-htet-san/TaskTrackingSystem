@@ -22,9 +22,9 @@
                         </span>
                         <div class="ml-3 overflow-hidden flex flex-col">
                             <span class="text-sm font-semibold truncate max-w-[130px]" style="color: var(--text-primary);">@context.User.Identity?.Name</span>
-                            <form method="post" action="/account/logout" class="mt-0.5">
+                            <form id="logout-form" method="post" action="/account/logout" class="mt-0.5">
                                 <AntiforgeryToken />
-                                <button type="submit" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all" style="color: var(--brand-accent);">
+                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all" style="color: var(--brand-accent);">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
                                     Sign Out
                                 </button>
@@ -38,6 +38,26 @@
                     </a>
                 </NotAuthorized>
             </AuthorizeView>
+        </div>
+
+        <div id="logout-confirm-dialog" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" style="display: none;">
+            <div class="rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden animate-in border border-slate-100 bg-white">
+                <div class="p-6 text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4" style="background-color: var(--status-warning-bg); color: var(--brand-accent);">
+                        <i data-lucide="log-out" class="h-7 w-7"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900">Sign Out?</h3>
+                    <p class="text-sm mt-2 text-slate-500">Are you sure you want to sign out of Taskify?</p>
+                </div>
+                <div class="flex items-center justify-center space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                    <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='none';" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-slate-200 bg-white hover:bg-slate-50 text-slate-500">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="document.getElementById('logout-form').submit();" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors" style="background-color: var(--brand-accent);">
+                        Yes, Sign Out
+                    </button>
+                </div>
+            </div>
         </div>
     </aside>
 

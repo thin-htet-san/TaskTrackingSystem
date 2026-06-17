@@ -7,7 +7,7 @@ namespace TaskTrackingSystem.Shared
         public bool IsSuccess { get; set; }
         public T? Value { get; set; }
         public string? ErrorMessage { get; set; }
-        public int StatusCode { get; set; } // 200, 400, 404, etc.
+        public int StatusCode { get; set; } 
 
         public static Result<T> Success(T value, int statusCode = 200)
         {
