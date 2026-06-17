@@ -1,0 +1,934 @@
+@page "/tasks/{TaskId:long}/details"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using TaskTrackingSystem.Shared
+@using TaskTrackingSystem.Shared.Models.Task
+@using TaskTrackingSystem.Shared.Models.Comment
+@using TaskTrackingSystem.Shared.Models.Attachment
+@using TaskTrackingSystem.Shared.Models.Project
+@using TaskTrackingSystem.Shared.Models.User
+@using TaskTrackingSystem.WebApp.Components.Partial
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
+
+<PageTitle>Task Details</PageTitle>
+
+<div class="space-y-6">
+    @if (ViewMode != "Embedded")
+    {
+        <!-- Breadcrumbs & Actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center space-x-2 text-sm text-slate-500">
+                <a href="/dashboard" class="hover:text-violet-600 transition-colors">Workspace</a>
+                <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                <a href="/tasks" class="hover:text-violet-600 transition-colors">Tasks</a>
+                <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                <span class="text-slate-800 font-medium">Task Details</span>
+            </div>
+            <a href="/tasks" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="arrow-left" class="h-4 w-4 mr-2 text-slate-500"></i>
+                Back to Tasks
+            </a>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading task details..." />
+    }
+    else if (task == null)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+            <i data-lucide="alert-circle" class="h-10 w-10 mx-auto text-red-500 mb-3"></i>
+            <h4 class="text-lg font-bold text-slate-800">Task Not Found</h4>
+            <p class="text-sm text-slate-400 mt-1">The task you are looking for does not exist or has been deleted.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Task Header Card -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="space-y-2 flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold font-mono text-slate-400">TASK-#@task.Id</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold @GetStatusBadge(task.StatusId)">
+                            @GetStatusLabel(task.StatusId)
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold @GetPriorityBadge(task.PriorityId)">
+                            @GetPriorityLabel(task.PriorityId)
+                        </span>
+                        @if (project != null)
+                        {
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-100">
+                                <i data-lucide="folder" class="h-3 w-3 mr-1.5"></i>
+                                @project.Name
+                            </span>
+                        }
+                    </div>
+                    @if (isEditingTitle)
+                    {
+                        <div class="flex items-center gap-2 max-w-xl mt-1">
+                            <input @bind="tempTitle" type="text" class="flex-1 rounded-lg border border-slate-200 px-3 py-1 text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+                            <button @onclick="CancelEditTitle" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+                            <button @onclick="SaveTitle" disabled="@isSavingTitle" class="px-2.5 py-1 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">Save</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <h2 class="text-2xl font-bold text-slate-900 leading-tight flex items-center gap-2 group">
+                            @task.Title
+                            @if (hasTaskManagePermission)
+                            {
+                                <button @onclick="StartEditTitle" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-violet-600 transition-all rounded-lg hover:bg-slate-50" title="Edit title">
+                                    <i data-lucide="pencil" class="h-4 w-4"></i>
+                                </button>
+                            }
+                        </h2>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Grid: Task Details & Description -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Description Card -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <i data-lucide="align-left" class="h-4 w-4"></i> Description
+                        </h3>
+                        @if (hasTaskManagePermission && !isEditingDescription)
+                        {
+                            <button @onclick="StartEditDescription" class="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 transition-colors">
+                                <i data-lucide="pencil" class="h-3 w-3 mr-1"></i> Edit
+                            </button>
+                        }
+                    </div>
+                    @if (isEditingDescription)
+                    {
+                        <div class="space-y-3">
+                            <textarea @bind="tempDescription" rows="4" class="w-full text-sm rounded-xl border border-slate-200 p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                            <div class="flex items-center gap-2 justify-end">
+                                <button @onclick="CancelEditDescription" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+                                <button @onclick="SaveDescription" disabled="@isSavingDescription" class="px-3 py-1.5 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">
+                                    @(isSavingDescription ? "Saving..." : "Save")
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-sm text-slate-700 leading-relaxed min-h-[120px] whitespace-pre-wrap">
+                            @(string.IsNullOrWhiteSpace(task.Description) ? "No description provided for this task." : task.Description)
+                        </div>
+                    }
+                </div>
+
+                <!-- Properties Grid (Pristine grid alignment in uniform 2-column layout) -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-5">
+                        <i data-lucide="info" class="h-4 w-4"></i> Properties
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 text-sm font-sans">
+                        <!-- Status Property (Free for everyone) -->
+                        <div class="flex flex-col gap-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Status</span>
+                            <select value="@task.StatusId" @onchange="OnStatusChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
+                                <option value="1">To Do</option>
+                                <option value="2">In Progress</option>
+                                <option value="3">Done</option>
+                            </select>
+                        </div>
+
+                        <!-- Priority Property -->
+                        <div class="flex flex-col gap-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Priority</span>
+                            @if (hasTaskManagePermission)
+                            {
+                                <select value="@task.PriorityId" @onchange="OnPriorityChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
+                                    <option value="1">Low</option>
+                                    <option value="2">Medium</option>
+                                    <option value="3">High</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <div class="h-9 flex items-center px-1 text-sm text-slate-800 cursor-not-allowed select-none">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold @GetPriorityBadge(task.PriorityId)">
+                                        @GetPriorityLabel(task.PriorityId)
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Assignee Property -->
+                        <div class="flex flex-col gap-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Assignee</span>
+                            @if (hasTaskManagePermission)
+                            {
+                                <select value="@(task.AssignedTo ?? 0)" @onchange="OnAssigneeChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
+                                    <option value="0">Unassigned</option>
+                                    @foreach (var u in allUsers)
+                                    {
+                                        <option value="@u.Id">@u.FirstName @u.LastName</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <div class="h-9 flex items-center px-1 text-sm text-slate-800 cursor-not-allowed select-none gap-2">
+                                    @if (assignee != null)
+                                    {
+                                        <span class="flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
+                                            @(assignee.FirstName.Length > 0 ? assignee.FirstName[0].ToString().ToUpper() : "")
+                                        </span>
+                                        <span class="font-medium text-slate-700">@assignee.FirstName @assignee.LastName</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-slate-400 italic">Unassigned</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Due Date Property -->
+                        <div class="flex flex-col gap-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Due Date</span>
+                            @if (hasTaskManagePermission)
+                            {
+                                <input type="date" value="@task.DueDate.ToString("yyyy-MM-dd")" @onchange="OnDueDateChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm" />
+                            }
+                            else
+                            {
+                                <div class="h-9 flex items-center px-1 text-sm text-slate-800 cursor-not-allowed select-none font-medium text-slate-700">
+                                    <i data-lucide="calendar" class="h-4 w-4 mr-2 text-slate-400"></i>
+                                    @DisplayFormats.Date(task.DueDate)
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Estimated Hours Property -->
+                        <div class="flex flex-col gap-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Estimated Hours</span>
+                            @if (hasTaskManagePermission)
+                            {
+                                <div class="relative flex items-center w-full">
+                                    <input type="number" step="0.5" min="0" max="999" value="@task.EstimatedHours" @onchange="OnEstimatedHoursChanged" placeholder="0.0" class="h-9 rounded-lg border border-slate-200 pl-3 pr-8 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm" />
+                                    <span class="absolute right-3 text-xs text-slate-400 pointer-events-none">hr</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="h-9 flex items-center px-1 text-sm text-slate-800 cursor-not-allowed select-none font-medium text-slate-700">
+                                    <i data-lucide="clock" class="h-4 w-4 mr-2 text-slate-400"></i>
+                                    @(task.EstimatedHours.HasValue ? $"{task.EstimatedHours} hr" : "Not set")
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Created At Property -->
+                        <div class="flex flex-col gap-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Created At</span>
+                            <div class="h-9 flex items-center px-1 border-b border-transparent text-sm text-slate-800 cursor-default select-none font-medium text-slate-700">
+                                <i data-lucide="calendar-plus" class="h-4 w-4 mr-2 text-slate-400"></i>
+                                @task.CreatedAt.ToString("dd-MM-yyyy HH:mm")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Grid: Collaboration Hub (Comments & Attachments) -->
+            <div class="space-y-6">
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col h-[580px]">
+                    <!-- Hub Tabs -->
+                    <div class="flex border-b border-slate-100 bg-slate-50/50 p-1">
+                        <button @onclick='() => SetTab("comments")' class="flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all @(currentTab == "comments" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+                            <i data-lucide="message-square" class="h-4 w-4"></i>
+                            <span>Comments (@comments.Count)</span>
+                        </button>
+                        <button @onclick='() => SetTab("files")' class="flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all @(currentTab == "files" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+                            <i data-lucide="paperclip" class="h-4 w-4"></i>
+                            <span>Files (@attachments.Count)</span>
+                        </button>
+                    </div>
+
+                    <!-- Hub Body -->
+                    <div class="flex-1 overflow-y-auto p-4 min-h-0">
+                        @if (currentTab == "comments")
+                        {
+                            <!-- Comments List -->
+                            <div class="space-y-4 font-sans">
+                                @if (comments.Any())
+                                {
+                                    @foreach (var c in comments)
+                                    {
+                                        <div class="flex items-start gap-3">
+                                            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold shrink-0 mt-0.5">
+                                                @(c.UserFullName.Length > 0 ? c.UserFullName[0].ToString().ToUpper() : "U")
+                                            </span>
+                                            <div class="flex-1 min-w-0 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="text-xs font-bold text-slate-800 truncate">@c.UserFullName</span>
+                                                    <span class="text-[9px] text-slate-400 shrink-0 font-sans">@c.CreatedAt.ToString("g")</span>
+                                                </div>
+                                                <p class="text-xs text-slate-400 mt-0.5">@c.UserRoleName</p>
+                                                <div class="text-xs text-slate-700 mt-2 whitespace-pre-wrap break-words">@c.Message</div>
+                                            </div>
+                                            @if (c.UserId == currentUserId || isAdmin)
+                                            {
+                                                <button @onclick="() => ConfirmDeleteComment(c.Id)" class="p-1 text-slate-300 hover:text-rose-500 rounded-lg transition-colors shrink-0" title="Delete comment">
+                                                    <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center py-12 text-slate-400 space-y-2">
+                                        <i data-lucide="messages-square" class="h-8 w-8 mx-auto text-slate-300"></i>
+                                        <p class="text-xs">No comments posted yet.</p>
+                                        <p class="text-[10px]">Start the conversation below!</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Attachments List -->
+                            <div class="space-y-3 font-sans">
+                                @if (attachments.Any())
+                                {
+                                    @foreach (var file in attachments)
+                                    {
+                                        <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50/50 transition-colors gap-3">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 shrink-0">
+                                                    <i data-lucide="@GetFileIcon(file.FileType)" class="h-4 w-4"></i>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <p class="text-xs font-semibold text-slate-800 truncate" title="@file.FileName">@file.FileName</p>
+                                                    <p class="text-[10px] text-slate-400 mt-0.5 font-sans">@FormatBytes(file.FileSizeInBytes) • by @file.CreatedByName</p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <a href="@($"{ApiClient.BaseUrl}/api/TaskDetails/attachments/{file.Id}/download")" target="_blank" class="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-all" title="Download">
+                                                    <i data-lucide="download" class="h-4 w-4"></i>
+                                                </a>
+                                                @if (file.CreatedBy == currentUserId || isAdmin)
+                                                {
+                                                    <button @onclick="() => ConfirmDeleteAttachment(file.Id)" class="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete file">
+                                                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center py-8 text-slate-400 space-y-2">
+                                        <i data-lucide="file-up" class="h-8 w-8 mx-auto text-slate-300"></i>
+                                        <p class="text-xs">No attachments found.</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Hub Footer (Inputs) (Free for everyone) -->
+                    <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                        @if (currentTab == "comments")
+                        {
+                            <div class="flex items-start gap-2">
+                                <div class="flex-1">
+                                    <textarea @bind="newCommentMessage" rows="2" placeholder="Write a comment..." class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" disabled="@isSavingComment"></textarea>
+                                    @if (!string.IsNullOrEmpty(commentError))
+                                    {
+                                        <p class="text-[10px] text-red-500 mt-1 font-sans">@commentError</p>
+                                    }
+                                </div>
+                                <button @onclick="PostComment" disabled="@(isSavingComment || string.IsNullOrWhiteSpace(newCommentMessage))" class="rounded-xl bg-violet-600 text-white p-2.5 hover:bg-violet-700 disabled:opacity-50 transition-all shadow-sm shrink-0">
+                                    <i data-lucide="send" class="h-4 w-4"></i>
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div>
+                                <InputFile OnChange="OnInputFileChange" class="hidden" id="fileUpload" disabled="@isUploading" />
+                                <label for="fileUpload" class="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-violet-500 hover:bg-violet-50/20 transition-all">
+                                    @if (isUploading)
+                                    {
+                                        <LoadingSpinner Message="Uploading file..." />
+                                    }
+                                    else
+                                    {
+                                        <i data-lucide="upload-cloud" class="h-7 w-7 text-slate-400 mb-1.5"></i>
+                                        <span class="text-xs font-semibold text-slate-600">Click to upload file</span>
+                                        <span class="text-[9px] text-slate-400 mt-0.5">Maximum size: 10MB</span>
+                                    }
+                                </label>
+                                @if (!string.IsNullOrEmpty(uploadError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-1.5 font-sans">@uploadError</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Confirm Actions dialog *@
+<ConfirmDialog IsVisible="showConfirm"
+               Title="@confirmTitle"
+               Message="@confirmMessage"
+               ConfirmText="Yes, Delete"
+               Icon="trash-2"
+               IconBgClass="bg-rose-50"
+               IconTextClass="text-rose-500"
+               ButtonClass="bg-rose-600 hover:bg-rose-700"
+               OnConfirm="ExecuteConfirmAction"
+               OnCancel="CancelConfirm" />
+
+@code {
+    [Parameter] public long TaskId { get; set; }
+    [Parameter] public string? ViewMode { get; set; }
+    [Parameter] public EventCallback OnTaskUpdated { get; set; }
+
+    private bool isLoading = true;
+    private TaskDto? task;
+    private ProjectDto? project;
+    private UserDto? assignee;
+    private List<CommentDto> comments = new();
+    private List<FileAttachmentDto> attachments = new();
+    private List<UserDto> allUsers = new();
+
+    private bool isAdmin = false;
+    private bool canEditTask = false;
+    private bool hasTaskManagePermission = false;
+    private long currentUserId = 0;
+    private string userRoleName = "Employee";
+
+    private List<string> scopes = new();
+
+    private string currentTab = "comments";
+
+    // Comments Form
+    private string newCommentMessage = "";
+    private bool isSavingComment = false;
+    private string? commentError;
+
+    // Attachments Form
+    private bool isUploading = false;
+    private string? uploadError;
+
+    // Confirm dialog
+    private bool showConfirm = false;
+    private string confirmTitle = "";
+    private string confirmMessage = "";
+    private Func<Task>? confirmAction;
+
+    // Inline edit states
+    private bool isEditingDescription = false;
+    private bool isSavingDescription = false;
+    private string tempDescription = "";
+
+    private bool isEditingTitle = false;
+    private bool isSavingTitle = false;
+    private string tempTitle = "";
+
+    private long lastLoadedTaskId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAdmin = user.IsInRole("Admin");
+
+        // Task details editing is driven by role permissions so future roles can be granted access.
+        canEditTask = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Tasks_Update");
+        hasTaskManagePermission = canEditTask;
+
+        var roleClaim = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        userRoleName = roleClaim ?? "Employee";
+
+        var idStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (idStr != null) long.TryParse(idStr, out currentUserId);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TaskId > 0 && TaskId != lastLoadedTaskId)
+        {
+            lastLoadedTaskId = TaskId;
+            assignee = null;
+            await LoadAllData();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private void SetTab(string tab)
+    {
+        currentTab = tab;
+        _ = InvokeAsync(async () => {
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("initIcons");
+        });
+    }
+
+    private async Task LoadAllData()
+    {
+        isLoading = true;
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var taskUrl = $"Task/{TaskId}";
+            var commentsUrl = $"TaskDetails/tasks/{TaskId}/comments";
+            var attachmentsUrl = $"TaskDetails/tasks/{TaskId}/attachments";
+            var usersUrl = "User";
+
+            var taskResponseTask = client.GetAsync(taskUrl);
+            var commentsResponseTask = client.GetAsync(commentsUrl);
+            var attachmentsResponseTask = client.GetAsync(attachmentsUrl);
+            var usersResponseTask = client.GetAsync(usersUrl);
+
+            await Task.WhenAll(taskResponseTask, commentsResponseTask, attachmentsResponseTask, usersResponseTask);
+
+            var taskResponse = taskResponseTask.Result;
+            if (taskResponse.IsSuccessStatusCode)
+            {
+                task = await taskResponse.Content.ReadFromJsonAsync<TaskDto>(Serialization.CaseInsensitive);
+            }
+
+            var commentsResponse = commentsResponseTask.Result;
+            if (commentsResponse.IsSuccessStatusCode)
+            {
+                comments = await commentsResponse.Content.ReadFromJsonAsync<List<CommentDto>>(Serialization.CaseInsensitive) ?? new();
+            }
+
+            var attachmentsResponse = attachmentsResponseTask.Result;
+            if (attachmentsResponse.IsSuccessStatusCode)
+            {
+                attachments = await attachmentsResponse.Content.ReadFromJsonAsync<List<FileAttachmentDto>>(Serialization.CaseInsensitive) ?? new();
+            }
+
+            var usersResponse = usersResponseTask.Result;
+            if (usersResponse.IsSuccessStatusCode)
+            {
+                allUsers = await usersResponse.Content.ReadFromJsonAsync<List<UserDto>>(Serialization.CaseInsensitive) ?? new();
+            }
+
+            if (task != null)
+            {
+                // Fetch project details
+                var projResponse = await client.GetAsync($"Project/{task.ProjectId}");
+                if (projResponse.IsSuccessStatusCode)
+                {
+                    project = await projResponse.Content.ReadFromJsonAsync<ProjectDto>(Serialization.CaseInsensitive);
+                }
+
+                // Set assignee details
+                if (task.AssignedTo.HasValue)
+                {
+                    assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo.Value);
+                }
+
+                CalculateScopes();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Load task details error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void CalculateScopes()
+    {
+        scopes = new List<string>();
+
+        if (task == null) return;
+
+        if (hasTaskManagePermission)
+        {
+            scopes.Add("task:all");
+            scopes.Add("task:write");
+            scopes.Add("comment:write");
+        }
+        else
+        {
+            scopes.Add("task:read");
+            // Comments stay available to everyone who can view the task.
+            scopes.Add("comment:write");
+        }
+    }
+
+    // ─── INLINE MUTATIONS ───────────────────────────────────────────────────
+
+    private async Task OnStatusChanged(ChangeEventArgs e)
+    {
+        if (task == null) return;
+        if (long.TryParse(e.Value?.ToString(), out var newStatusId))
+        {
+            var client = ApiClient.CreateClient();
+            try
+            {
+                var response = await client.PatchAsync($"Task/{task.Id}/status?statusId={newStatusId}", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    task.StatusId = newStatusId;
+                    await OnTaskUpdated.InvokeAsync();
+                    await JS.InvokeVoidAsync("initIcons");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Update status error: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task OnPriorityChanged(ChangeEventArgs e)
+    {
+        if (long.TryParse(e.Value?.ToString(), out var newPriorityId))
+        {
+            await UpdateTaskProperty(dto => dto.PriorityId = newPriorityId);
+        }
+    }
+
+    private async Task OnAssigneeChanged(ChangeEventArgs e)
+    {
+        if (long.TryParse(e.Value?.ToString(), out var assigneeId))
+        {
+            var newAssigneeId = assigneeId > 0 ? (long?)assigneeId : null;
+            await UpdateTaskProperty(dto => dto.AssignedTo = newAssigneeId);
+            assignee = newAssigneeId.HasValue ? allUsers.FirstOrDefault(u => u.Id == newAssigneeId.Value) : null;
+        }
+    }
+
+    private async Task OnDueDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var newDueDate))
+        {
+            await UpdateTaskProperty(dto => dto.DueDate = newDueDate);
+        }
+    }
+
+    private async Task OnEstimatedHoursChanged(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString();
+        decimal? newEstimatedHours = null;
+        if (!string.IsNullOrWhiteSpace(input) && decimal.TryParse(input, out var val))
+        {
+            newEstimatedHours = val;
+        }
+        await UpdateTaskProperty(dto => dto.EstimatedHours = newEstimatedHours);
+    }
+
+    private async Task UpdateTaskProperty(Action<UpdateTaskDto> applyChange)
+    {
+        if (task == null) return;
+
+        var dto = new UpdateTaskDto
+        {
+            Title = task.Title,
+            Description = task.Description,
+            StatusId = task.StatusId,
+            PriorityId = task.PriorityId,
+            DueDate = task.DueDate,
+            AssignedTo = task.AssignedTo,
+            AssignedBy = task.AssignedBy,
+            EstimatedHours = task.EstimatedHours
+        };
+
+        applyChange(dto);
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.PutAsJsonAsync($"Task/{task.Id}", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                task.Title = dto.Title;
+                task.Description = dto.Description;
+                task.StatusId = dto.StatusId;
+                task.PriorityId = dto.PriorityId;
+                task.DueDate = dto.DueDate;
+                task.AssignedTo = dto.AssignedTo;
+                task.EstimatedHours = dto.EstimatedHours;
+
+                await OnTaskUpdated.InvokeAsync();
+                await JS.InvokeVoidAsync("initIcons");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Update task property error: {ex.Message}");
+        }
+    }
+
+    private void StartEditDescription()
+    {
+        if (task == null) return;
+        tempDescription = task.Description ?? "";
+        isEditingDescription = true;
+    }
+
+    private void CancelEditDescription()
+    {
+        isEditingDescription = false;
+    }
+
+    private async Task SaveDescription()
+    {
+        isSavingDescription = true;
+        await UpdateTaskProperty(dto => dto.Description = tempDescription);
+        isEditingDescription = false;
+        isSavingDescription = false;
+    }
+
+    private void StartEditTitle()
+    {
+        if (task == null) return;
+        tempTitle = task.Title;
+        isEditingTitle = true;
+    }
+
+    private void CancelEditTitle()
+    {
+        isEditingTitle = false;
+    }
+
+    private async Task SaveTitle()
+    {
+        if (string.IsNullOrWhiteSpace(tempTitle)) return;
+        isSavingTitle = true;
+        await UpdateTaskProperty(dto => dto.Title = tempTitle.Trim());
+        isEditingTitle = false;
+        isSavingTitle = false;
+    }
+
+    // ─── COMMENTS ACTIONS ───────────────────────────────────────────────────
+
+    private async Task PostComment()
+    {
+        if (string.IsNullOrWhiteSpace(newCommentMessage)) return;
+
+        isSavingComment = true;
+        commentError = null;
+        try
+        {
+            var client = ApiClient.CreateClient();
+            var response = await client.PostAsJsonAsync($"TaskDetails/tasks/{TaskId}/comments", new CreateCommentDto { Message = newCommentMessage });
+            var res = await response.Content.ReadFromJsonAsync<Result<CommentDto>>(Serialization.CaseInsensitive);
+
+            if (response.IsSuccessStatusCode && res != null && res.IsSuccess)
+            {
+                comments.Add(res.Value);
+                newCommentMessage = "";
+                await JS.InvokeVoidAsync("initIcons");
+            }
+            else
+            {
+                commentError = res?.ErrorMessage ?? "Failed to post comment.";
+            }
+        }
+        catch (Exception ex)
+        {
+            commentError = ex.Message;
+        }
+        finally
+        {
+            isSavingComment = false;
+        }
+    }
+
+    private void ConfirmDeleteComment(long commentId)
+    {
+        confirmTitle = "Delete Comment?";
+        confirmMessage = "Are you sure you want to delete this comment? This action cannot be undone.";
+        confirmAction = () => DeleteComment(commentId);
+        showConfirm = true;
+    }
+
+    private async Task DeleteComment(long commentId)
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.DeleteAsync($"TaskDetails/comments/{commentId}");
+            var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+            if (response.IsSuccessStatusCode && res != null && res.IsSuccess)
+            {
+                var idx = comments.FindIndex(c => c.Id == commentId);
+                if (idx >= 0) comments.RemoveAt(idx);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Delete comment error: {ex.Message}");
+        }
+    }
+
+    // ─── ATTACHMENTS ACTIONS ────────────────────────────────────────────────
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        isUploading = true;
+        uploadError = null;
+
+        try
+        {
+            var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+            content.Add(fileContent, "file", file.Name);
+
+            var client = ApiClient.CreateClient();
+            var response = await client.PostAsync($"TaskDetails/tasks/{TaskId}/attachments", content);
+            var res = await response.Content.ReadFromJsonAsync<Result<FileAttachmentDto>>(Serialization.CaseInsensitive);
+
+            if (response.IsSuccessStatusCode && res != null && res.IsSuccess)
+            {
+                attachments.Add(res.Value);
+                await JS.InvokeVoidAsync("initIcons");
+            }
+            else
+            {
+                uploadError = res?.ErrorMessage ?? "Failed to upload file.";
+            }
+        }
+        catch (Exception ex)
+        {
+            uploadError = ex.Message;
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private void ConfirmDeleteAttachment(long attachmentId)
+    {
+        confirmTitle = "Delete File?";
+        confirmMessage = "Are you sure you want to delete this file attachment?";
+        confirmAction = () => DeleteAttachment(attachmentId);
+        showConfirm = true;
+    }
+
+    private async Task DeleteAttachment(long attachmentId)
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.DeleteAsync($"TaskDetails/attachments/{attachmentId}");
+            var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
+            if (response.IsSuccessStatusCode && res != null && res.IsSuccess)
+            {
+                var idx = attachments.FindIndex(f => f.Id == attachmentId);
+                if (idx >= 0) attachments.RemoveAt(idx);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Delete file error: {ex.Message}");
+        }
+    }
+
+    // ─── CONFIRM DIALOG LOGIC ───────────────────────────────────────────────
+
+    private async Task ExecuteConfirmAction()
+    {
+        showConfirm = false;
+        if (confirmAction != null)
+        {
+            await confirmAction();
+        }
+        confirmAction = null;
+    }
+
+    private void CancelConfirm()
+    {
+        showConfirm = false;
+        confirmAction = null;
+    }
+
+    // ─── DISPLAY UTILITIES ──────────────────────────────────────────────────
+
+    private string GetStatusLabel(long statusId) => statusId switch
+    {
+        1 => "To Do",
+        2 => "In Progress",
+        3 => "Done",
+        _ => "Unknown"
+    };
+
+    private string GetStatusBadge(long statusId) => statusId switch
+    {
+        1 => "bg-slate-100 text-slate-800 border border-slate-200",
+        2 => "bg-blue-50 text-blue-700 border border-blue-100",
+        3 => "bg-emerald-50 text-emerald-700 border border-emerald-100",
+        _ => "bg-slate-50 text-slate-600"
+    };
+
+    private string GetPriorityLabel(long priorityId) => priorityId switch
+    {
+        1 => "Low",
+        2 => "Medium",
+        3 => "High",
+        _ => "Unknown"
+    };
+
+    private string GetPriorityBadge(long priorityId) => priorityId switch
+    {
+        1 => "bg-slate-100 text-slate-600",
+        2 => "bg-amber-50 text-amber-700 border border-amber-100",
+        3 => "bg-rose-50 text-rose-700 border border-rose-100",
+        _ => "bg-slate-50 text-slate-600"
+    };
+
+    private string GetFileIcon(string fileType)
+    {
+        if (fileType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)) return "image";
+        if (fileType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase)) return "file-text";
+        if (fileType.Contains("word") || fileType.Contains("officedocument.wordprocessingml")) return "file-text";
+        if (fileType.Contains("excel") || fileType.Contains("officedocument.spreadsheetml")) return "file-spreadsheet";
+        return "file";
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        string[] suffix = { "B", "KB", "MB", "GB", "TB" };
+        int i;
+        double dblBytes = bytes;
+        for (i = 0; i < suffix.Length && bytes >= 1024; i++, bytes /= 1024)
+        {
+            dblBytes = bytes / 1024.0;
+        }
+        return $"{dblBytes:0.##} {suffix[i]}";
+    }
+}

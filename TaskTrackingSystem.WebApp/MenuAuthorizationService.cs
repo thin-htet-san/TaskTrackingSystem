@@ -64,6 +64,12 @@ public class MenuAuthorizationService
             return true;
         }
 
+        var cleanRelative = relativePath.Split('?')[0].Trim('/');
+        if (cleanRelative.Equals("audit-logs", StringComparison.OrdinalIgnoreCase))
+        {
+            return user.IsInRole("Admin");
+        }
+
         var roleKey = GetRoleCacheKey(user);
 
         if (_sessionState.CachedAccessRoleId == roleKey && _sessionState.CachedAccessItems != null)
@@ -84,7 +90,28 @@ public class MenuAuthorizationService
             return true;
         }
 
-        // Special case for Kanban Board page route parameter wildcard since MenuUrl is /board
+        // Special case for Task Details page route parameter wildcard
+        if (cleanRelative.StartsWith("tasks/", StringComparison.OrdinalIgnoreCase) && 
+            cleanRelative.EndsWith("/details", StringComparison.OrdinalIgnoreCase))
+        {
+            var segments = cleanRelative.Split('/');
+            if (segments.Length == 3 && long.TryParse(segments[1], out _))
+            {
+                var hasTasksAccess = accessItems.Any(m => 
+                    m.MenuCode.Equals("TASKS_LIST", StringComparison.OrdinalIgnoreCase) ||
+                    m.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) ||
+                    m.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase) ||
+                    m.SubMenus.Any(sm => sm.MenuCode.Equals("TASKS_LIST", StringComparison.OrdinalIgnoreCase) ||
+                                         sm.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) ||
+                                         sm.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase)));
+                if (hasTasksAccess)
+                {
+                    return true;
+                }
+            }
+        }
+
+        // Special case for project-specific Kanban board
         if (cleanRelative.StartsWith("projects/", StringComparison.OrdinalIgnoreCase) && 
             cleanRelative.EndsWith("/tasks", StringComparison.OrdinalIgnoreCase))
         {
@@ -99,6 +126,24 @@ public class MenuAuthorizationService
                     return true;
                 }
             }
+        }
+
+        // Special case for Task Backlog split-screen page
+        if (cleanRelative.Equals("tasks/backlog", StringComparison.OrdinalIgnoreCase))
+        {
+            var hasTasksAccess = accessItems.Any(m => 
+                m.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase) ||
+                m.SubMenus.Any(sm => sm.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase)));
+            if (hasTasksAccess)
+            {
+                return true;
+            }
+        }
+
+        // Disable global board access
+        if (cleanRelative.Equals("board", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
         }
 
         if (string.IsNullOrEmpty(cleanRelative) || 

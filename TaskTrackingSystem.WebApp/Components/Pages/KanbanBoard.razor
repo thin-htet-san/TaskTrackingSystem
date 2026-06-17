@@ -1,5 +1,4 @@
 @page "/projects/{ProjectId:long}/tasks"
-@page "/board"
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
@@ -307,7 +306,7 @@
         }
     }
 
-    private void GoBack() => Navigation.NavigateTo("/projects");
+    private void GoBack() => Navigation.NavigateTo("/projects/all");
 
     private void OpenCreateTaskModal()
     {
@@ -383,7 +382,7 @@
             if (response.IsSuccessStatusCode)
             {
                 CloseTaskModal();
-                Navigation.NavigateTo("/tasks");
+                Navigation.NavigateTo("/tasks/all");
             }
             else
             {

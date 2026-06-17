@@ -146,6 +146,7 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60 font-sans">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">No.</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Employee</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Total Tasks</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completed</th>
@@ -158,10 +159,12 @@
                     <tbody class="divide-y divide-slate-100">
                         @if (reportData.EmployeeSummary.Any())
                         {
-                            @foreach (var emp in reportData.EmployeeSummary)
+                            @foreach (var entry in PagedEmployeeSummary.Select((emp, index) => (emp, index)))
                             {
+                                var emp = entry.emp;
                                 var pct = emp.CompletionPercentage;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-500 font-sans">@GetRowNo(userPage, entry.index)</td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-3">
                                             <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
@@ -194,10 +197,16 @@
                         }
                         else
                         {
-                            <EmptyState ColSpan="7" Icon="clock" Title="No timesheet data" Subtitle="No tasks found with the current filters." />
+                            <EmptyState ColSpan="8" Icon="clock" Title="No timesheet data" Subtitle="No tasks found with the current filters." />
                         }
                     </tbody>
                 </table>
+                <Pagination CurrentPage="userPage"
+                            TotalPages="UserTotalPages"
+                            PageSize="pageSize"
+                            TotalCount="reportData.EmployeeSummary.Count"
+                            OnPageChanged="HandleUserPageChanged"
+                            OnPageSizeChanged="HandlePageSizeChanged" />
             </div>
         }
 
@@ -211,6 +220,7 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">No.</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Project</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Total Tasks</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Completed</th>
@@ -222,10 +232,12 @@
                     <tbody class="divide-y divide-slate-100">
                         @if (reportData.ProjectSummary.Any())
                         {
-                            @foreach (var proj in reportData.ProjectSummary)
+                            @foreach (var entry in PagedProjectSummary.Select((proj, index) => (proj, index)))
                             {
+                                var proj = entry.proj;
                                 var pct = proj.CompletionPercentage;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-500 font-sans">@GetRowNo(projectPage, entry.index)</td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-2">
                                             <i data-lucide="folder-kanban" class="h-4 w-4 text-violet-500"></i>
@@ -250,10 +262,16 @@
                         }
                         else
                         {
-                            <EmptyState ColSpan="6" Icon="folder-kanban" Title="No project data" Subtitle="No tasks found with the current filters." />
+                            <EmptyState ColSpan="7" Icon="folder-kanban" Title="No project data" Subtitle="No tasks found with the current filters." />
                         }
                     </tbody>
                 </table>
+                <Pagination CurrentPage="projectPage"
+                            TotalPages="ProjectTotalPages"
+                            PageSize="pageSize"
+                            TotalCount="reportData.ProjectSummary.Count"
+                            OnPageChanged="HandleProjectPageChanged"
+                            OnPageSizeChanged="HandlePageSizeChanged" />
             </div>
         }
 
@@ -269,6 +287,7 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">No.</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Task</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Project</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider font-sans">Assignee</th>
@@ -281,14 +300,16 @@
                     <tbody class="divide-y divide-slate-100">
                         @if (PagedDetailTasks.Any())
                         {
-                            @foreach (var task in PagedDetailTasks)
+                            @foreach (var entry in PagedDetailTasks.Select((task, index) => (task, index)))
                             {
+                                var task = entry.task;
                                 var (statusLabel, statusClass) = task.StatusId switch {
                                     2 => ("In Progress", "bg-blue-50 text-blue-700"),
                                     3 => ("Done", "bg-emerald-50 text-emerald-700"),
                                     _ => ("To Do", "bg-slate-100 text-slate-600")
                                 };
                                 <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-500 font-sans">@GetRowNo(detailPage, entry.index)</td>
                                     <td class="px-6 py-4">
                                         <p class="text-sm font-semibold text-slate-900">@task.Title</p>
                                     </td>
@@ -327,7 +348,7 @@
                         }
                         else
                         {
-                            <EmptyState ColSpan="7" Icon="clock" Title="No tasks found" Subtitle="Try adjusting your filters." />
+                            <EmptyState ColSpan="8" Icon="clock" Title="No tasks found" Subtitle="Try adjusting your filters." />
                         }
                     </tbody>
                 </table>
@@ -360,13 +381,23 @@
     private long filterStatusId = 0;
     private long appliedStatusId = 0;
 
+    // Pagination (all list views)
+    private int userPage = 1;
+    private int projectPage = 1;
     // Pagination (detail view)
     private int detailPage = 1;
     private int pageSize = 10;
 
-    private IEnumerable<TaskTimeDetailDto> FilteredDetailTasks => reportData.TaskDetail;
+    private IEnumerable<TaskTimeDetailDto> FilteredDetailTasks =>
+        reportData.TaskDetail.OrderBy(t => t.Title);
+    private IEnumerable<EmployeeTimeSummaryDto> PagedEmployeeSummary =>
+        reportData.EmployeeSummary.OrderBy(x => x.FullName).Skip((userPage - 1) * pageSize).Take(pageSize);
+    private IEnumerable<ProjectTimeSummaryDto> PagedProjectSummary =>
+        reportData.ProjectSummary.OrderBy(x => x.ProjectName).Skip((projectPage - 1) * pageSize).Take(pageSize);
     private int DetailTotalPages => (int)Math.Ceiling((double)FilteredDetailTasks.Count() / pageSize);
     private IEnumerable<TaskTimeDetailDto> PagedDetailTasks => FilteredDetailTasks.Skip((detailPage - 1) * pageSize).Take(pageSize);
+    private int UserTotalPages => (int)Math.Ceiling((double)reportData.EmployeeSummary.Count() / pageSize);
+    private int ProjectTotalPages => (int)Math.Ceiling((double)reportData.ProjectSummary.Count() / pageSize);
 
     protected override async Task OnInitializedAsync()
     {
@@ -421,6 +452,8 @@
         appliedSearch    = searchInput;
         appliedProjectId = filterProjectId;
         appliedStatusId  = filterStatusId;
+        userPage = 1;
+        projectPage = 1;
         detailPage = 1;
         await LoadTimeTrackingData();
     }
@@ -430,12 +463,23 @@
         searchInput = "";      appliedSearch    = "";
         filterProjectId = 0;   appliedProjectId = 0;
         filterStatusId = 0;    appliedStatusId  = 0;
+        userPage = 1;
+        projectPage = 1;
         detailPage = 1;
         await LoadTimeTrackingData();
     }
 
+    private int GetRowNo(int page, int index) => ((page - 1) * pageSize) + index + 1;
+    private void HandleUserPageChanged(int page) => userPage = page;
+    private void HandleProjectPageChanged(int page) => projectPage = page;
     private void HandleDetailPageChanged(int page) => detailPage = page;
-    private void HandlePageSizeChanged(int size) { pageSize = size; detailPage = 1; }
+    private void HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        userPage = 1;
+        projectPage = 1;
+        detailPage = 1;
+    }
 
     private async Task DownloadExcel()
     {

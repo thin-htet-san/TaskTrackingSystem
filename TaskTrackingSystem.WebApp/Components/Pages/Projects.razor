@@ -60,6 +60,7 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/60">
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Date</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">End Date</th>
@@ -70,9 +71,11 @@
                 <tbody class="divide-y divide-slate-100">
                     @if (PagedProjects.Any())
                     {
-                        @foreach (var project in PagedProjects)
+                        @foreach (var entry in PagedProjects.Select((project, index) => (project, index)))
                         {
+                            var project = entry.project;
                             <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4">
                                     <button @onclick="() => NavigateToKanban(project.Id)" class="text-sm font-semibold text-slate-900 hover:text-violet-600 transition-colors">
                                         @project.Name
@@ -118,7 +121,7 @@
                     }
                     else
                     {
-                        <EmptyState ColSpan="5" Icon="folder-kanban" Title="No projects yet" Subtitle="@(canCreateProject ? "Create your first project to get started." : "You have not been assigned to any projects.")" />
+                        <EmptyState ColSpan="6" Icon="folder-kanban" Title="No projects yet" Subtitle="@(canCreateProject ? "Create your first project to get started." : "You have not been assigned to any projects.")" />
                     }
                 </tbody>
             </table>

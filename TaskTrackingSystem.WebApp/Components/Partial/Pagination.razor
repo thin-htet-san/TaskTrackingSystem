@@ -10,7 +10,7 @@
         {
             var from = (CurrentPage - 1) * PageSize + 1;
             var to = Math.Min(CurrentPage * PageSize, TotalCount);
-            <span>Showing <span class="font-semibold text-slate-700">@from–@to</span> of <span class="font-semibold text-slate-700">@TotalCount</span> results</span>
+            <span>Showing <span class="font-semibold text-slate-700">@from-@to</span> of <span class="font-semibold text-slate-700">@TotalCount</span> results</span>
         }
     </div>
 
@@ -46,7 +46,7 @@
             {
                 if (p == -1)
                 {
-                    <span class="inline-flex h-7 w-7 items-center justify-center text-xs text-slate-400">…</span>
+                    <span class="inline-flex h-7 w-7 items-center justify-center text-xs text-slate-400">...</span>
                 }
                 else
                 {
