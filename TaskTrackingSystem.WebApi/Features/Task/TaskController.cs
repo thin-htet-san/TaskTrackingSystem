@@ -62,7 +62,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             }
 
             long? currentUserId = User.GetUserId();
-            var result = await _taskService.UpdateTaskAsync(id, updateTaskDto, User.GetRoleName(), currentUserId);
+            var result = await _taskService.UpdateTaskAsync(id, updateTaskDto, currentUserId);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -74,7 +74,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Forbid();
             }
 
-            var result = await _taskService.SoftDeleteTaskAsync(id, User.GetRoleName(), User.GetUserId());
+            var result = await _taskService.SoftDeleteTaskAsync(id, User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -88,11 +88,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateTaskStatus(long id, [FromQuery] long statusId)
         {
-            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Update"))
-            {
-                return Forbid();
-            }
-
             var result = await _taskService.UpdateTaskStatusAsync(id, statusId, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess)
             {

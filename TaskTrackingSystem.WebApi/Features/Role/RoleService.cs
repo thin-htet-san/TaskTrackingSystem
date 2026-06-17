@@ -13,10 +13,12 @@ namespace TaskTrackingSystem.WebApi.Features.Role
     public class RoleService
     {
         private readonly AppDbContext _db;
+        private readonly Infrastructure.AuditLogService _auditLog;
 
-        public RoleService(AppDbContext db)
+        public RoleService(AppDbContext db, Infrastructure.AuditLogService auditLog)
         {
             _db = db;
+            _auditLog = auditLog;
         }
 
         public async Task<IEnumerable<RoleDto>> GetAllRolesAsync()
@@ -83,6 +85,8 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             _db.Roles.Add(role);
             await _db.SaveChangesAsync();
 
+            await _auditLog.LogAsync("Create", "Role", $"Created new role '{role.Name}'");
+
             var assignResult = await AssignAccessToRoleAsync(role.Id, new AssignAccessDto { AccessCodes = dto.AccessCodes ?? new List<string>() });
             if (!assignResult.IsSuccess)
             {
@@ -124,6 +128,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Update", "Role", $"Updated role name/description for '{role.Name}'");
             return Result.Success(200);
         }
 
@@ -138,6 +143,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             role.IsDeleted = true;
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Delete", "Role", $"Deleted role '{role.Name}'");
             return Result.Success(200);
         }
 
@@ -260,7 +266,77 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 });
             }
 
+            // Build a human-readable diff of what changed
+            var oldMenuCodes = existingRoleMenus
+                .Where(rm => !rm.IsDeleted)
+                .Select(rm => rm.MenuId)
+                .ToHashSet();
+            var oldPermissionIds = existingRolePermissions
+                .Where(rp => !rp.IsDeleted)
+                .Select(rp => rp.PermissionId)
+                .ToHashSet();
+
+            // Load all menu and permission names for diff display
+            var allMenuNames = await _db.Menus
+                .Where(m => !m.IsDeleted)
+                .Select(m => new { m.MenuId, m.MenuName, m.MenuCode })
+                .ToListAsync();
+            var allPermNames = await _db.Permissions
+                .Include(p => p.Menu)
+                .Where(p => !p.IsDeleted)
+                .Select(p => new { p.PermissionId, p.PermissionCode, p.ActionName, MenuName = p.Menu.MenuName })
+                .ToListAsync();
+
+            var menuNameLookup = allMenuNames.ToDictionary(m => m.MenuId, m => m.MenuName);
+            var permNameLookup = allPermNames.ToDictionary(p => p.PermissionId,
+                p => $"{p.MenuName} — {p.ActionName}");
+
+            var addedMenuNames = menuIdsToPersist
+                .Except(oldMenuCodes)
+                .Select(id => menuNameLookup.TryGetValue(id, out var n) ? n : id.ToString())
+                .OrderBy(n => n)
+                .ToList();
+
+            var removedMenuNames = oldMenuCodes
+                .Except(menuIdsToPersist)
+                .Select(id => menuNameLookup.TryGetValue(id, out var n) ? n : id.ToString())
+                .OrderBy(n => n)
+                .ToList();
+
+            var addedPermNames = permissionIdsToPersist
+                .Except(oldPermissionIds)
+                .Select(id => permNameLookup.TryGetValue(id, out var n) ? n : id.ToString())
+                .OrderBy(n => n)
+                .ToList();
+
+            var removedPermNames = oldPermissionIds
+                .Except(new HashSet<long>(permissionIdsToPersist))
+                .Select(id => permNameLookup.TryGetValue(id, out var n) ? n : id.ToString())
+                .OrderBy(n => n)
+                .ToList();
+
+            var descParts = new System.Text.StringBuilder();
+            descParts.Append($"Updated access permissions for role '{role.Name}'.");
+
+            if (addedMenuNames.Any() || addedPermNames.Any())
+            {
+                var added = addedMenuNames.Concat(addedPermNames).OrderBy(n => n).ToList();
+                descParts.Append($" Granted: {string.Join(", ", added)}.");
+            }
+
+            if (removedMenuNames.Any() || removedPermNames.Any())
+            {
+                var removed = removedMenuNames.Concat(removedPermNames).OrderBy(n => n).ToList();
+                descParts.Append($" Revoked: {string.Join(", ", removed)}.");
+            }
+
+            if (!addedMenuNames.Any() && !addedPermNames.Any() && !removedMenuNames.Any() && !removedPermNames.Any())
+            {
+                descParts.Append(" No changes detected.");
+            }
+
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("AssignAccess", "Role", descParts.ToString());
             return Result.Success(200);
         }
 

@@ -47,6 +47,13 @@
                 </NavLink>
             }
         }
+        @if (isAdmin)
+        {
+            <NavLink class="nav-link-item mt-2 pt-2 border-t border-slate-100" href="/audit-logs" Match="NavLinkMatch.All">
+                <i data-lucide="file-text" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                <span>Audit Logs</span>
+            </NavLink>
+        }
     }
     else
     {
@@ -58,6 +65,7 @@
 
 @code {
     private List<MenuDto> menus = new();
+    private bool isAdmin = false;
     private string currentPath = string.Empty;
     private HashSet<string> expandedMenuGroups = new();
 
@@ -73,7 +81,9 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                menus = await MenuAuthorization.GetUserMenusAsync(user);
+                isAdmin = user.IsInRole("Admin");
+                var rawMenus = await MenuAuthorization.GetUserMenusAsync(user);
+                menus = ProcessMenus(rawMenus);
                 BuildUrlHierarchy(menus);
 
                 foreach (var menu in menus)
@@ -97,6 +107,37 @@
         InvokeAsync(RefreshMenusAsync);
     }
 
+    private List<MenuDto> ProcessMenus(List<MenuDto> rawMenus)
+    {
+        var result = new List<MenuDto>();
+
+        foreach (var m in rawMenus)
+        {
+            // Skip the global board
+            if (m.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) || 
+                (m.MenuUrl != null && m.MenuUrl.Trim('/').Equals("board", StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var clonedSubMenus = new List<MenuDto>();
+            foreach (var sm in m.SubMenus)
+            {
+                if (sm.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) || 
+                    (sm.MenuUrl != null && sm.MenuUrl.Trim('/').Equals("board", StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+                clonedSubMenus.Add(sm);
+            }
+
+            m.SubMenus = clonedSubMenus;
+            result.Add(m);
+        }
+
+        return result;
+    }
+
     private async Task RefreshMenusAsync()
     {
         try
@@ -106,14 +147,14 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                // GetUserMenusAsync will automatically bust the cache if an admin changed permissions.
                 var freshMenus = await MenuAuthorization.GetUserMenusAsync(user);
+                var processedMenus = ProcessMenus(freshMenus);
 
                 // Only update and re-render if the menu list actually changed.
-                if (freshMenus.Count != menus.Count ||
-                    freshMenus.Select(m => m.MenuCode).SequenceEqual(menus.Select(m => m.MenuCode)) == false)
+                if (processedMenus.Count != menus.Count ||
+                    processedMenus.Select(m => m.MenuCode).SequenceEqual(menus.Select(m => m.MenuCode)) == false)
                 {
-                    menus = freshMenus;
+                    menus = processedMenus;
                     BuildUrlHierarchy(menus);
                     expandedMenuGroups.Clear();
                     foreach (var menu in menus)

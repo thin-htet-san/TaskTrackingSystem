@@ -140,7 +140,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result<TaskDto>.Success(resultDto, 201);
         }
 
-        public async Task<Result> UpdateTaskAsync(long id, UpdateTaskDto dto, string roleName, long? currentUserId = null)
+        public async Task<Result> UpdateTaskAsync(long id, UpdateTaskDto dto, long? currentUserId = null)
         {
             if (string.IsNullOrWhiteSpace(dto.Title))
             {
@@ -149,11 +149,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
-
-            if (!currentUserId.HasValue || !await CanEditTaskAsync(task, roleName, currentUserId.Value))
-            {
-                return Result.Failure("You do not have access to update this task.", 403);
-            }
 
             if (dto.AssignedTo.HasValue && !await IsProjectMemberAsync(task.ProjectId, dto.AssignedTo.Value))
             {
@@ -176,17 +171,14 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result.Success(200);
         }
 
-        public async Task<Result> SoftDeleteTaskAsync(long id, string roleName, long currentUserId)
+        public async Task<Result> SoftDeleteTaskAsync(long id, long currentUserId)
         {
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
-            if (!await CanEditTaskAsync(task, roleName, currentUserId))
-            {
-                return Result.Failure("You do not have access to delete this task.", 403);
-            }
-
             task.IsDeleted = true;
+            task.UpdatedAt = DateTime.UtcNow;
+            task.UpdatedBy = currentUserId;
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
             return Result.Success(200);
@@ -234,11 +226,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Result.Failure(ResultMessages.TaskNotFound(id), 404);
             }
 
-            if (!await CanEditTaskAsync(task, roleName, currentUserId))
-            {
-                return Result.Failure("You do not have access to update this task.", 403);
-            }
-
             task.StatusId = statusId;
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
@@ -269,26 +256,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return query.Where(t =>
                 t.AssignedTo == currentUserId ||
                 t.CreatedBy == currentUserId);
-        }
-
-        private async Task<bool> CanEditTaskAsync(TaskTrackingSystem.Database.AppDbContextModels.Task task, string roleName, long currentUserId)
-        {
-            if (IsAdmin(roleName))
-            {
-                return true;
-            }
-
-            if (task.CreatedBy == currentUserId || task.AssignedTo == currentUserId)
-            {
-                return true;
-            }
-
-            if (IsManager(roleName))
-            {
-                return await _db.ProjectMembers.AnyAsync(pm => pm.ProjectId == task.ProjectId && pm.UserId == currentUserId);
-            }
-
-            return false;
         }
 
         private async Task<bool> CanAccessProjectAsync(long projectId, string roleName, long currentUserId)

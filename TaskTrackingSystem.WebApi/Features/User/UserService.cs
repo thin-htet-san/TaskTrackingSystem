@@ -15,11 +15,13 @@ namespace TaskTrackingSystem.WebApi.Features.User
     {
         private readonly AppDbContext _db;
         private readonly IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User> _passwordHasher;
+        private readonly Infrastructure.AuditLogService _auditLog;
 
-        public UserService(AppDbContext db, IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User> passwordHasher)
+        public UserService(AppDbContext db, IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User> passwordHasher, Infrastructure.AuditLogService auditLog)
         {
             _db = db;
             _passwordHasher = passwordHasher;
+            _auditLog = auditLog;
         }
 
         public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
@@ -29,7 +31,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
                 .Select(u => new UserDto
                 {
                     Id = u.Id,
-                    Username = u.Username, // 🆕 Mapped
+                    Username = u.Username,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
                     Email = u.Email,
@@ -96,9 +98,11 @@ namespace TaskTrackingSystem.WebApi.Features.User
 
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
-
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
+
+            var roleName = await _db.Roles.Where(r => r.Id == user.RoleId).Select(r => r.Name).FirstOrDefaultAsync() ?? "Unknown";
+            await _auditLog.LogAsync("Create", "User", $"Created user '{user.Username}' ({user.FirstName} {user.LastName}, {user.Email}) with role '{roleName}'");
 
             var resultDto = new UserDto
             {
@@ -143,6 +147,11 @@ namespace TaskTrackingSystem.WebApi.Features.User
 
             _db.Users.Update(user);
             await _db.SaveChangesAsync();
+
+            var roleName = await _db.Roles.Where(r => r.Id == user.RoleId).Select(r => r.Name).FirstOrDefaultAsync() ?? "Unknown";
+            var statusLabel = user.IsActive ? "Active" : "Inactive";
+            await _auditLog.LogAsync("Update", "User", $"Updated user '{user.Username}' ({user.FirstName} {user.LastName}) — Role: '{roleName}', Status: {statusLabel}");
+
             return Result.Success(200);
         }
 
@@ -159,6 +168,9 @@ namespace TaskTrackingSystem.WebApi.Features.User
             user.IsDeleted = true;
             _db.Users.Update(user);
             await _db.SaveChangesAsync();
+
+            await _auditLog.LogAsync("Delete", "User", $"Deleted user account '{user.Username}' ({user.FirstName} {user.LastName})");
+
             return Result.Success(200);
         }
     }

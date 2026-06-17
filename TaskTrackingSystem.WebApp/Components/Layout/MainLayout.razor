@@ -157,7 +157,7 @@
         }
 
         var menus = await MenuAuthorization.GetUserMenusAsync(user);
-        var allowed = MenuAuthorization.IsRouteAllowed(menus, relativePath);
+        var allowed = MenuAuthorization.IsRouteAllowed(user, relativePath);
         Console.WriteLine($"[DEBUG MainLayout] User: {user.Identity?.Name}, Path: {relativePath}, Allowed: {allowed}");
         if (menus != null)
         {
