@@ -28,8 +28,11 @@
                     <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
                 </button>
             </div>
-            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+            </button>
+            <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
             </button>
         </div>
     </div>
@@ -267,7 +270,7 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(t.PriorityId)">@t.PriorityName</span>
                                     </td>
                                     <td class="px-6 py-3 text-sm text-slate-500">@(t.AssignedToUser ?? "Unassigned")</td>
-                                    <td class="px-6 py-3 text-sm text-slate-500">@t.DueDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-3 text-sm text-slate-500">@DisplayFormats.Date(t.DueDate)</td>
                                 </tr>
                             }
                         }
@@ -487,19 +490,71 @@
         }
     }
 
-    private async Task DownloadCsv()
+    private async Task DownloadExcel()
     {
-        var csv = new StringBuilder();
-        csv.AppendLine("Task Title,Project,Status,Priority,Assigned To,Due Date");
-
-        foreach (var t in taskReports)
+        var rows = FilteredList.Select(t => new object?[]
         {
-            csv.AppendLine($"\"{t.Title}\",\"{t.ProjectName}\",\"{t.StatusName}\",\"{t.PriorityName}\",\"{t.AssignedToUser ?? "Unassigned"}\",\"{t.DueDate:yyyy-MM-dd}\"");
-        }
+            t.Title,
+            t.ProjectName,
+            t.StatusName,
+            t.PriorityName,
+            t.AssignedToUser ?? "Unassigned",
+            t.DueDate
+        });
 
-        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
-        var base64 = Convert.ToBase64String(bytes);
-        await JS.InvokeVoidAsync("downloadFile", "TaskReport.csv", "text/csv;charset=utf-8;", csv.ToString());
+        var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
+            "Task Report",
+            "Task Report",
+            new[] { "Task", "Project", "Status", "Priority", "Assigned To", "Due Date" },
+            rows,
+            new[]
+            {
+                $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All tasks" : searchQuery)}",
+                $"Period: {filterPeriod}",
+                $"Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", "uncompleted" => "Uncompleted", _ => filterStatus }}",
+                $"Project: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? "Selected project" : "All projects")}",
+                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+            });
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"TaskReport_{DateTime.Today:yyyyMMdd}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Convert.ToBase64String(workbookBytes));
+    }
+
+    private async Task DownloadPdf()
+    {
+        var summaryLines = new List<string>
+        {
+            $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All tasks" : searchQuery)}",
+            $"Period: {filterPeriod}",
+            $"Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", "uncompleted" => "Uncompleted", _ => filterStatus }}",
+            $"Project: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? "Selected project" : "All projects")}",
+            $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+        };
+
+        var rows = FilteredList.Select(t => new[]
+        {
+            t.Title,
+            t.ProjectName,
+            t.StatusName,
+            t.PriorityName,
+            t.AssignedToUser ?? "Unassigned",
+            DisplayFormats.Date(t.DueDate)
+        });
+
+        var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
+            "Task Report",
+            summaryLines,
+            new[] { "Task", "Project", "Status", "Priority", "Assigned To", "Due Date" },
+            rows);
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"TaskReport_{DateTime.Today:yyyyMMdd}.pdf",
+            "application/pdf",
+            Convert.ToBase64String(pdfBytes));
     }
 
     private string GetStatusBadge(long statusId) => statusId switch

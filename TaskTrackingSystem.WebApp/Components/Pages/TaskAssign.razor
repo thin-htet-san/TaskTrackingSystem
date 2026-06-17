@@ -142,7 +142,7 @@
                             </span>
                             <span class="text-xs text-slate-500">
                                 <i data-lucide="calendar" class="h-3 w-3 inline mr-1 text-slate-400"></i>
-                                Due: @SelectedTask.DueDate.ToString("dd-MMM-yyyy")
+                                Due: @DisplayFormats.Date(SelectedTask.DueDate)
                             </span>
                         </div>
                     </div>

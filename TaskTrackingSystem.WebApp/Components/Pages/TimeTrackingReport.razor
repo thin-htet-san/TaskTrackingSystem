@@ -34,8 +34,11 @@
                     <i data-lucide="list" class="h-3.5 w-3.5 mr-1 font-sans"></i> Detail
                 </button>
             </div>
-            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-sans">
-                <i data-lucide="download" class="h-4 w-4 mr-2 font-sans"></i> Export CSV
+            <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-sans">
+                <i data-lucide="download" class="h-4 w-4 mr-2 font-sans"></i> Export Excel
+            </button>
+            <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-sans">
+                <i data-lucide="file-text" class="h-4 w-4 mr-2 font-sans"></i> Export PDF
             </button>
         </div>
     </div>
@@ -315,7 +318,7 @@
                                     <td class="px-6 py-4">
                                         <span class="text-sm font-semibold text-amber-600 font-sans">@task.CompletedHours.ToString("F1") h</span>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-600 font-sans">@task.DueDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600 font-sans">@DisplayFormats.Date(task.DueDate)</td>
                                     <td class="px-6 py-4">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass font-sans">@statusLabel</span>
                                     </td>
@@ -434,17 +437,74 @@
     private void HandleDetailPageChanged(int page) => detailPage = page;
     private void HandlePageSizeChanged(int size) { pageSize = size; detailPage = 1; }
 
-    private async Task DownloadCsv()
+    private async Task DownloadExcel()
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("Task Title,Project,Assignee,Estimated Hours,Logged Hours,Due Date,Status");
-        foreach (var task in reportData.TaskDetail)
+        var rows = FilteredDetailTasks.Select(task =>
         {
             var status = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
-            sb.AppendLine($"\"{task.Title}\",\"{task.ProjectName}\",\"{task.AssigneeName}\",{task.EstimatedHours?.ToString() ?? ""},{task.CompletedHours},\"{task.DueDate:dd-MMM-yyyy}\",{status}");
-        }
-        var bytes  = Encoding.UTF8.GetBytes(sb.ToString());
-        var base64 = Convert.ToBase64String(bytes);
-        await JS.InvokeVoidAsync("downloadFile", $"timesheet_{DateTime.Today:yyyy-MM-dd}.csv", "text/csv", base64);
+            return new object?[]
+            {
+                task.Title,
+                task.ProjectName,
+                task.AssigneeName,
+                task.EstimatedHours,
+                task.CompletedHours,
+                task.DueDate,
+                status
+            };
+        });
+
+        var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
+            "Time Tracking",
+            "Time Tracking Report",
+            new[] { "Task", "Project", "Assignee", "Estimated Hours", "Logged Hours", "Due Date", "Status" },
+            rows,
+            new[]
+            {
+                $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All tasks" : appliedSearch)}",
+                $"Project: {(appliedProjectId == 0 ? "All projects" : allProjects.FirstOrDefault(p => p.Id == appliedProjectId)?.Name ?? "Selected project")}",
+                $"Status: {(appliedStatusId == 0 ? "All statuses" : appliedStatusId == 1 ? "To Do" : appliedStatusId == 2 ? "In Progress" : "Done")}",
+                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+            });
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"TimeTrackingReport_{DateTime.Today:yyyyMMdd}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Convert.ToBase64String(workbookBytes));
+    }
+
+    private async Task DownloadPdf()
+    {
+        var summaryLines = new List<string>
+        {
+            $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All tasks" : appliedSearch)}",
+            $"Project: {(appliedProjectId == 0 ? "All projects" : allProjects.FirstOrDefault(p => p.Id == appliedProjectId)?.Name ?? "Selected project")}",
+            $"Status: {(appliedStatusId == 0 ? "All statuses" : appliedStatusId == 1 ? "To Do" : appliedStatusId == 2 ? "In Progress" : "Done")}",
+            $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+        };
+
+        var rows = FilteredDetailTasks.Select(task => new[]
+        {
+            task.Title,
+            task.ProjectName,
+            task.AssigneeName,
+            task.EstimatedHours?.ToString("F1") ?? "-",
+            task.CompletedHours.ToString("F1"),
+            DisplayFormats.Date(task.DueDate),
+            task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" }
+        });
+
+        var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
+            "Time Tracking Report",
+            summaryLines,
+            new[] { "Task", "Project", "Assignee", "Estimated Hours", "Logged Hours", "Due Date", "Status" },
+            rows);
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"TimeTrackingReport_{DateTime.Today:yyyyMMdd}.pdf",
+            "application/pdf",
+            Convert.ToBase64String(pdfBytes));
     }
 }

@@ -82,9 +82,9 @@
                                         <p class="text-xs text-slate-400 mt-0.5 truncate max-w-xs">@project.Description</p>
                                     }
                                 </td>
-                                <td class="px-6 py-4 text-sm text-slate-600">@project.StartDate.ToString("dd-MMM-yyyy")</td>
-                                <td class="px-6 py-4 text-sm text-slate-600">@project.EndDate.ToString("dd-MMM-yyyy")</td>
-                                <td class="px-6 py-4 text-sm text-slate-400">@project.CreatedAt.ToString("dd-MMM-yyyy")</td>
+                                <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(project.StartDate)</td>
+                                <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(project.EndDate)</td>
+                                <td class="px-6 py-4 text-sm text-slate-400">@DisplayFormats.Date(project.CreatedAt)</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
                                         <button @onclick="() => NavigateToKanban(project.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-600 transition-all" title="View Board">

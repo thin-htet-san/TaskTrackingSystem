@@ -149,7 +149,7 @@
                                         <!-- Right section -->
                                         <div class="flex items-center justify-between sm:justify-end gap-4 shrink-0">
                                             <span class="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
-                                                Due @task.DueDate.ToString("dd-MMM-yyyy")
+                                                Due @DisplayFormats.Date(task.DueDate)
                                             </span>
                                             
                                             <div class="flex items-center space-x-1">
@@ -221,7 +221,7 @@
                                             <p class="text-xs text-slate-505 mt-1.5 line-clamp-2">@task.Description</p>
                                         }
                                         <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
-                                            <span class="text-[10px] text-slate-400">Due @task.DueDate.ToString("MMM dd")</span>
+                                            <span class="text-[10px] text-slate-400">Due @DisplayFormats.Date(task.DueDate)</span>
                                             @{ var user = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo); }
                                             @if (user != null)
                                             {
@@ -283,7 +283,7 @@
                                             @GetPriorityLabel(task.PriorityId)
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">@task.DueDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(task.DueDate)</td>
                                     <td class="px-6 py-4 text-sm text-slate-500">
                                         @{ var proj = projects.FirstOrDefault(p => p.Id == task.ProjectId); }
                                         @(proj?.Name ?? $"#{task.ProjectId}")

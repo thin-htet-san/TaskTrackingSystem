@@ -1,32 +1,45 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TaskTrackingSystem.Shared.Models.Task
 {
-    public class UpdateTaskDto
+    public class UpdateTaskDto : IValidatableObject
     {
         [Required, MaxLength(200)]
         public string Title { get; set; } = string.Empty;
 
+        [MaxLength(1000)]
         public string? Description { get; set; }
 
         [Required]
+        [Range(0, 3)]
         public long StatusId { get; set; }
 
         [Required]
+        [Range(0, 3)]
         public long PriorityId { get; set; }
 
+        [Range(0, long.MaxValue)]
         public long? AssignedTo { get; set; }
 
+        [Range(0, long.MaxValue)]
         public long? AssignedBy { get; set; }
 
+        [Range(typeof(decimal), "0", "100000")]
         public decimal? EstimatedHours { get; set; }
 
         [Required]
         public DateTime DueDate { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (DueDate == default)
+            {
+                yield return new ValidationResult(
+                    "Due date is required.",
+                    new[] { nameof(DueDate) });
+            }
+        }
     }
 }

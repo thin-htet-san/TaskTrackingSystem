@@ -26,8 +26,11 @@
                     <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
                 </button>
             </div>
-            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+            </button>
+            <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
             </button>
         </div>
     </div>
@@ -361,17 +364,69 @@
         displayList = metrics.OrderByDescending(m => m.Efficiency).ToList();
     }
 
-    private async Task DownloadCsv()
+    private async Task DownloadExcel()
     {
-        var csv = new StringBuilder();
-        csv.AppendLine("Employee Name,Username,Total Assigned,Completed Tasks,Efficiency %,On-Time Delivery %");
-
-        foreach (var emp in displayList)
+        var rows = FilteredList.Select(emp => new object?[]
         {
-            csv.AppendLine($"\"{emp.FullName}\",\"{emp.Username}\",\"{emp.AssignedCount}\",\"{emp.CompletedCount}\",\"{emp.Efficiency:F0}%\",\"{emp.OnTimeDeliveryRate:F0}%\"");
-        }
+            emp.FullName,
+            emp.Username,
+            emp.AssignedCount,
+            emp.CompletedCount,
+            $"{emp.Efficiency:F0}%",
+            $"{emp.OnTimeDeliveryRate:F0}%"
+        });
 
-        await JS.InvokeVoidAsync("downloadFile", "EmployeeProductivityReport.csv", "text/csv;charset=utf-8;", csv.ToString());
+        var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
+            "Employee Productivity",
+            "Employee Productivity Report",
+            new[] { "Employee", "Username", "Total Assigned", "Completed", "Efficiency", "On-Time Delivery" },
+            rows,
+            new[]
+            {
+                $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All employees" : searchQuery)}",
+                $"Period: {filterPeriod}",
+                $"Task Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", _ => filterStatus }}",
+                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+            });
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"EmployeeProductivityReport_{DateTime.Today:yyyyMMdd}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Convert.ToBase64String(workbookBytes));
+    }
+
+    private async Task DownloadPdf()
+    {
+        var summaryLines = new List<string>
+        {
+            $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All employees" : searchQuery)}",
+            $"Period: {filterPeriod}",
+            $"Task Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", _ => filterStatus }}",
+            $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+        };
+
+        var rows = FilteredList.Select(emp => new[]
+        {
+            emp.FullName,
+            emp.Username,
+            emp.AssignedCount.ToString(),
+            emp.CompletedCount.ToString(),
+            $"{emp.Efficiency:F0}%",
+            $"{emp.OnTimeDeliveryRate:F0}%"
+        });
+
+        var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
+            "Employee Productivity Report",
+            summaryLines,
+            new[] { "Employee", "Username", "Total Assigned", "Completed", "Efficiency", "On-Time Delivery" },
+            rows);
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"EmployeeProductivityReport_{DateTime.Today:yyyyMMdd}.pdf",
+            "application/pdf",
+            Convert.ToBase64String(pdfBytes));
     }
 
     private class EmployeeMetric

@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TaskTrackingSystem.Shared.Models.Project
 {
-    public class UpdateProjectDto
+    public class UpdateProjectDto : IValidatableObject
     {
         [Required, MaxLength(150)]
         public string Name { get; set; } = string.Empty;
 
+        [MaxLength(500)]
         public string? Description { get; set; }
 
         [Required]
@@ -20,6 +18,17 @@ namespace TaskTrackingSystem.Shared.Models.Project
         [Required]
         public DateTime EndDate { get; set; }
 
+        [Range(0, 100000)]
         public int? BudgetedHours { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (EndDate < StartDate)
+            {
+                yield return new ValidationResult(
+                    "End date cannot be before start date.",
+                    new[] { nameof(EndDate), nameof(StartDate) });
+            }
+        }
     }
 }

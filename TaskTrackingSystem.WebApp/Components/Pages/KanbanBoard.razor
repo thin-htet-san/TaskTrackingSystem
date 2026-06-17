@@ -84,7 +84,7 @@
                                         <p class="text-xs text-slate-500 mt-1.5 line-clamp-2">@task.Description</p>
                                     }
                                     <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
-                                        <span class="text-xs text-slate-400">Due @task.DueDate.ToString("dd-MMM-yyyy")</span>
+                                        <span class="text-xs text-slate-400">Due @DisplayFormats.Date(task.DueDate)</span>
                                     </div>
                                 </div>
                             }

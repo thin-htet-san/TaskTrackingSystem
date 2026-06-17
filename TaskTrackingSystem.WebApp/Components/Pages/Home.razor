@@ -55,24 +55,24 @@ else
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">Total Tasks</span>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600"><i data-lucide="list-todo" class="h-4 w-4"></i></span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Total Users</span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600"><i data-lucide="users" class="h-4 w-4"></i></span>
                 </div>
-                <p class="text-3xl font-bold text-slate-900 mt-3">@TotalTasksCount</p>
+                <p class="text-3xl font-bold text-slate-900 mt-3">@summary.TotalUsers</p>
             </div>
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">Completed</span>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><i data-lucide="check-circle" class="h-4 w-4"></i></span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Active Projects</span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><i data-lucide="folder-kanban" class="h-4 w-4"></i></span>
                 </div>
-                <p class="text-3xl font-bold text-emerald-600 mt-3">@CompletedTasksCount</p>
+                <p class="text-3xl font-bold text-emerald-600 mt-3">@summary.ActiveProjectsCount</p>
             </div>
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">In Progress</span>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><i data-lucide="loader" class="h-4 w-4"></i></span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Pending Tasks</span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><i data-lucide="list-todo" class="h-4 w-4"></i></span>
                 </div>
-                <p class="text-3xl font-bold text-blue-600 mt-3">@(taskStatuses.FirstOrDefault(s => s.StatusId == 2)?.TaskCount ?? 0)</p>
+                <p class="text-3xl font-bold text-blue-600 mt-3">@summary.PendingTasksCount</p>
             </div>
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
@@ -101,7 +101,7 @@ else
                                     var progress = GetTaskProgress(task.StatusId);
                                     <div @onclick="() => NavigateToTask(task.Id)" class="rounded-xl border border-slate-100 p-4 hover:shadow-md transition-all cursor-pointer">
                                         <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-                                            <span>@task.DueDate.ToString("dd-MMM-yyyy")</span>
+                                            <span>@DisplayFormats.Date(task.DueDate)</span>
                                             <i data-lucide="more-horizontal" class="h-4 w-4"></i>
                                         </div>
                                         <h4 class="font-bold text-sm text-slate-800 truncate">@task.Title</h4>
@@ -227,7 +227,7 @@ else
                                     <input type="checkbox" checked="@(task.StatusId == 3)" @onchange="() => ToggleTaskStatus(task)" disabled="@(!canUpdateTask)" class="h-4 w-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 mt-0.5 disabled:opacity-50 disabled:cursor-not-allowed" />
                                     <div class="min-w-0 flex-1">
                                         <p class="text-xs font-semibold text-slate-800 truncate @(task.StatusId == 3 ? "line-through text-slate-400" : "")">@task.Title</p>
-                                        <p class="text-[10px] text-slate-400">Due @task.DueDate.ToString("dd-MMM-yyyy")</p>
+                                        <p class="text-[10px] text-slate-400">Due @DisplayFormats.Date(task.DueDate)</p>
                                     </div>
                                 </div>
                             }

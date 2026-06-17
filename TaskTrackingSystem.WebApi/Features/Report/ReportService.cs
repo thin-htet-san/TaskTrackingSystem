@@ -231,8 +231,8 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 ws.Cell(row, 4).Value = item.StatusName;
                 ws.Cell(row, 5).Value = item.PriorityName;
                 ws.Cell(row, 6).Value = item.AssignedTo ?? "Unassigned";
-                ws.Cell(row, 7).Value = item.DueDate.ToString("yyyy-MM-dd");
-                ws.Cell(row, 8).Value = item.CreatedAt.ToString("yyyy-MM-dd");
+                ws.Cell(row, 7).Value = DisplayFormats.Date(item.DueDate);
+                ws.Cell(row, 8).Value = DisplayFormats.Date(item.CreatedAt);
                 ws.Cell(row, 9).Value = item.IsOverdue ? "Yes" : "No";
                 if (item.IsOverdue) ws.Row(row).Style.Fill.BackgroundColor = XLColor.FromHtml("#FEE2E2");
                 row++;
@@ -375,9 +375,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 ws.Cell(row, 4).Value = item.StatusName;
                 ws.Cell(row, 5).Value = item.PriorityName;
                 ws.Cell(row, 6).Value = item.AssignedTo ?? "Unassigned";
-                ws.Cell(row, 7).Value = item.DueDate.ToString("yyyy-MM-dd");
+                ws.Cell(row, 7).Value = DisplayFormats.Date(item.DueDate);
                 ws.Cell(row, 8).Value = item.DaysOverdue;
-                ws.Cell(row, 9).Value = item.CreatedAt.ToString("yyyy-MM-dd");
+                ws.Cell(row, 9).Value = DisplayFormats.Date(item.CreatedAt);
                 if (item.DaysOverdue > 0) ws.Row(row).Style.Fill.BackgroundColor = XLColor.FromHtml("#FEE2E2");
                 row++;
             }

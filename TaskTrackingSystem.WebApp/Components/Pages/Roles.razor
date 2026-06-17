@@ -80,7 +80,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">@(role.Description ?? "—")</td>
-                                <td class="px-6 py-4 text-sm text-slate-400">@role.CreatedAt.ToString("dd-MMM-yyyy")</td>
+                                <td class="px-6 py-4 text-sm text-slate-400">@DisplayFormats.Date(role.CreatedAt)</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
                                         @if (canManageAccess)

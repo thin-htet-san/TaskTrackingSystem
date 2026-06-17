@@ -136,7 +136,8 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
                 return Result.Failure(ResultMessages.FillAllFields, 400);
             }
 
-            var expectedCode = _configuration["PasswordReset:RecoveryCode"] ?? "TASKIFY-RESET-2026";
+            var expectedCode = _configuration["PasswordReset:RecoveryCode"]
+                               ?? throw new InvalidOperationException("PasswordReset:RecoveryCode must be configured.");
             if (!string.Equals(dto.RecoveryCode.Trim(), expectedCode, StringComparison.Ordinal))
             {
                 return Result.Failure("Invalid recovery code.", 400);
@@ -161,7 +162,8 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
         private string GenerateJwtToken(string userId, string username, string email, long roleId, string roleName)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var keyStr = jwtSettings["Key"] ?? "SUPER_SECRET_KEY_THAT_IS_LONG_ENOUGH_12345";
+            var keyStr = jwtSettings["Key"]
+                         ?? throw new InvalidOperationException("JwtSettings:Key must be configured.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -175,8 +177,10 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
             };
 
             var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"] ?? "YourApp",
-                audience: jwtSettings["Audience"] ?? "YourAppUsers",
+                issuer: jwtSettings["Issuer"]
+                    ?? throw new InvalidOperationException("JwtSettings:Issuer must be configured."),
+                audience: jwtSettings["Audience"]
+                    ?? throw new InvalidOperationException("JwtSettings:Audience must be configured."),
                 claims: claims,
                 expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: creds

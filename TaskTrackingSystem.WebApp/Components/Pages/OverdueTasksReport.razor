@@ -22,8 +22,11 @@
             <p class="text-slate-500 mt-1">Track tasks that have passed their due date or are at risk of delay.</p>
         </div>
         <div class="flex items-center space-x-3">
-            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+            </button>
+            <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
             </button>
         </div>
     </div>
@@ -180,7 +183,7 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="text-sm font-medium @(daysOverdue > 0 ? "text-rose-600" : "text-amber-600")">
-                                        @task.DueDate.ToString("dd-MMM-yyyy")
+                                        @DisplayFormats.Date(task.DueDate)
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
@@ -414,22 +417,88 @@
     private void HandlePageChanged(int page) => currentPage = page;
     private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
 
-    private async Task DownloadCsv()
+    private async Task DownloadExcel()
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("Task Title,Project,Assignee,Due Date,Days Overdue,Priority,Status");
-        foreach (var task in FilteredTasks)
+        var rows = FilteredTasks.Select(task =>
         {
             var daysOver = (DateTime.Today - task.DueDate).Days;
             var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
-            var project  = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
+            var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
             var priority = task.PriorityId switch { 3 => "High", 2 => "Medium", _ => "Low" };
-            var status   = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
-            sb.AppendLine($"\"{task.Title}\",\"{project?.Name ?? ""}\",\"{(assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : "Unassigned")}\",{task.DueDate:dd-MMM-yyyy},{daysOver},{priority},{status}");
-        }
-        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-        var base64 = Convert.ToBase64String(bytes);
-        await JS.InvokeVoidAsync("downloadFile", $"overdue_tasks_{DateTime.Today:yyyy-MM-dd}.csv", "text/csv", base64);
+            var status = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
+
+            return new object?[]
+            {
+                task.Title,
+                project?.Name ?? string.Empty,
+                assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : "Unassigned",
+                task.DueDate,
+                daysOver,
+                priority,
+                status
+            };
+        });
+
+        var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
+            "Overdue Tasks",
+            "Overdue & Delayed Tasks Report",
+            new[] { "Task", "Project", "Assignee", "Due Date", "Days Overdue", "Priority", "Status" },
+            rows,
+            new[]
+            {
+                $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All tasks" : appliedSearch)}",
+                $"Priority: {appliedPriority switch { 0 => "All", 1 => "Low", 2 => "Medium", 3 => "High", _ => appliedPriority.ToString() }}",
+                $"Delay Type: {appliedDelayType switch { "all" => "All delayed tasks", "overdue" => "Overdue", "soon" => "Due within 3 days", _ => appliedDelayType }}",
+                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+            });
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"OverdueTasksReport_{DateTime.Today:yyyyMMdd}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Convert.ToBase64String(workbookBytes));
+    }
+
+    private async Task DownloadPdf()
+    {
+        var summaryLines = new List<string>
+        {
+            $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All tasks" : appliedSearch)}",
+            $"Priority: {appliedPriority switch { 0 => "All", 1 => "Low", 2 => "Medium", 3 => "High", _ => appliedPriority.ToString() }}",
+            $"Delay Type: {appliedDelayType switch { "all" => "All delayed tasks", "overdue" => "Overdue", "soon" => "Due within 3 days", _ => appliedDelayType }}",
+            $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+        };
+
+        var rows = FilteredTasks.Select(task =>
+        {
+            var daysOver = (DateTime.Today - task.DueDate).Days;
+            var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
+            var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
+            var priority = task.PriorityId switch { 3 => "High", 2 => "Medium", _ => "Low" };
+            var status = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
+            return new[]
+            {
+                task.Title,
+                project?.Name ?? string.Empty,
+                assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : "Unassigned",
+                DisplayFormats.Date(task.DueDate),
+                daysOver.ToString(),
+                priority,
+                status
+            };
+        });
+
+        var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
+            "Overdue Tasks Report",
+            summaryLines,
+            new[] { "Task", "Project", "Assignee", "Due Date", "Days Overdue", "Priority", "Status" },
+            rows);
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"OverdueTasksReport_{DateTime.Today:yyyyMMdd}.pdf",
+            "application/pdf",
+            Convert.ToBase64String(pdfBytes));
     }
 
     // Adjust Due Date modal variables and methods

@@ -59,7 +59,7 @@
                                     class="w-full text-left p-4 hover:bg-slate-50/60 transition-colors flex flex-col gap-1 @(isSelected ? "bg-violet-50/60 border-l-4 border-violet-600 pl-3" : "")">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-900 @(isSelected ? "text-violet-700" : "")">@proj.Name</span>
-                                    <span class="text-[10px] text-slate-400">@proj.StartDate.ToString("MMM yy") - @proj.EndDate.ToString("MMM yy")</span>
+                                    <span class="text-[10px] text-slate-400">@DisplayFormats.Date(proj.StartDate) - @DisplayFormats.Date(proj.EndDate)</span>
                                 </div>
                                 @if (!string.IsNullOrEmpty(proj.Description))
                                 {
@@ -101,7 +101,7 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                                @SelectedProject.StartDate.ToString("dd-MMM-yyyy") - @SelectedProject.EndDate.ToString("dd-MMM-yyyy")
+                                @DisplayFormats.Date(SelectedProject.StartDate) - @DisplayFormats.Date(SelectedProject.EndDate)
                             </span>
                         </div>
                     </div>

@@ -28,8 +28,11 @@
                     <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
                 </button>
             </div>
-            <button @onclick="DownloadCsv" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export CSV
+            <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+            </button>
+            <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
             </button>
         </div>
     </div>
@@ -184,8 +187,8 @@
                             {
                                 <tr class="hover:bg-slate-50/50 transition-colors">
                                     <td class="px-6 py-4 text-sm font-semibold text-slate-900">@proj.ProjectName</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">@proj.StartDate.ToString("dd-MMM-yyyy")</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">@proj.EndDate.ToString("dd-MMM-yyyy")</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(proj.StartDate)</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(proj.EndDate)</td>
                                     <td class="px-6 py-4 text-sm text-slate-900">@proj.TotalTasks</td>
                                     <td class="px-6 py-4 text-sm text-emerald-600">@proj.CompletedTasks</td>
                                     <td class="px-6 py-4">
@@ -408,17 +411,69 @@
         atRiskCount = displayList.Count(m => m.IsAtRisk);
     }
 
-    private async Task DownloadCsv()
+    private async Task DownloadExcel()
     {
-        var csv = new StringBuilder();
-        csv.AppendLine("Project Name,Start Date,End Date,Total Tasks,Completed Tasks,Completeness %");
-
-        foreach (var proj in displayList)
+        var rows = FilteredList.Select(proj => new object?[]
         {
-            csv.AppendLine($"\"{proj.ProjectName}\",\"{proj.StartDate:yyyy-MM-dd}\",\"{proj.EndDate:yyyy-MM-dd}\",\"{proj.TotalTasks}\",\"{proj.CompletedTasks}\",\"{proj.Progress:F0}%\"");
-        }
+            proj.ProjectName,
+            proj.StartDate,
+            proj.EndDate,
+            proj.TotalTasks,
+            proj.CompletedTasks,
+            $"{proj.Progress:F0}%"
+        });
 
-        await JS.InvokeVoidAsync("downloadFile", "ProjectProgressReport.csv", "text/csv;charset=utf-8;", csv.ToString());
+        var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
+            "Project Progress",
+            "Project Progress Report",
+            new[] { "Project", "Start Date", "End Date", "Total Tasks", "Completed Tasks", "Completeness" },
+            rows,
+            new[]
+            {
+                $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All projects" : searchQuery)}",
+                $"Period: {filterPeriod}",
+                $"Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", _ => filterStatus }}",
+                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+            });
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"ProjectProgressReport_{DateTime.Today:yyyyMMdd}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Convert.ToBase64String(workbookBytes));
+    }
+
+    private async Task DownloadPdf()
+    {
+        var summaryLines = new List<string>
+        {
+            $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All projects" : searchQuery)}",
+            $"Period: {filterPeriod}",
+            $"Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", _ => filterStatus }}",
+            $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+        };
+
+        var rows = FilteredList.Select(proj => new[]
+        {
+            proj.ProjectName,
+            DisplayFormats.Date(proj.StartDate),
+            DisplayFormats.Date(proj.EndDate),
+            proj.TotalTasks.ToString(),
+            proj.CompletedTasks.ToString(),
+            $"{proj.Progress:F0}%"
+        });
+
+        var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
+            "Project Progress Report",
+            summaryLines,
+            new[] { "Project", "Start Date", "End Date", "Total Tasks", "Completed Tasks", "Completeness" },
+            rows);
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"ProjectProgressReport_{DateTime.Today:yyyyMMdd}.pdf",
+            "application/pdf",
+            Convert.ToBase64String(pdfBytes));
     }
 
     private class ProjectMetric
