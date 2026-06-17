@@ -11,7 +11,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize]
     public class ReportController : ControllerBase
     {
         private readonly ReportService _reportService;
