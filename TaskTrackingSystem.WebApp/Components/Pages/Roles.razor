@@ -190,7 +190,7 @@
                     {
                         <p class="text-xs text-slate-400 flex items-center gap-1">
                             <i data-lucide="info" class="h-3.5 w-3.5 shrink-0"></i>
-                            Pick access on the right — it will be assigned when you create.
+                            Choose what this role can see and do on the right. It will be saved with the role.
                         </p>
                     }
                 </div>
@@ -199,26 +199,32 @@
                 @if (!isEditing)
                 {
                     <div class="w-7/12 flex flex-col min-h-0 border-l border-slate-100">
-                        <!-- Permission panel header -->
-                        <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
+                        <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2 min-w-0">
                                 <i data-lucide="shield-check" class="h-4 w-4 text-violet-500"></i>
                                 <span class="text-sm font-semibold text-slate-700">Assign Access</span>
+                                <span class="hidden md:inline text-xs text-slate-400">Pages control where the role can go. Actions control what it can do.</span>
                             </div>
-                            @if (formAccessItems.Any())
-                            {
-                                <label class="flex items-center gap-1.5 cursor-pointer group">
-                                    <input type="checkbox"
-                                           checked="@IsAllFormAccessSelected"
-                                           @onchange="ToggleSelectAllFormAccess"
-                                           class="h-3.5 w-3.5 rounded accent-violet-600" />
-                                    <span class="text-xs text-slate-500 group-hover:text-violet-600 transition-colors">Select All</span>
-                                </label>
-                            }
+                            <div class="flex items-center gap-2">
+                                <div class="relative w-36 sm:w-44">
+                                    <i data-lucide="search" class="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400"></i>
+                                    <input @bind-value="formAccessSearch" @bind-value:event="oninput" type="text" placeholder="Search"
+                                           class="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent" />
+                                </div>
+                                @if (formAccessItems.Any())
+                                {
+                                    <label class="flex items-center gap-1.5 cursor-pointer group whitespace-nowrap">
+                                        <input type="checkbox"
+                                               checked="@IsAllFormAccessSelected"
+                                               @onchange="ToggleSelectAllFormAccess"
+                                               class="h-3.5 w-3.5 rounded accent-violet-600" />
+                                        <span class="text-xs text-slate-500 group-hover:text-violet-600 transition-colors">All</span>
+                                    </label>
+                                }
+                            </div>
                         </div>
 
-                        <!-- Permission items -->
-                        <div class="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+                        <div class="overflow-y-auto flex-1 px-4 py-4">
                             @if (isLoadingFormAccessItems)
                             {
                                 <div class="flex items-center justify-center py-10">
@@ -234,83 +240,113 @@
                             }
                             else
                             {
-                                @foreach (var parent in formAccessItems.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
+                                <div class="mb-4 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-xs text-slate-500 flex items-center justify-between">
+                                    <span>Page access lets the role open this section. Permissions let it use the buttons and actions inside.</span>
+                                    <span class="font-medium text-slate-400">@formSelectedAccessCodes.Count selected</span>
+                                </div>
+
+                                @if (GetRootAccessItems(true).Any())
                                 {
-                                    var children = formAccessItems.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
-                                    var parentChecked = formSelectedAccessCodes.Contains(parent.MenuCode);
-
-                                    <div class="mb-3 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                                        <!-- Parent Row -->
-                                        <label class="flex items-center gap-3 px-4 py-2.5 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors">
-                                            <input type="checkbox" checked="@parentChecked"
-                                                   @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: true)"
-                                                   class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                                            <div class="flex items-center gap-2 flex-1">
-                                                @if (!string.IsNullOrEmpty(parent.Icon))
-                                                {
-                                                    <i data-lucide="@parent.Icon" class="h-4 w-4 text-violet-500 shrink-0"></i>
-                                                }
-                                                <span class="text-sm font-semibold text-slate-800">@parent.MenuName</span>
-                                            </div>
-                                        </label>
-
-                                        @if (children.Any())
+                                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                                        @foreach (var parent in GetRootAccessItems(true))
                                         {
-                                            <!-- Submenus inside Card -->
-                                            <div class="divide-y divide-slate-100 bg-white">
-                                                @foreach (var child in children)
-                                                {
-                                                    var childChecked = formSelectedAccessCodes.Contains(child.MenuCode);
-                                                    <div class="pl-8 pr-4 py-2.5">
-                                                        <label class="flex items-center gap-3 cursor-pointer hover:text-violet-600 transition-colors mb-1.5">
-                                                            <input type="checkbox" checked="@childChecked"
-                                                                   @onchange="(e) => ToggleAccessSelection(child, (bool)(e.Value ?? false), isForm: true)"
-                                                                   class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                                                            <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
-                                                        </label>
+                                            var children = GetChildAccessItems(parent, true).ToList();
+                                            var parentChecked = formSelectedAccessCodes.Contains(parent.MenuCode);
 
-                                                        @if (child.Permissions.Any())
+                                            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                                <label class="flex items-start gap-3 px-4 py-3 bg-gradient-to-r from-slate-50 to-white cursor-pointer hover:bg-slate-50 transition-colors">
+                                                    <input type="checkbox" checked="@parentChecked"
+                                                           @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: true)"
+                                                           class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                                    <div class="flex min-w-0 flex-1 items-start gap-2">
+                                                        @if (!string.IsNullOrEmpty(parent.Icon))
                                                         {
-                                                            <div class="flex flex-wrap gap-2 pl-7 mt-1">
-                                                                @foreach (var action in child.Permissions)
-                                                                {
-                                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.PermissionCode);
-                                                                    <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
-                                                                                  @(isActionChecked
-                                                                                      ? "bg-violet-50 border-violet-200 text-violet-700"
-                                                                                      : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
-                                                                        <input type="checkbox" checked="@isActionChecked"
-                                                                               @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: true)"
-                                                                               class="h-3 w-3 rounded accent-violet-600" />
-                                                                        <span class="text-xs">@action.ActionName</span>
-                                                                    </label>
-                                                                }
-                                                            </div>
+                                                            <i data-lucide="@parent.Icon" class="mt-0.5 h-4 w-4 text-violet-500 shrink-0"></i>
                                                         }
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="text-sm font-semibold text-slate-800 truncate">@parent.MenuName</span>
+                                                                <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-600">Menu</span>
+                                                            </div>
+                                                            <div class="text-[11px] text-slate-400 truncate">@parent.MenuCode</div>
+                                                        </div>
+                                                    </div>
+                                                </label>
+
+                                            <div class="border-t border-slate-100 px-3 py-3">
+                                                @if (parent.Permissions.Any())
+                                                {
+                                                    <div class="mb-3">
+                                                        <div class="mb-2 flex items-center justify-between px-1">
+                                                            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Actions</span>
+                                                            <span class="text-[11px] text-slate-400">CRUD permissions for this page</span>
+                                                        </div>
+                                                        <div class="flex flex-wrap gap-2">
+                                                            @foreach (var action in parent.Permissions)
+                                                            {
+                                                                var isActionChecked = formSelectedAccessCodes.Contains(action.PermissionCode);
+                                                                <label class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] cursor-pointer select-none transition-all
+                                                                              @(isActionChecked
+                                                                                  ? "bg-violet-50 border-violet-200 text-violet-700"
+                                                                                  : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
+                                                                    <input type="checkbox" checked="@isActionChecked"
+                                                                           @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: true)"
+                                                                           class="h-3.5 w-3.5 rounded accent-violet-600" />
+                                                                    <span>@action.ActionName</span>
+                                                                </label>
+                                                            }
+                                                        </div>
                                                     </div>
                                                 }
-                                            </div>
-                                        }
-                                        else if (parent.Permissions.Any())
-                                        {
-                                                    <!-- Direct Access under Parent -->
-                                            <div class="px-5 py-2.5 bg-white flex flex-wrap gap-2">
-                                                @foreach (var action in parent.Permissions)
+
+                                                @if (children.Any())
                                                 {
-                                                    var isActionChecked = formSelectedAccessCodes.Contains(action.PermissionCode);
-                                                    <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border cursor-pointer select-none transition-all
-                                                                  @(isActionChecked
-                                                                      ? "bg-violet-50 border-violet-200 text-violet-700 shadow-sm"
-                                                                      : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
-                                                        <input type="checkbox" checked="@isActionChecked"
-                                                               @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: true)"
-                                                               class="h-3.5 w-3.5 rounded accent-violet-600" />
-                                                        <span class="text-xs font-medium">@action.ActionName</span>
-                                                    </label>
-                                                }
+                                                    <div class="space-y-2">
+                                                        @foreach (var child in children)
+                                                        {
+                                                            var childChecked = formSelectedAccessCodes.Contains(child.MenuCode);
+                                                                <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                                                                    <label class="flex items-center gap-2 cursor-pointer">
+                                                                        <input type="checkbox" checked="@childChecked"
+                                                                               @onchange="(e) => ToggleAccessSelection(child, (bool)(e.Value ?? false), isForm: true)"
+                                                                               class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                                                        <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
+                                                                    </label>
+
+                                                                    @if (child.Permissions.Any())
+                                                                    {
+                                                                        <div class="mt-2 flex flex-wrap gap-2 pl-6">
+                                                                            @foreach (var action in child.Permissions)
+                                                                            {
+                                                                                var isActionChecked = formSelectedAccessCodes.Contains(action.PermissionCode);
+                                                                                <label class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] cursor-pointer select-none transition-all
+                                                                                              @(isActionChecked
+                                                                                                  ? "bg-violet-50 border-violet-200 text-violet-700"
+                                                                                                  : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
+                                                                                    <input type="checkbox" checked="@isActionChecked"
+                                                                                           @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: true)"
+                                                                                           class="h-3 w-3 rounded accent-violet-600" />
+                                                                                    <span>@action.ActionName</span>
+                                                                                </label>
+                                                                            }
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    else if (!parent.Permissions.Any())
+                                                    {
+                                                        <p class="text-xs text-slate-400">Nothing else is available inside this page.</p>
+                                                    }
+                                                </div>
                                             </div>
                                         }
                                     </div>
+                                }
+                                else
+                                {
+                                    <p class="py-10 text-center text-sm text-slate-400">No pages or permissions match your search.</p>
                                 }
                             }
                         </div>
@@ -323,8 +359,8 @@
                 <span class="text-xs text-slate-400">
                     @if (!isEditing && formSelectedAccessCodes.Count > 0)
                     {
-                        <span class="text-violet-600 font-medium">@formSelectedAccessCodes.Count access item(s)</span>
-                        <span> will be assigned</span>
+                        <span class="text-violet-600 font-medium">@formSelectedAccessCodes.Count selected item(s)</span>
+                        <span> will be saved</span>
                     }
                 </span>
                 <div class="flex items-center gap-3">
@@ -350,7 +386,7 @@
 @if (showAccessModal)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col" style="max-height: 85vh;">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl mx-4 overflow-hidden flex flex-col" style="max-height: 88vh;">
 
             <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-indigo-50">
@@ -369,17 +405,27 @@
             </div>
 
             <!-- Select All Bar -->
-            <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked="@IsAllAccessSelected" @onchange="ToggleSelectAllAccess"
-                           class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                    <span class="text-sm font-medium text-slate-700">Select All Access</span>
-                </label>
-                <span class="text-xs text-slate-400">@selectedAccessCodes.Count access item(s) selected</span>
+            <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked="@IsAllAccessSelected" @onchange="ToggleSelectAllAccess"
+                               class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                        <span class="text-sm font-medium text-slate-700">Select All</span>
+                    </label>
+                    <span class="hidden md:inline text-xs text-slate-400">Menus open pages. Permissions unlock actions.</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="relative w-36 sm:w-48">
+                        <i data-lucide="search" class="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400"></i>
+                        <input @bind-value="accessSearch" @bind-value:event="oninput" type="text" placeholder="Search"
+                               class="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent" />
+                    </div>
+                    <span class="text-xs text-slate-400 whitespace-nowrap">@selectedAccessCodes.Count selected</span>
+                </div>
             </div>
 
             <!-- Menu Items Body -->
-            <div class="overflow-y-auto flex-1 px-6 py-4">
+            <div class="overflow-y-auto flex-1 px-4 py-4">
                 @if (isLoadingAccessItems)
                 {
                     <div class="flex items-center justify-center py-12">
@@ -398,83 +444,113 @@
                 }
                 else
                 {
-                    @foreach (var parent in accessItems.Where(m => string.IsNullOrEmpty(m.ParentCode) || m.ParentCode == "0").OrderBy(m => m.OrderNo))
+                    <div class="mb-4 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-xs text-slate-500 flex items-center justify-between">
+                        <span>Choosing an action also turns on its page. Turning off a page clears the actions inside it.</span>
+                        <span class="font-medium text-slate-400">@selectedAccessCodes.Count selected</span>
+                    </div>
+
+                    @if (GetRootAccessItems(false).Any())
                     {
-                        var children = accessItems.Where(c => c.ParentCode == parent.MenuCode).OrderBy(c => c.OrderNo).ToList();
-                        var parentChecked = selectedAccessCodes.Contains(parent.MenuCode);
-
-                        <div class="mb-4 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                            <!-- Parent Row -->
-                            <label class="flex items-center gap-3 px-4 py-3 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors">
-                                <input type="checkbox" checked="@parentChecked"
-                                       @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: false)"
-                                       class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                                <div class="flex items-center gap-2 flex-1">
-                                    @if (!string.IsNullOrEmpty(parent.Icon))
-                                    {
-                                        <i data-lucide="@parent.Icon" class="h-4 w-4 text-violet-500 shrink-0"></i>
-                                    }
-                                    <span class="text-sm font-semibold text-slate-800">@parent.MenuName</span>
-                                </div>
-                            </label>
-
-                            @if (children.Any())
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                            @foreach (var parent in GetRootAccessItems(false))
                             {
-                                <!-- Submenus inside Card -->
-                                <div class="divide-y divide-slate-100 bg-white">
-                                    @foreach (var child in children)
-                                    {
-                                        var childChecked = selectedAccessCodes.Contains(child.MenuCode);
-                                        <div class="pl-8 pr-4 py-3">
-                                            <label class="flex items-center gap-3 cursor-pointer hover:text-violet-600 transition-colors mb-2">
-                                                <input type="checkbox" checked="@childChecked"
-                                                       @onchange="(e) => ToggleAccessSelection(child, (bool)(e.Value ?? false), isForm: false)"
-                                                       class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                                                <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
-                                            </label>
+                                var children = GetChildAccessItems(parent, false).ToList();
+                                var parentChecked = selectedAccessCodes.Contains(parent.MenuCode);
 
-                                            @if (child.Permissions.Any())
+                                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                    <label class="flex items-start gap-3 px-4 py-3 bg-gradient-to-r from-slate-50 to-white cursor-pointer hover:bg-slate-50 transition-colors">
+                                        <input type="checkbox" checked="@parentChecked"
+                                               @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: false)"
+                                               class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                        <div class="flex min-w-0 flex-1 items-start gap-2">
+                                            @if (!string.IsNullOrEmpty(parent.Icon))
                                             {
-                                                <div class="flex flex-wrap gap-2 pl-7 mt-1.5">
-                                                    @foreach (var action in child.Permissions)
+                                                <i data-lucide="@parent.Icon" class="mt-0.5 h-4 w-4 text-violet-500 shrink-0"></i>
+                                            }
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-sm font-semibold text-slate-800 truncate">@parent.MenuName</span>
+                                                    <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-600">Menu</span>
+                                                </div>
+                                                <div class="text-[11px] text-slate-400 truncate">@parent.MenuCode</div>
+                                            </div>
+                                        </div>
+                                    </label>
+
+                                    <div class="border-t border-slate-100 px-3 py-3">
+                                        @if (parent.Permissions.Any())
+                                        {
+                                            <div class="mb-3">
+                                                <div class="mb-2 flex items-center justify-between px-1">
+                                                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Actions</span>
+                                                    <span class="text-[11px] text-slate-400">CRUD permissions for this page</span>
+                                                </div>
+                                                <div class="flex flex-wrap gap-2">
+                                                    @foreach (var action in parent.Permissions)
                                                     {
                                                         var isActionChecked = selectedAccessCodes.Contains(action.PermissionCode);
-                                                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border cursor-pointer select-none transition-all
+                                                        <label class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] cursor-pointer select-none transition-all
                                                                       @(isActionChecked
                                                                           ? "bg-violet-50 border-violet-200 text-violet-700"
                                                                           : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
                                                             <input type="checkbox" checked="@isActionChecked"
                                                                    @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: false)"
-                                                                   class="h-3 w-3 rounded accent-violet-600" />
-                                                            <span class="text-xs">@action.ActionName</span>
+                                                                   class="h-3.5 w-3.5 rounded accent-violet-600" />
+                                                            <span>@action.ActionName</span>
                                                         </label>
                                                     }
                                                 </div>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            else if (parent.Permissions.Any())
-                            {
-                                            <!-- Direct Access under Parent -->
-                                <div class="px-6 py-3.5 bg-white flex flex-wrap gap-2.5">
-                                    @foreach (var action in parent.Permissions)
-                                    {
-                                        var isActionChecked = selectedAccessCodes.Contains(action.PermissionCode);
-                                        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer select-none transition-all
-                                                      @(isActionChecked
-                                                          ? "bg-violet-50 border-violet-300 text-violet-700 shadow-sm"
-                                                          : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
-                                            <input type="checkbox" checked="@isActionChecked"
-                                                   @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: false)"
-                                                   class="h-3.5 w-3.5 rounded accent-violet-600" />
-                                            <span class="text-xs font-medium">@action.ActionName</span>
-                                        </label>
-                                    }
+                                            </div>
+                                        }
+
+                                        @if (children.Any())
+                                        {
+                                            <div class="space-y-2">
+                                                @foreach (var child in children)
+                                                {
+                                                    var childChecked = selectedAccessCodes.Contains(child.MenuCode);
+                                                    <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                                                        <label class="flex items-center gap-2 cursor-pointer">
+                                                            <input type="checkbox" checked="@childChecked"
+                                                                   @onchange="(e) => ToggleAccessSelection(child, (bool)(e.Value ?? false), isForm: false)"
+                                                                   class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                                                            <span class="text-sm font-medium text-slate-700">@child.MenuName</span>
+                                                        </label>
+
+                                                        @if (child.Permissions.Any())
+                                                        {
+                                                            <div class="mt-2 flex flex-wrap gap-2 pl-6">
+                                                                @foreach (var action in child.Permissions)
+                                                                {
+                                                                    var isActionChecked = selectedAccessCodes.Contains(action.PermissionCode);
+                                                                    <label class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] cursor-pointer select-none transition-all
+                                                                                  @(isActionChecked
+                                                                                      ? "bg-violet-50 border-violet-200 text-violet-700"
+                                                                                      : "bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-500")">
+                                                                        <input type="checkbox" checked="@isActionChecked"
+                                                                               @onchange="(e) => TogglePermissionSelection(action.PermissionCode, (bool)(e.Value ?? false), isForm: false)"
+                                                                               class="h-3 w-3 rounded accent-violet-600" />
+                                                                        <span>@action.ActionName</span>
+                                                                    </label>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (!parent.Permissions.Any())
+                                        {
+                                            <p class="text-xs text-slate-400">Nothing else is available inside this page.</p>
+                                        }
+                                    </div>
                                 </div>
                             }
                         </div>
+                    }
+                    else
+                    {
+                        <p class="py-10 text-center text-sm text-slate-400">No pages or permissions match your search.</p>
                     }
                 }
             </div>
@@ -599,6 +675,7 @@
     // Inline access items in Create form
     private List<AccessMenuDto> formAccessItems = new();
     private HashSet<string> formSelectedAccessCodes = new();
+    private string formAccessSearch = "";
     private bool isLoadingFormAccessItems = false;
 
     private bool IsAllFormAccessSelected
@@ -609,6 +686,7 @@
     private string selectedRoleName = "";
     private List<AccessMenuDto> accessItems = new();
     private HashSet<string> selectedAccessCodes = new();
+    private string accessSearch = "";
     private bool isLoadingAccessItems = false;
     private bool isSavingAccess = false;
     private string? accessSaveError;
@@ -675,6 +753,7 @@
         roleNameErrorMsg = "";
         formSelectedAccessCodes = new(StringComparer.OrdinalIgnoreCase);
         formAccessItems = new();
+        formAccessSearch = "";
         isLoadingFormAccessItems = true;
         showRoleModal = true;
         StateHasChanged();
@@ -715,6 +794,7 @@
         roleNameErrorMsg = "";
         formAccessItems = new();
         formSelectedAccessCodes = new(StringComparer.OrdinalIgnoreCase);
+        formAccessSearch = "";
     }
 
     private void ToggleAccessSelection(AccessMenuDto menu, bool isChecked, bool isForm)
@@ -724,41 +804,11 @@
 
         if (isChecked)
         {
-            targetSet.Add(menu.MenuCode);
-            // Select direct actions
-            foreach (var action in menu.Permissions)
-            {
-                targetSet.Add(action.PermissionCode);
-            }
-            // Select child menus and their actions
-            var children = allMenuSource.Where(c => c.ParentCode == menu.MenuCode).ToList();
-            foreach (var child in children)
-            {
-                targetSet.Add(child.MenuCode);
-                foreach (var action in child.Permissions)
-                {
-                    targetSet.Add(action.PermissionCode);
-                }
-            }
+            AddMenuSelection(menu, allMenuSource, targetSet);
         }
         else
         {
-            targetSet.Remove(menu.MenuCode);
-            // Unselect direct actions
-            foreach (var action in menu.Permissions)
-            {
-                targetSet.Remove(action.PermissionCode);
-            }
-            // Unselect child menus and their actions
-            var children = allMenuSource.Where(c => c.ParentCode == menu.MenuCode).ToList();
-            foreach (var child in children)
-            {
-                targetSet.Remove(child.MenuCode);
-                foreach (var action in child.Permissions)
-                {
-                    targetSet.Remove(action.PermissionCode);
-                }
-            }
+            RemoveMenuSelection(menu, allMenuSource, targetSet);
         }
         StateHasChanged();
     }
@@ -766,9 +816,16 @@
     private void TogglePermissionSelection(string actionCode, bool isChecked, bool isForm)
     {
         var targetSet = isForm ? formSelectedAccessCodes : selectedAccessCodes;
+        var menuSource = isForm ? formAccessItems : accessItems;
         if (isChecked)
         {
             targetSet.Add(actionCode);
+            var permission = FindPermission(actionCode, menuSource);
+            if (permission != null)
+            {
+                EnsureMenuPathSelected(permission.ParentMenuCode, menuSource, targetSet);
+                EnsureMenuBranchVisible(permission.ParentMenuCode, menuSource, targetSet);
+            }
         }
         else
         {
@@ -796,6 +853,207 @@
         {
             formSelectedAccessCodes.Clear();
         }
+    }
+
+    private static bool IsRootMenu(AccessMenuDto menu)
+        => string.IsNullOrWhiteSpace(menu.ParentCode) || menu.ParentCode == "0";
+
+    private static bool MatchesSearch(string? value, string search)
+        => !string.IsNullOrWhiteSpace(value)
+           && value.Contains(search, StringComparison.OrdinalIgnoreCase);
+
+    private IEnumerable<AccessMenuDto> GetRootAccessItems(bool isForm)
+    {
+        var source = isForm ? formAccessItems : accessItems;
+        var search = (isForm ? formAccessSearch : accessSearch).Trim();
+
+        return source
+            .Where(IsRootMenu)
+            .Where(menu => string.IsNullOrWhiteSpace(search) || AccessBranchMatchesSearch(menu, source, search))
+            .OrderBy(m => m.OrderNo);
+    }
+
+    private IEnumerable<AccessMenuDto> GetChildAccessItems(AccessMenuDto parent, bool isForm)
+    {
+        var source = isForm ? formAccessItems : accessItems;
+        var search = (isForm ? formAccessSearch : accessSearch).Trim();
+
+        var children = source
+            .Where(c => c.ParentCode == parent.MenuCode)
+            .OrderBy(c => c.OrderNo);
+
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return children;
+        }
+
+        return children.Where(child => AccessBranchMatchesSearch(child, source, search));
+    }
+
+    private static bool AccessBranchMatchesSearch(AccessMenuDto menu, IReadOnlyList<AccessMenuDto> source, string search)
+    {
+        if (MatchesSearch(menu.MenuName, search) || MatchesSearch(menu.MenuCode, search) || MatchesSearch(menu.MenuUrl, search))
+        {
+            return true;
+        }
+
+        if (menu.Permissions.Any(permission =>
+                MatchesSearch(permission.ActionName, search) ||
+                MatchesSearch(permission.PermissionCode, search) ||
+                MatchesSearch(permission.ApiName, search)))
+        {
+            return true;
+        }
+
+        return source
+            .Where(child => child.ParentCode == menu.MenuCode)
+            .Any(child => AccessBranchMatchesSearch(child, source, search));
+    }
+
+    private static AccessPermissionDto? FindPermission(string actionCode, IReadOnlyList<AccessMenuDto> source)
+    {
+        foreach (var menu in source)
+        {
+            var permission = menu.Permissions.FirstOrDefault(p => string.Equals(p.PermissionCode, actionCode, StringComparison.OrdinalIgnoreCase));
+            if (permission != null)
+            {
+                return permission;
+            }
+        }
+
+        return null;
+    }
+
+    private static AccessMenuDto? FindMenu(string menuCode, IReadOnlyList<AccessMenuDto> source)
+    {
+        return source.FirstOrDefault(m => string.Equals(m.MenuCode, menuCode, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static void EnsureMenuPathSelected(string menuCode, IReadOnlyList<AccessMenuDto> source, ISet<string> targetSet)
+    {
+        var current = FindMenu(menuCode, source);
+        while (current != null)
+        {
+            targetSet.Add(current.MenuCode);
+            if (string.IsNullOrWhiteSpace(current.ParentCode) || current.ParentCode == "0")
+            {
+                break;
+            }
+
+            current = FindMenu(current.ParentCode, source);
+        }
+    }
+
+    private static void EnsureMenuBranchVisible(string menuCode, IReadOnlyList<AccessMenuDto> source, ISet<string> targetSet)
+    {
+        var menu = FindMenu(menuCode, source);
+        if (menu == null)
+        {
+            return;
+        }
+
+        targetSet.Add(menu.MenuCode);
+
+        foreach (var child in GetAutoVisibleChildren(menu, source))
+        {
+            EnsureMenuBranchVisible(child.MenuCode, source, targetSet);
+        }
+    }
+
+    private static void AddMenuSelection(AccessMenuDto menu, IReadOnlyList<AccessMenuDto> source, ISet<string> targetSet)
+    {
+        targetSet.Add(menu.MenuCode);
+        foreach (var permission in menu.Permissions)
+        {
+            targetSet.Add(permission.PermissionCode);
+        }
+
+        EnsureMenuPathSelected(menu.ParentCode, source, targetSet);
+
+        foreach (var child in GetAutoVisibleChildren(menu, source))
+        {
+            EnsureMenuBranchVisible(child.MenuCode, source, targetSet);
+        }
+    }
+
+    private static void RemoveMenuSelection(AccessMenuDto menu, IReadOnlyList<AccessMenuDto> source, ISet<string> targetSet)
+    {
+        targetSet.Remove(menu.MenuCode);
+        foreach (var permission in menu.Permissions)
+        {
+            targetSet.Remove(permission.PermissionCode);
+        }
+
+        foreach (var child in GetAutoVisibleChildren(menu, source))
+        {
+            RemoveMenuSelection(child, source, targetSet);
+        }
+
+        CleanupAncestorSelection(menu.ParentCode, source, targetSet);
+    }
+
+    private static void CleanupAncestorSelection(string parentCode, IReadOnlyList<AccessMenuDto> source, ISet<string> targetSet)
+    {
+        if (string.IsNullOrWhiteSpace(parentCode) || parentCode == "0")
+        {
+            return;
+        }
+
+        var parent = FindMenu(parentCode, source);
+        if (parent == null)
+        {
+            return;
+        }
+
+        if (HasAnySelectedInBranch(parent, source, targetSet))
+        {
+            return;
+        }
+
+        targetSet.Remove(parent.MenuCode);
+        CleanupAncestorSelection(parent.ParentCode, source, targetSet);
+    }
+
+    private static bool HasAnySelectedInBranch(AccessMenuDto menu, IReadOnlyList<AccessMenuDto> source, ISet<string> targetSet)
+    {
+        if (targetSet.Contains(menu.MenuCode) || menu.Permissions.Any(p => targetSet.Contains(p.PermissionCode)))
+        {
+            return true;
+        }
+
+        return GetAutoVisibleChildren(menu, source)
+            .Any(child => HasAnySelectedInBranch(child, source, targetSet));
+    }
+
+    private static void NormalizeAccessSelection(IReadOnlyList<AccessMenuDto> source, ISet<string> targetSet)
+    {
+        var selectedPermissions = source
+            .SelectMany(menu => menu.Permissions)
+            .Where(permission => targetSet.Contains(permission.PermissionCode))
+            .ToList();
+
+        foreach (var permission in selectedPermissions)
+        {
+            EnsureMenuPathSelected(permission.ParentMenuCode, source, targetSet);
+            EnsureMenuBranchVisible(permission.ParentMenuCode, source, targetSet);
+        }
+    }
+
+    private static IEnumerable<AccessMenuDto> GetAutoVisibleChildren(AccessMenuDto menu, IReadOnlyList<AccessMenuDto> source)
+    {
+        return source
+            .Where(m => m.ParentCode == menu.MenuCode && IsAutoVisiblePageMenu(m))
+            .OrderBy(m => m.OrderNo)
+            .ThenBy(m => m.MenuName, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool IsAutoVisiblePageMenu(AccessMenuDto menu)
+    {
+        var text = $"{menu.MenuName} {menu.MenuCode} {menu.MenuUrl}".Trim();
+        return text.Contains("list", StringComparison.OrdinalIgnoreCase)
+               || text.Contains("view", StringComparison.OrdinalIgnoreCase)
+               || text.Contains("dashboard", StringComparison.OrdinalIgnoreCase)
+               || text.Contains("home", StringComparison.OrdinalIgnoreCase);
     }
 
     private void RequestSaveConfirmation()
@@ -885,6 +1143,7 @@
             }
             else
             {
+                NormalizeAccessSelection(formAccessItems, formSelectedAccessCodes);
                 var dto = new CreateRoleDto
                 {
                     Name = formName,
@@ -933,6 +1192,7 @@
         selectedRoleName = role.Name;
         accessSaveError = null;
         accessSaveSuccess = null;
+        accessSearch = "";
         isLoadingAccessItems = true;
         showAccessModal = true;
         StateHasChanged();
@@ -946,6 +1206,7 @@
             // Load currently assigned access items for this role
             var assignedResult = await client.GetFromJsonAsync<Result<List<string>>>($"Role/{role.Id}/access", Serialization.CaseInsensitive);
             selectedAccessCodes = new HashSet<string>(assignedResult?.Value ?? new(), StringComparer.OrdinalIgnoreCase);
+            NormalizeAccessSelection(accessItems, selectedAccessCodes);
         }
         catch (Exception ex)
         {
@@ -964,6 +1225,7 @@
         showAccessModal = false;
         accessItems = new();
         selectedAccessCodes = new(StringComparer.OrdinalIgnoreCase);
+        accessSearch = "";
         accessSaveError = null;
         accessSaveSuccess = null;
     }
@@ -997,6 +1259,7 @@
         var client = ApiClient.CreateClient();
         try
         {
+            NormalizeAccessSelection(accessItems, selectedAccessCodes);
             var dto = new AssignAccessDto { AccessCodes = selectedAccessCodes.ToList() };
             var response = await client.PostAsJsonAsync($"Role/{selectedRoleId}/access", dto);
             if (response.IsSuccessStatusCode)
