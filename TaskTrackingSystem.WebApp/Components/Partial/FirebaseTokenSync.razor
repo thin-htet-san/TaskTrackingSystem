@@ -1,0 +1,53 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IJSRuntime JS
+@inject ApiClientService ApiClient
+@inject AuthenticationStateProvider AuthStateProvider
+
+@code {
+    private bool _hasRun;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_hasRun || !firstRender)
+        {
+            return;
+        }
+
+        _hasRun = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string?>("ttsFirebase.getRegistrationToken");
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                Console.WriteLine("[DEBUG FirebaseTokenSync] FCM registration token is empty or null.");
+                return;
+            }
+
+            var client = ApiClient.CreateClient(authState.User);
+            var response = await client.PostAsJsonAsync("UserDevices/register", new RegisterDeviceTokenDto
+            {
+                FcmToken = token
+            });
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[DEBUG FirebaseTokenSync] Successfully registered FCM token.");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[DEBUG FirebaseTokenSync] Failed to register token with API: {response.StatusCode} - {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG FirebaseTokenSync] Exception occurred: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+}

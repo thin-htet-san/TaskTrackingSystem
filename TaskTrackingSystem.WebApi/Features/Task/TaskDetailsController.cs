@@ -21,10 +21,12 @@ namespace TaskTrackingSystem.WebApi.Features.Task
     public class TaskDetailsController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService _notificationService;
 
-        public TaskDetailsController(AppDbContext db)
+        public TaskDetailsController(AppDbContext db, TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService)
         {
             _db = db;
+            _notificationService = notificationService;
         }
 
         // ─── COMMENTS ────────────────────────────────────────────────────────
@@ -95,6 +97,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             _db.Comments.Add(comment);
             await _db.SaveChangesAsync();
+
+            await _notificationService.NotifyCommentAddedAsync(task, userId, $"{user.FirstName} {user.LastName}");
 
             var resultDto = new CommentDto
             {

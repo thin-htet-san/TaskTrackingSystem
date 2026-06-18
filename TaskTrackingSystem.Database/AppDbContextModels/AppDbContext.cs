@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +23,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Menu> Menus { get; set; }
 
+    public virtual DbSet<Notification> Notifications { get; set; }
+
     public virtual DbSet<Permission> Permissions { get; set; }
 
     public virtual DbSet<Project> Projects { get; set; }
@@ -40,6 +42,8 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<TaskHistory> TaskHistories { get; set; }
 
     public virtual DbSet<TimeLog> TimeLogs { get; set; }
+
+    public virtual DbSet<UserDevice> UserDevices { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
 
@@ -124,6 +128,35 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.ParentMenu).WithMany(p => p.InverseParentMenu)
                 .HasForeignKey(d => d.ParentMenuId)
                 .HasConstraintName("FK_Menus_ParentMenu");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("notifications");
+
+            entity.HasIndex(e => e.CreatedAt, "IX_notifications_CreatedAt");
+            entity.HasIndex(e => new { e.RecipientId, e.IsRead }, "IX_notifications_Recipient_IsRead");
+
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2");
+            entity.Property(e => e.IsRead).HasColumnName("is_read").HasDefaultValue(false);
+            entity.Property(e => e.NotificationType).HasColumnName("notification_type");
+            entity.Property(e => e.Title).HasMaxLength(255);
+            entity.Property(e => e.Body).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ReadAt).HasColumnName("read_at").HasColumnType("datetime2");
+            entity.Property(e => e.RecipientId).HasColumnName("recipient_id");
+            entity.Property(e => e.SenderId).HasColumnName("sender_id");
+            entity.Property(e => e.SourceId).HasColumnName("source_id");
+            entity.Property(e => e.SourceType).HasColumnName("source_type").HasMaxLength(20);
+
+            entity.HasOne(d => d.Recipient).WithMany()
+                .HasForeignKey(d => d.RecipientId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_notifications_Users_Recipient");
+
+            entity.HasOne(d => d.Sender).WithMany()
+                .HasForeignKey(d => d.SenderId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_notifications_Users_Sender");
         });
 
         modelBuilder.Entity<Permission>(entity =>
@@ -343,6 +376,25 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Users_Roles");
+        });
+
+        modelBuilder.Entity<UserDevice>(entity =>
+        {
+            entity.ToTable("user_devices");
+
+            entity.HasIndex(e => e.UserId, "IX_user_devices_UserId");
+
+            entity.HasIndex(e => e.FcmToken, "UQ_user_devices_FcmToken").IsUnique();
+
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.FcmToken).HasColumnName("fcm_token").HasMaxLength(255);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime2");
+
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_user_devices_Users");
         });
 
         OnModelCreatingPartial(modelBuilder);
