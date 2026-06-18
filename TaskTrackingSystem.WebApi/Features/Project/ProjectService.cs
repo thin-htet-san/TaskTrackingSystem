@@ -136,6 +136,22 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             project.IsDeleted = true;
             _db.Projects.Update(project);
+
+            // Soft-delete all tasks associated with this project
+            var tasksToUpdate = await _db.Tasks
+                .Where(t => t.ProjectId == id && t.IsDeleted != true)
+                .ToListAsync();
+            foreach (var task in tasksToUpdate)
+            {
+                task.IsDeleted = true;
+                task.UpdatedAt = DateTime.UtcNow;
+                task.UpdatedBy = currentUserId;
+            }
+            if (tasksToUpdate.Any())
+            {
+                _db.Tasks.UpdateRange(tasksToUpdate);
+            }
+
             await _db.SaveChangesAsync();
             return Result.Success(200);
         }

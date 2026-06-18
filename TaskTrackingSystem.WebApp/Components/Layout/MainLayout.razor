@@ -2,29 +2,29 @@
 @implements IDisposable
 @using System.Security.Claims
 
-<div class="flex h-screen bg-[#F4F3FA] font-sans text-slate-800 antialiased overflow-hidden">
-    <aside class="flex w-64 flex-col border-r border-slate-100 bg-white shrink-0 overflow-hidden">
+<div class="flex h-screen bg-background font-sans text-slate-800 antialiased overflow-hidden">
+    <aside class="flex w-64 flex-col border-r border-slate-900 bg-[#10002B] text-white shrink-0 overflow-hidden">
         <div class="flex h-20 items-center px-6">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white">
                 <i data-lucide="flame" class="h-5 w-5 fill-current"></i>
             </span>
-            <span class="ml-3 font-bold text-xl tracking-tight text-slate-800">Taskify</span>
+            <span class="ml-3 font-bold text-xl tracking-tight text-white">Taskify</span>
         </div>
 
         <NavMenu @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 
-        <div class="border-t border-slate-100 p-4 shrink-0">
+        <div class="border-t border-slate-800 p-4 shrink-0">
             <AuthorizeView>
                 <Authorized>
-                    <div class="flex items-center rounded-xl p-2 hover:bg-slate-50 transition-all">
+                    <div class="flex items-center rounded-xl p-2 hover:bg-white/10 transition-all">
                         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white font-semibold text-sm shrink-0">
                             @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
                         </span>
                         <div class="ml-3 overflow-hidden flex flex-col">
-                            <span class="text-sm font-semibold truncate max-w-[130px]" style="color: var(--text-primary);">@context.User.Identity?.Name</span>
+                            <span class="text-sm font-semibold truncate max-w-[130px] text-white">@context.User.Identity?.Name</span>
                             <form id="logout-form" method="post" action="/account/logout" class="mt-0.5">
                                 <AntiforgeryToken />
-                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all" style="color: var(--brand-accent);">
+                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all text-[#C77DFF]">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
                                     Sign Out
                                 </button>

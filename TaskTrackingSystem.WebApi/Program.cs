@@ -120,5 +120,19 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
         backlogMenu.UpdatedAt = DateTime.UtcNow;
     }
 
+    // Soft-delete existing tasks that belong to deleted projects
+    var orphanedTasks = await db.Tasks
+        .Where(t => t.IsDeleted != true && t.Project.IsDeleted == true)
+        .ToListAsync();
+    foreach (var task in orphanedTasks)
+    {
+        task.IsDeleted = true;
+        task.UpdatedAt = DateTime.UtcNow;
+    }
+    if (orphanedTasks.Any())
+    {
+        db.Tasks.UpdateRange(orphanedTasks);
+    }
+
     await db.SaveChangesAsync();
 }

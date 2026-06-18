@@ -167,21 +167,21 @@
                             <svg class="w-full max-w-[320px]" height="220" viewBox="0 0 320 220">
                                 <g transform="translate(0, 180)">
                                     <!-- Axes -->
-                                    <line x1="40" y1="0" x2="280" y2="0" stroke="#cbd5e1" stroke-width="2" />
+                                    <line x1="40" y1="0" x2="280" y2="0" stroke="#E5E7EB" stroke-width="2" />
                                     <!-- To Do Bar -->
-                                    <rect x="60" y="-@hTodo" width="40" height="@hTodo" rx="4" fill="#e2e8f0" />
-                                    <text x="80" y="20" font-size="12" fill="#64748b" text-anchor="middle">To Do</text>
-                                    <text x="80" y="-@(hTodo + 10)" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">@todo</text>
+                                    <rect x="60" y="-@hTodo" width="40" height="@hTodo" rx="4" fill="#E5E7EB" />
+                                    <text x="80" y="20" font-size="12" fill="#6B7280" text-anchor="middle">To Do</text>
+                                    <text x="80" y="-@(hTodo + 10)" font-size="12" font-weight="bold" fill="#10002B" text-anchor="middle">@todo</text>
 
                                     <!-- In Progress Bar -->
-                                    <rect x="140" y="-@hInProgress" width="40" height="@hInProgress" rx="4" fill="#3b82f6" />
-                                    <text x="160" y="20" font-size="12" fill="#64748b" text-anchor="middle">In Progress</text>
-                                    <text x="160" y="-@(hInProgress + 10)" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">@inProgress</text>
+                                    <rect x="140" y="-@hInProgress" width="40" height="@hInProgress" rx="4" fill="#06B6D4" />
+                                    <text x="160" y="20" font-size="12" fill="#6B7280" text-anchor="middle">In Progress</text>
+                                    <text x="160" y="-@(hInProgress + 10)" font-size="12" font-weight="bold" fill="#10002B" text-anchor="middle">@inProgress</text>
 
                                     <!-- Done Bar -->
-                                    <rect x="220" y="-@hDone" width="40" height="@hDone" rx="4" fill="#10b981" />
-                                    <text x="240" y="20" font-size="12" fill="#64748b" text-anchor="middle">Done</text>
-                                    <text x="240" y="-@(hDone + 10)" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">@done</text>
+                                    <rect x="220" y="-@hDone" width="40" height="@hDone" rx="4" fill="#10B981" />
+                                    <text x="240" y="20" font-size="12" fill="#6B7280" text-anchor="middle">Done</text>
+                                    <text x="240" y="-@(hDone + 10)" font-size="12" font-weight="bold" fill="#10002B" text-anchor="middle">@done</text>
                                 </g>
                             </svg>
                         }
@@ -213,7 +213,7 @@
                                         <span>@high tasks (@pctHigh%)</span>
                                     </div>
                                     <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                                        <div class="h-full bg-rose-500 rounded-full" style="width: @pctHigh%"></div>
+                                        <div class="h-full bg-violet-600 rounded-full" style="width: @pctHigh%"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -222,7 +222,7 @@
                                         <span>@med tasks (@pctMed%)</span>
                                     </div>
                                     <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                                        <div class="h-full bg-amber-500 rounded-full" style="width: @pctMed%"></div>
+                                        <div class="h-full bg-violet-400 rounded-full" style="width: @pctMed%"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -231,7 +231,7 @@
                                         <span>@low tasks (@pctLow%)</span>
                                     </div>
                                     <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                                        <div class="h-full bg-slate-400 rounded-full" style="width: @pctLow%"></div>
+                                        <div class="h-full bg-violet-200 rounded-full" style="width: @pctLow%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -287,8 +287,8 @@
                                             <path d="M45 40H75" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
                                             <path d="M45 55H75" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
                                             <path d="M45 70H60" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-                                            <circle cx="85" cy="85" r="15" fill="white" stroke="#7c3aed" stroke-width="3" />
-                                            <path d="M80 85L90 85M85 80L85 90" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" />
+                                            <circle cx="85" cy="85" r="15" fill="white" stroke="#5A189A" stroke-width="3" />
+                                            <path d="M80 85L90 85M85 80L85 90" stroke="#5A189A" stroke-width="3" stroke-linecap="round" />
                                         </svg>
                                         <h3 class="text-lg font-semibold text-slate-700">No Tasks Found</h3>
                                         <p class="text-sm text-slate-400 max-w-xs">There are no tasks matching your filters. Try adjusting your search query or filters.</p>

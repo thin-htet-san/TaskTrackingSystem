@@ -10,12 +10,12 @@ main {
 }
 
 .sidebar {
-    background-color: #ffffff;
+    background-color: #10002B;
 }
 
 .top-row {
     background-color: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #E5E7EB;
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
@@ -27,14 +27,13 @@ main {
     white-space: nowrap;
     margin-left: 1.5rem;
     text-decoration: none;
-    color: #e6e094;
-    /* Soft yellow text */
+    color: #6B7280;
 }
 
 .top-row ::deep a:hover,
 .top-row ::deep .btn-link:hover {
     text-decoration: underline;
-    color: white;
+    color: #10002B;
 }
 
 @media (min-width: 641px) {
@@ -51,8 +50,8 @@ main {
 }
 
 #blazor-error-ui {
-    background: #e6e094;
-    color: #2d2d2d;
+    background: #FFE4E6;
+    color: #991B1B;
     bottom: 0;
     position: fixed;
     width: 100%;

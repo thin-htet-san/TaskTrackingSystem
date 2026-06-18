@@ -13,32 +13,207 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        const brandDark = "#10002B";
+        const brandDarkAlt = "#240046";
+        const brandPrimary = "#5A189A";
+        const brandAccent = "#7B2CBF";
+        const brandLight = "#E0AAFF";
+        const brandMuted = "#9D4EDD";
+        
+        const semanticRedBg = "#FFE4E6";
+        const semanticRedText = "#991B1B";
+        
+        const semanticGreenBg = "#D1FAE5";
+        const semanticGreenText = "#065F46";
+        
+        const semanticPurpleBg = "#E0AAFF";
+        const semanticPurpleText = "#3C096C";
+        
+        const neutralBg = "#F8F9FA";
+        const neutralBorder = "#E5E7EB";
+        const neutralMuted = "#6B7280";
+        const neutralDark = "#10002B";
+
+        const customGray = {
+            50: neutralBg,
+            100: "#F3F4F6",
+            200: neutralBorder,
+            300: "#D1D5DB",
+            400: "#9CA3AF",
+            500: neutralMuted,
+            600: "#4B5563",
+            700: "#374151",
+            800: "#1F2937",
+            900: neutralDark,
+            950: neutralDark
+        };
+
         tailwind.config = {
             darkMode: 'class',
             theme: {
-                extend: {
-                    colors: {
-                        background: "#F4F3FA",          
-                        foreground: "#1E1B4B",          
-                        card: "#FFFFFF",                
-                        "card-foreground": "#1E1B4B",   
-                        popover: "#FFFFFF",
-                        "popover-foreground": "#1E1B4B",
+                colors: {
+                    transparent: 'transparent',
+                    current: 'currentColor',
+                    white: '#ffffff',
+                    black: '#000000',
+                    
+                    slate: customGray,
+                    gray: customGray,
+                    zinc: customGray,
+                    neutral: customGray,
+                    stone: customGray,
 
-                        primary: "#7C3AED",              
-                        "primary-foreground": "#FFFFFF",
+                    red: {
+                        50: semanticRedBg,
+                        100: semanticRedBg,
+                        200: "#FECDD3",
+                        300: "#FDA4AF",
+                        400: "#FB7185",
+                        500: semanticRedText,
+                        600: semanticRedText,
+                        700: semanticRedText,
+                        800: semanticRedText,
+                        900: semanticRedText
+                    },
+                    rose: {
+                        50: semanticRedBg,
+                        100: semanticRedBg,
+                        200: "#FECDD3",
+                        300: "#FDA4AF",
+                        400: "#FB7185",
+                        500: semanticRedText,
+                        600: semanticRedText,
+                        700: semanticRedText,
+                        800: semanticRedText,
+                        900: semanticRedText
+                    },
+                    green: {
+                        50: semanticGreenBg,
+                        100: semanticGreenBg,
+                        200: "#A7F3D0",
+                        300: "#6EE7B7",
+                        400: "#34D399",
+                        500: semanticGreenText,
+                        600: semanticGreenText,
+                        700: semanticGreenText,
+                        800: semanticGreenText,
+                        900: semanticGreenText
+                    },
+                    emerald: {
+                        50: semanticGreenBg,
+                        100: semanticGreenBg,
+                        200: "#A7F3D0",
+                        300: "#6EE7B7",
+                        400: "#34D399",
+                        500: semanticGreenText,
+                        600: semanticGreenText,
+                        700: semanticGreenText,
+                        800: semanticGreenText,
+                        900: semanticGreenText
+                    },
+                    blue: {
+                        50: semanticPurpleBg,
+                        100: semanticPurpleBg,
+                        200: "#C77DFF",
+                        300: "#9D4EDD",
+                        400: "#7B2CBF",
+                        500: semanticPurpleText,
+                        600: semanticPurpleText,
+                        700: semanticPurpleText,
+                        800: semanticPurpleText,
+                        900: semanticPurpleText
+                    },
+                    amber: {
+                        50: semanticPurpleBg,
+                        100: semanticPurpleBg,
+                        200: "#C77DFF",
+                        300: "#9D4EDD",
+                        400: "#7B2CBF",
+                        500: semanticPurpleText,
+                        600: semanticPurpleText,
+                        700: semanticPurpleText,
+                        800: semanticPurpleText,
+                        900: semanticPurpleText
+                    },
+                    yellow: {
+                        50: semanticPurpleBg,
+                        100: semanticPurpleBg,
+                        200: "#C77DFF",
+                        300: "#9D4EDD",
+                        400: "#7B2CBF",
+                        500: semanticPurpleText,
+                        600: semanticPurpleText,
+                        700: semanticPurpleText,
+                        800: semanticPurpleText,
+                        900: semanticPurpleText
+                    },
+                    violet: {
+                        50: brandLight,
+                        100: "#E8E8FF",
+                        200: brandMuted,
+                        300: brandMuted,
+                        400: brandAccent,
+                        500: brandPrimary,
+                        600: brandPrimary,
+                        700: brandDarkAlt,
+                        800: brandDark,
+                        900: brandDark,
+                        950: brandDark
+                    },
+                    purple: {
+                        50: brandLight,
+                        100: "#E8E8FF",
+                        200: brandMuted,
+                        300: brandMuted,
+                        400: brandAccent,
+                        500: brandPrimary,
+                        600: brandPrimary,
+                        700: brandDarkAlt,
+                        800: brandDark,
+                        900: brandDark,
+                        950: brandDark
+                    },
+                    indigo: {
+                        50: brandLight,
+                        100: "#E8E8FF",
+                        200: brandMuted,
+                        300: brandMuted,
+                        400: brandAccent,
+                        500: brandPrimary,
+                        600: brandPrimary,
+                        700: brandDarkAlt,
+                        800: brandDark,
+                        900: brandDark,
+                        950: brandDark
+                    },
 
-                        secondary: "#EEF2F6",            
-                        "secondary-foreground": "#1E1B4B",
+                    chart: {
+                        purple: "#5A189A",
+                        teal: "#06B6D4",
+                        green: "#10B981",
+                        neutral: "#E5E7EB"
+                    },
 
-                        muted: "#F3F4F6",                
-                        "muted-foreground": "#6B7280",
+                    background: neutralBg,          
+                    foreground: neutralDark,          
+                    card: "#FFFFFF",                
+                    "card-foreground": neutralDark,   
+                    popover: "#FFFFFF",
+                    "popover-foreground": neutralDark,
 
-                        accent: "#8B5CF6",               
-                        "accent-foreground": "#FFFFFF",
+                    primary: brandPrimary,              
+                    "primary-foreground": "#FFFFFF",
 
-                        border: "#E5E7EB",               
-                    }
+                    secondary: brandLight,            
+                    "secondary-foreground": neutralDark,
+
+                    muted: "#F3F4F6",                
+                    "muted-foreground": neutralMuted,
+
+                    accent: brandAccent,               
+                    "accent-foreground": "#FFFFFF",
+
+                    border: neutralBorder,
                 }
             }
         }
