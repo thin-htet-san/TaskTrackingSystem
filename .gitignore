@@ -266,6 +266,9 @@ ServiceFabricBackup/
 *.ldf
 *.ndf
 
+# Firebase service account keys
+TaskTrackingSystem.WebApi/Firebase/*.json
+
 # Business Intelligence projects
 *.rdl.data
 *.bim.layout
