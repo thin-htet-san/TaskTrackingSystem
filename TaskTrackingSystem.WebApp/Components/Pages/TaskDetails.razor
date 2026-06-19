@@ -5,7 +5,6 @@
 @using TaskTrackingSystem.Shared
 @using TaskTrackingSystem.Shared.Models.Task
 @using TaskTrackingSystem.Shared.Models.Comment
-@using TaskTrackingSystem.Shared.Models.Attachment
 @using TaskTrackingSystem.Shared.Models.Project
 @using TaskTrackingSystem.Shared.Models.User
 @using TaskTrackingSystem.WebApp.Components.Partial
@@ -247,144 +246,70 @@
                 </div>
             </div>
 
-            <!-- Right Grid: Collaboration Hub (Comments & Attachments) -->
+            <!-- Right Grid: Comments -->
             <div class="space-y-6">
                 <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col h-[580px]">
-                    <!-- Hub Tabs -->
-                    <div class="flex border-b border-slate-100 bg-slate-50/50 p-1">
-                        <button @onclick='() => SetTab("comments")' class="flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all @(currentTab == "comments" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
-                            <i data-lucide="message-square" class="h-4 w-4"></i>
-                            <span>Comments (@comments.Count)</span>
-                        </button>
-                        <button @onclick='() => SetTab("files")' class="flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all @(currentTab == "files" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
-                            <i data-lucide="paperclip" class="h-4 w-4"></i>
-                            <span>Files (@attachments.Count)</span>
-                        </button>
+                    <!-- Header -->
+                    <div class="border-b border-slate-100 bg-slate-50/50 p-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="message-square" class="h-4 w-4 text-violet-600"></i>
+                            Comments (@comments.Count)
+                        </h3>
                     </div>
 
-                    <!-- Hub Body -->
+                    <!-- Comments Body -->
                     <div class="flex-1 overflow-y-auto p-4 min-h-0">
-                        @if (currentTab == "comments")
-                        {
-                            <!-- Comments List -->
-                            <div class="space-y-4 font-sans">
-                                @if (comments.Any())
+                        <div class="space-y-4 font-sans">
+                            @if (comments.Any())
+                            {
+                                @foreach (var c in comments)
                                 {
-                                    @foreach (var c in comments)
-                                    {
-                                        <div class="flex items-start gap-3">
-                                            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold shrink-0 mt-0.5">
-                                                @(c.UserFullName.Length > 0 ? c.UserFullName[0].ToString().ToUpper() : "U")
-                                            </span>
-                                            <div class="flex-1 min-w-0 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <span class="text-xs font-bold text-slate-800 truncate">@c.UserFullName</span>
-                                                    <span class="text-[9px] text-slate-400 shrink-0 font-sans">@c.CreatedAt.ToString("g")</span>
-                                                </div>
-                                                <p class="text-xs text-slate-400 mt-0.5">@c.UserRoleName</p>
-                                                <div class="text-xs text-slate-700 mt-2 whitespace-pre-wrap break-words">@c.Message</div>
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold shrink-0 mt-0.5">
+                                            @(c.UserFullName.Length > 0 ? c.UserFullName[0].ToString().ToUpper() : "U")
+                                        </span>
+                                        <div class="flex-1 min-w-0 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-xs font-bold text-slate-800 truncate">@c.UserFullName</span>
+                                                <span class="text-[9px] text-slate-400 shrink-0 font-sans">@c.CreatedAt.ToString("g")</span>
                                             </div>
-                                            @if (c.UserId == currentUserId || isAdmin)
-                                            {
-                                                <button @onclick="() => ConfirmDeleteComment(c.Id)" class="p-1 text-slate-300 hover:text-rose-500 rounded-lg transition-colors shrink-0" title="Delete comment">
-                                                    <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
-                                                </button>
-                                            }
+                                            <p class="text-xs text-slate-400 mt-0.5">@c.UserRoleName</p>
+                                            <div class="text-xs text-slate-700 mt-2 whitespace-pre-wrap break-words">@c.Message</div>
                                         </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="text-center py-12 text-slate-400 space-y-2">
-                                        <i data-lucide="messages-square" class="h-8 w-8 mx-auto text-slate-300"></i>
-                                        <p class="text-xs">No comments posted yet.</p>
-                                        <p class="text-[10px]">Start the conversation below!</p>
+                                        @if (c.UserId == currentUserId || isAdmin)
+                                        {
+                                            <button @onclick="() => ConfirmDeleteComment(c.Id)" class="p-1 text-slate-300 hover:text-rose-500 rounded-lg transition-colors shrink-0" title="Delete comment">
+                                                <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                                            </button>
+                                        }
                                     </div>
                                 }
-                            </div>
-                        }
-                        else
-                        {
-                            <!-- Attachments List -->
-                            <div class="space-y-3 font-sans">
-                                @if (attachments.Any())
-                                {
-                                    @foreach (var file in attachments)
-                                    {
-                                        <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50/50 transition-colors gap-3">
-                                            <div class="flex items-center gap-2.5 min-w-0">
-                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 shrink-0">
-                                                    <i data-lucide="@GetFileIcon(file.FileType)" class="h-4 w-4"></i>
-                                                </span>
-                                                <div class="min-w-0">
-                                                    <p class="text-xs font-semibold text-slate-800 truncate" title="@file.FileName">@file.FileName</p>
-                                                    <p class="text-[10px] text-slate-400 mt-0.5 font-sans">@FormatBytes(file.FileSizeInBytes) â€¢ by @file.CreatedByName</p>
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center gap-1.5 shrink-0">
-                                                <a href="@($"{ApiClient.BaseUrl}/api/TaskDetails/attachments/{file.Id}/download")" target="_blank" class="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-all" title="Download">
-                                                    <i data-lucide="download" class="h-4 w-4"></i>
-                                                </a>
-                                                @if (file.CreatedBy == currentUserId || isAdmin)
-                                                {
-                                                    <button @onclick="() => ConfirmDeleteAttachment(file.Id)" class="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete file">
-                                                        <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                                    </button>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="text-center py-8 text-slate-400 space-y-2">
-                                        <i data-lucide="file-up" class="h-8 w-8 mx-auto text-slate-300"></i>
-                                        <p class="text-xs">No attachments found.</p>
-                                    </div>
-                                }
-                            </div>
-                        }
+                            }
+                            else
+                            {
+                                <div class="text-center py-12 text-slate-400 space-y-2">
+                                    <i data-lucide="messages-square" class="h-8 w-8 mx-auto text-slate-300"></i>
+                                    <p class="text-xs">No comments posted yet.</p>
+                                    <p class="text-[10px]">Start the conversation below!</p>
+                                </div>
+                            }
+                        </div>
                     </div>
 
-                    <!-- Hub Footer (Inputs) (Free for everyone) -->
+                    <!-- Footer (Inputs) -->
                     <div class="p-4 border-t border-slate-100 bg-slate-50/50">
-                        @if (currentTab == "comments")
-                        {
-                            <div class="flex items-start gap-2">
-                                <div class="flex-1">
-                                    <textarea @bind="newCommentMessage" rows="2" placeholder="Write a comment..." class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" disabled="@isSavingComment"></textarea>
-                                    @if (!string.IsNullOrEmpty(commentError))
-                                    {
-                                        <p class="text-[10px] text-red-500 mt-1 font-sans">@commentError</p>
-                                    }
-                                </div>
-                                <button @onclick="PostComment" disabled="@(isSavingComment || string.IsNullOrWhiteSpace(newCommentMessage))" class="rounded-xl bg-violet-600 text-white p-2.5 hover:bg-violet-700 disabled:opacity-50 transition-all shadow-sm shrink-0">
-                                    <i data-lucide="send" class="h-4 w-4"></i>
-                                </button>
-                            </div>
-                        }
-                        else
-                        {
-                            <div>
-                                <InputFile OnChange="OnInputFileChange" class="hidden" id="fileUpload" disabled="@isUploading" />
-                                <label for="fileUpload" class="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-violet-500 hover:bg-violet-50/20 transition-all">
-                                    @if (isUploading)
-                                    {
-                                        <LoadingSpinner Message="Uploading file..." />
-                                    }
-                                    else
-                                    {
-                                        <i data-lucide="upload-cloud" class="h-7 w-7 text-slate-400 mb-1.5"></i>
-                                        <span class="text-xs font-semibold text-slate-600">Click to upload file</span>
-                                        <span class="text-[9px] text-slate-400 mt-0.5">Maximum size: 10MB</span>
-                                    }
-                                </label>
-                                @if (!string.IsNullOrEmpty(uploadError))
+                        <div class="flex items-start gap-2">
+                            <div class="flex-1">
+                                <textarea @bind="newCommentMessage" rows="2" placeholder="Write a comment..." class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" disabled="@isSavingComment"></textarea>
+                                @if (!string.IsNullOrEmpty(commentError))
                                 {
-                                    <p class="text-[10px] text-red-500 mt-1.5 font-sans">@uploadError</p>
+                                    <p class="text-[10px] text-red-500 mt-1 font-sans">@commentError</p>
                                 }
                             </div>
-                        }
+                            <button @onclick="PostComment" disabled="@(isSavingComment || string.IsNullOrWhiteSpace(newCommentMessage))" class="rounded-xl bg-violet-600 text-white p-2.5 hover:bg-violet-700 disabled:opacity-50 transition-all shadow-sm shrink-0">
+                                <i data-lucide="send" class="h-4 w-4"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -392,7 +317,6 @@
     }
 </div>
 
-@* Confirm Actions dialog *@
 <ConfirmDialog IsVisible="showConfirm"
                Title="@confirmTitle"
                Message="@confirmMessage"
@@ -410,13 +334,13 @@
     [Parameter] public EventCallback OnTaskUpdated { get; set; }
     [SupplyParameterFromQuery(Name = "tab")]
     public string? TabQuery { get; set; }
+    private Func<Task>? confirmAction;
 
     private bool isLoading = true;
     private TaskDto? task;
     private ProjectDto? project;
     private UserDto? assignee;
     private List<CommentDto> comments = new();
-    private List<FileAttachmentDto> attachments = new();
     private List<UserDto> allUsers = new();
 
     private bool isAdmin = false;
@@ -427,22 +351,15 @@
 
     private List<string> scopes = new();
 
-    private string currentTab = "comments";
-
     // Comments Form
     private string newCommentMessage = "";
     private bool isSavingComment = false;
     private string? commentError;
 
-    // Attachments Form
-    private bool isUploading = false;
-    private string? uploadError;
-
     // Confirm dialog
     private bool showConfirm = false;
     private string confirmTitle = "";
     private string confirmMessage = "";
-    private Func<Task>? confirmAction;
 
     // Inline edit states
     private bool isEditingDescription = false;
@@ -480,25 +397,11 @@
             assignee = null;
             await LoadAllData();
         }
-
-        if (!string.IsNullOrWhiteSpace(TabQuery))
-        {
-            currentTab = TabQuery.Equals("files", StringComparison.OrdinalIgnoreCase) ? "files" : "comments";
-        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await JS.InvokeVoidAsync("initIcons");
-    }
-
-    private void SetTab(string tab)
-    {
-        currentTab = tab;
-        _ = InvokeAsync(async () => {
-            await Task.Delay(50);
-            await JS.InvokeVoidAsync("initIcons");
-        });
     }
 
     private async Task LoadAllData()
@@ -509,15 +412,13 @@
         {
             var taskUrl = $"Task/{TaskId}";
             var commentsUrl = $"TaskDetails/tasks/{TaskId}/comments";
-            var attachmentsUrl = $"TaskDetails/tasks/{TaskId}/attachments";
             var usersUrl = "User";
 
             var taskResponseTask = client.GetAsync(taskUrl);
             var commentsResponseTask = client.GetAsync(commentsUrl);
-            var attachmentsResponseTask = client.GetAsync(attachmentsUrl);
             var usersResponseTask = client.GetAsync(usersUrl);
 
-            await Task.WhenAll(taskResponseTask, commentsResponseTask, attachmentsResponseTask, usersResponseTask);
+            await Task.WhenAll(taskResponseTask, commentsResponseTask, usersResponseTask);
 
             var taskResponse = taskResponseTask.Result;
             if (taskResponse.IsSuccessStatusCode)
@@ -529,12 +430,6 @@
             if (commentsResponse.IsSuccessStatusCode)
             {
                 comments = await commentsResponse.Content.ReadFromJsonAsync<List<CommentDto>>(Serialization.CaseInsensitive) ?? new();
-            }
-
-            var attachmentsResponse = attachmentsResponseTask.Result;
-            if (attachmentsResponse.IsSuccessStatusCode)
-            {
-                attachments = await attachmentsResponse.Content.ReadFromJsonAsync<List<FileAttachmentDto>>(Serialization.CaseInsensitive) ?? new();
             }
 
             var usersResponse = usersResponseTask.Result;
@@ -591,7 +486,7 @@
         }
     }
 
-    // â”€â”€â”€ INLINE MUTATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── INLINE MUTATIONS ──────────────────────────────────────────────────────
 
     private async Task OnStatusChanged(ChangeEventArgs e)
     {
@@ -736,7 +631,7 @@
         isSavingTitle = false;
     }
 
-    // â”€â”€â”€ COMMENTS ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── COMMENTS ACTIONS ──────────────────────────────────────────────────────
 
     private async Task PostComment()
     {
@@ -750,7 +645,7 @@
             var response = await client.PostAsJsonAsync($"TaskDetails/tasks/{TaskId}/comments", new CreateCommentDto { Message = newCommentMessage });
             var res = await response.Content.ReadFromJsonAsync<Result<CommentDto>>(Serialization.CaseInsensitive);
 
-            if (response.IsSuccessStatusCode && res != null && res.IsSuccess)
+            if (response.IsSuccessStatusCode && res != null && res.IsSuccess && res.Value != null)
             {
                 comments.Add(res.Value);
                 newCommentMessage = "";
@@ -798,75 +693,7 @@
         }
     }
 
-    // â”€â”€â”€ ATTACHMENTS ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-    private async Task OnInputFileChange(InputFileChangeEventArgs e)
-    {
-        var file = e.File;
-        if (file == null) return;
-
-        isUploading = true;
-        uploadError = null;
-
-        try
-        {
-            var content = new MultipartFormDataContent();
-            var fileContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
-            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
-            content.Add(fileContent, "file", file.Name);
-
-            var client = ApiClient.CreateClient();
-            var response = await client.PostAsync($"TaskDetails/tasks/{TaskId}/attachments", content);
-            var res = await response.Content.ReadFromJsonAsync<Result<FileAttachmentDto>>(Serialization.CaseInsensitive);
-
-            if (response.IsSuccessStatusCode && res != null && res.IsSuccess)
-            {
-                attachments.Add(res.Value);
-                await JS.InvokeVoidAsync("initIcons");
-            }
-            else
-            {
-                uploadError = res?.ErrorMessage ?? "Failed to upload file.";
-            }
-        }
-        catch (Exception ex)
-        {
-            uploadError = ex.Message;
-        }
-        finally
-        {
-            isUploading = false;
-        }
-    }
-
-    private void ConfirmDeleteAttachment(long attachmentId)
-    {
-        confirmTitle = "Delete File?";
-        confirmMessage = "Are you sure you want to delete this file attachment?";
-        confirmAction = () => DeleteAttachment(attachmentId);
-        showConfirm = true;
-    }
-
-    private async Task DeleteAttachment(long attachmentId)
-    {
-        var client = ApiClient.CreateClient();
-        try
-        {
-            var response = await client.DeleteAsync($"TaskDetails/attachments/{attachmentId}");
-            var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
-            if (response.IsSuccessStatusCode && res != null && res.IsSuccess)
-            {
-                var idx = attachments.FindIndex(f => f.Id == attachmentId);
-                if (idx >= 0) attachments.RemoveAt(idx);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Delete file error: {ex.Message}");
-        }
-    }
-
-    // â”€â”€â”€ CONFIRM DIALOG LOGIC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ——— CONFIRM DIALOG LOGIC —————————————————————————————————————————————————
 
     private async Task ExecuteConfirmAction()
     {
@@ -884,7 +711,7 @@
         confirmAction = null;
     }
 
-    // â”€â”€â”€ DISPLAY UTILITIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ——— DISPLAY UTILITIES ————————————————————————————————————————————————————
 
     private string GetStatusLabel(AppTaskStatus statusId) => statusId switch
     {
@@ -917,25 +744,4 @@
         TaskPriority.High => "bg-rose-50 text-rose-700 border border-rose-100",
         _ => "bg-slate-50 text-slate-600"
     };
-
-    private string GetFileIcon(string fileType)
-    {
-        if (fileType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)) return "image";
-        if (fileType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase)) return "file-text";
-        if (fileType.Contains("word") || fileType.Contains("officedocument.wordprocessingml")) return "file-text";
-        if (fileType.Contains("excel") || fileType.Contains("officedocument.spreadsheetml")) return "file-spreadsheet";
-        return "file";
-    }
-
-    private string FormatBytes(long bytes)
-    {
-        string[] suffix = { "B", "KB", "MB", "GB", "TB" };
-        int i;
-        double dblBytes = bytes;
-        for (i = 0; i < suffix.Length && bytes >= 1024; i++, bytes /= 1024)
-        {
-            dblBytes = bytes / 1024.0;
-        }
-        return $"{dblBytes:0.##} {suffix[i]}";
-    }
 }

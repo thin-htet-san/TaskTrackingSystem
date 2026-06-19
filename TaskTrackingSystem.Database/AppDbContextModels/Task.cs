@@ -42,8 +42,6 @@ public partial class Task
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
-    public virtual ICollection<FileAttachment> FileAttachments { get; set; } = new List<FileAttachment>();
-
     public virtual Project Project { get; set; } = null!;
 
     public virtual ICollection<TaskHistory> TaskHistories { get; set; } = new List<TaskHistory>();

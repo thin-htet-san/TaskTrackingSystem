@@ -20,7 +20,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Comment> Comments { get; set; }
 
-    public virtual DbSet<FileAttachment> FileAttachments { get; set; }
 
     public virtual DbSet<Menu> Menus { get; set; }
 
@@ -98,27 +97,10 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK_Comments_Users");
         });
 
-        modelBuilder.Entity<FileAttachment>(entity =>
-        {
-            entity.HasIndex(e => e.TaskId, "IX_FileAttachments_TaskId");
 
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.FileName).HasMaxLength(255);
-            entity.Property(e => e.FileType).HasMaxLength(100);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasOne(d => d.Task).WithMany(p => p.FileAttachments)
-                .HasForeignKey(d => d.TaskId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_FileAttachments_Tasks");
-        });
 
         modelBuilder.Entity<Menu>(entity =>
         {
-            entity.HasIndex(e => e.ParentMenuId, "IX_Menus_ParentMenuId");
-
             entity.HasIndex(e => e.MenuCode, "UQ_Menus_MenuCode").IsUnique();
 
             entity.Property(e => e.CreatedAt)
