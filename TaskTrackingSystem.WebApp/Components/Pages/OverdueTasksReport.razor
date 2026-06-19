@@ -140,7 +140,6 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Days Overdue</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -226,17 +225,6 @@
                                      }
                                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
                                  </td>
-                                <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
-                                    <button @onclick="() => RemindAssignee(task)" class="text-xs font-semibold text-violet-600 hover:text-violet-900 transition-colors font-sans">
-                                        Remind
-                                    </button>
-                                    @if (canUpdateTask)
-                                    {
-                                        <button @onclick="() => OpenAdjustDueDateModal(task)" class="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors font-sans">
-                                            Adjust Due Date
-                                        </button>
-                                    }
-                                </td>
                             </tr>
                         }
                     }

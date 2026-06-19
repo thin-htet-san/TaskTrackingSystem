@@ -90,17 +90,8 @@
                                 <td class="px-6 py-4 text-sm text-slate-400">@DisplayFormats.Date(project.CreatedAt)</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <button @onclick="() => NavigateToKanban(project.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-600 transition-all" title="View Board">
-                                            <i data-lucide="kanban" class="h-4 w-4"></i>
-                                        </button>
-                                        @if (canAssignProject || canEditProject || canDeleteProject)
+                                        @if (canEditProject || canDeleteProject)
                                         {
-                                            @if (canAssignProject)
-                                            {
-                                                <button @onclick="() => OpenAssignModal(project)" class="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all" title="Assign Members">
-                                                    <i data-lucide="user-plus" class="h-4 w-4"></i>
-                                                </button>
-                                            }
                                             @if (canEditProject)
                                             {
                                                 <button @onclick="() => OpenEditModal(project)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
