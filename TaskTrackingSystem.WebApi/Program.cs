@@ -124,6 +124,147 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
         backlogMenu.UpdatedAt = DateTime.UtcNow;
     }
 
+    var widgetSetupMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "DASHBOARD_WIDGETS");
+    if (widgetSetupMenu == null)
+    {
+        widgetSetupMenu = new Menu
+        {
+            MenuCode = "DASHBOARD_WIDGETS",
+            MenuName = "Widget Setup",
+            MenuUrl = "/widget-setup",
+            Icon = "layout-grid",
+            Visible = true,
+            OrderNo = 26,
+            IsDeleted = false,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Menus.Add(widgetSetupMenu);
+        await db.SaveChangesAsync();
+    }
+    else
+    {
+        widgetSetupMenu.MenuName = "Widget Setup";
+        widgetSetupMenu.MenuUrl = "/widget-setup";
+        widgetSetupMenu.Icon = "layout-grid";
+        widgetSetupMenu.Visible = true;
+        widgetSetupMenu.OrderNo = 26;
+        widgetSetupMenu.IsDeleted = false;
+        widgetSetupMenu.UpdatedAt = DateTime.UtcNow;
+    }
+
+    var adminRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Admin" && !r.IsDeleted);
+    if (adminRole != null && widgetSetupMenu.MenuId > 0)
+    {
+        var adminMenuAccess = await db.RoleMenus.FirstOrDefaultAsync(rm => rm.RoleId == adminRole.Id && rm.MenuId == widgetSetupMenu.MenuId);
+        if (adminMenuAccess == null)
+        {
+            db.RoleMenus.Add(new RoleMenu
+            {
+                RoleId = adminRole.Id,
+                MenuId = widgetSetupMenu.MenuId,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            adminMenuAccess.IsDeleted = false;
+            adminMenuAccess.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    var widgetSeeds = new[]
+    {
+        new DashboardWidget { WidgetCode = "WIDGET_GREETING_BANNER", WidgetName = "Greeting Banner", Description = "A friendly greeting panel with the current date.", Category = "Overview", ComponentKey = "GreetingBanner", DataSourceKey = "CurrentUser", DefaultWidth = 4, DefaultHeight = 2, DefaultOrder = 1, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow },
+        new DashboardWidget { WidgetCode = "WIDGET_KPI_CARDS", WidgetName = "KPI Cards", Description = "Quick counts for users, projects, and tasks.", Category = "Overview", ComponentKey = "KpiCards", DataSourceKey = "DashboardSummary", DefaultWidth = 4, DefaultHeight = 2, DefaultOrder = 2, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow },
+        new DashboardWidget { WidgetCode = "WIDGET_CALENDAR_STRIP", WidgetName = "Calendar Strip", Description = "A compact weekly view with due tasks.", Category = "Planning", ComponentKey = "CalendarStrip", DataSourceKey = "DueTasks", DefaultWidth = 4, DefaultHeight = 3, DefaultOrder = 3, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow },
+        new DashboardWidget { WidgetCode = "WIDGET_PROJECT_PROGRESS", WidgetName = "Project Progress", Description = "Shows completion progress for active projects.", Category = "Analytics", ComponentKey = "ProjectProgressChart", DataSourceKey = "ProjectProgress", DefaultWidth = 4, DefaultHeight = 3, DefaultOrder = 4, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow },
+        new DashboardWidget { WidgetCode = "WIDGET_TIMELINE", WidgetName = "Timeline", Description = "Highlights project timing and start/end dates.", Category = "Planning", ComponentKey = "TimelineChart", DataSourceKey = "Projects", DefaultWidth = 4, DefaultHeight = 3, DefaultOrder = 5, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow },
+        new DashboardWidget { WidgetCode = "WIDGET_TASK_TRAY", WidgetName = "Task Tray", Description = "A small queue of work the user can pick up next.", Category = "Work", ComponentKey = "TaskTray", DataSourceKey = "Tasks", DefaultWidth = 4, DefaultHeight = 3, DefaultOrder = 6, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow },
+        new DashboardWidget { WidgetCode = "WIDGET_WORKLOAD", WidgetName = "Workload", Description = "Team load distribution across members.", Category = "Analytics", ComponentKey = "WorkloadChart", DataSourceKey = "ProjectsAndUsers", DefaultWidth = 4, DefaultHeight = 3, DefaultOrder = 7, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow },
+        new DashboardWidget { WidgetCode = "WIDGET_AUDIT_FEED", WidgetName = "Audit Feed", Description = "Recent administrative activity.", Category = "Admin", ComponentKey = "AuditFeed", DataSourceKey = "AuditLogs", DefaultWidth = 4, DefaultHeight = 3, DefaultOrder = 8, IsActive = true, IsDeleted = false, CreatedAt = DateTime.UtcNow }
+    };
+
+    var widgetAccessTemplates = new Dictionary<string, (bool admin, bool manager, bool employee)>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["WIDGET_GREETING_BANNER"] = (true, true, true),
+        ["WIDGET_KPI_CARDS"] = (true, true, true),
+        ["WIDGET_CALENDAR_STRIP"] = (true, true, true),
+        ["WIDGET_PROJECT_PROGRESS"] = (true, true, false),
+        ["WIDGET_TIMELINE"] = (true, true, false),
+        ["WIDGET_TASK_TRAY"] = (true, true, true),
+        ["WIDGET_WORKLOAD"] = (true, true, false),
+        ["WIDGET_AUDIT_FEED"] = (true, false, false)
+    };
+
+    var roles = await db.Roles.Where(r => !r.IsDeleted).ToListAsync();
+
+    foreach (var seed in widgetSeeds)
+    {
+        var existingWidget = await db.DashboardWidgets.FirstOrDefaultAsync(w => w.WidgetCode == seed.WidgetCode);
+        if (existingWidget == null)
+        {
+            db.DashboardWidgets.Add(seed);
+            await db.SaveChangesAsync();
+            existingWidget = seed;
+        }
+        else
+        {
+            existingWidget.WidgetName = seed.WidgetName;
+            existingWidget.Description = seed.Description;
+            existingWidget.Category = seed.Category;
+            existingWidget.ComponentKey = seed.ComponentKey;
+            existingWidget.DataSourceKey = seed.DataSourceKey;
+            existingWidget.DefaultWidth = seed.DefaultWidth;
+            existingWidget.DefaultHeight = seed.DefaultHeight;
+            existingWidget.DefaultOrder = seed.DefaultOrder;
+            existingWidget.IsActive = seed.IsActive;
+            existingWidget.IsDeleted = false;
+            existingWidget.UpdatedAt = DateTime.UtcNow;
+        }
+
+        var template = widgetAccessTemplates[seed.WidgetCode];
+        foreach (var role in roles)
+        {
+            var shouldView = role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                ? template.admin
+                : role.Name.Equals("Manager", StringComparison.OrdinalIgnoreCase)
+                    ? template.manager
+                    : template.employee;
+
+            var existingAccess = await db.RoleDashboardWidgets.FirstOrDefaultAsync(row => row.RoleId == role.Id && row.WidgetId == existingWidget.WidgetId);
+            if (existingAccess == null)
+            {
+                db.RoleDashboardWidgets.Add(new RoleDashboardWidget
+                {
+                    RoleId = role.Id,
+                    WidgetId = existingWidget.WidgetId,
+                    CanView = shouldView,
+                    CanConfigure = role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase),
+                    IsDefaultVisible = shouldView,
+                    DefaultGridX = 0,
+                    DefaultGridY = 0,
+                    DefaultWidth = seed.DefaultWidth,
+                    DefaultHeight = seed.DefaultHeight,
+                    DefaultSortOrder = seed.DefaultOrder,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                existingAccess.CanView = shouldView;
+                existingAccess.CanConfigure = role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+                existingAccess.IsDefaultVisible = shouldView;
+                existingAccess.DefaultWidth = seed.DefaultWidth;
+                existingAccess.DefaultHeight = seed.DefaultHeight;
+                existingAccess.DefaultSortOrder = seed.DefaultOrder;
+                existingAccess.IsDeleted = false;
+                existingAccess.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+    }
+
     // Soft-delete existing tasks that belong to deleted projects
     var orphanedTasks = await db.Tasks
         .Where(t => t.IsDeleted != true && t.Project.IsDeleted == true)
