@@ -169,6 +169,7 @@
                         {
                             var index = i;
                             var slice = DonutSlices[i];
+                            if (slice.Count <= 0) continue;
                             <circle cx="110" cy="110" r="74"
                                     fill="none"
                                     stroke="@slice.Color"
@@ -218,47 +219,75 @@
     </div>
 
     <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
-        <div class="rounded-[28px] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-900">Project Timeline</h3>
-                    <p class="mt-1 text-sm text-slate-500">Showcasing five projects across the current timeline.</p>
-                </div>
-                <div class="text-sm text-slate-500">@TimelineRangeLabel</div>
+        <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60">
+            <!-- Header -->
+            <div class="flex items-center justify-between gap-4 mb-5">
+                <h3 class="text-2xl font-bold text-slate-900">Project Timeline</h3>
+                <div class="text-sm font-medium text-slate-500">@TimelineRangeLabel</div>
             </div>
 
-            <div class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                <div class="grid border-b border-slate-200 bg-white text-center text-xs font-semibold uppercase tracking-wider text-slate-500" style="@TimelineColumnsStyle">
-                    <div class="px-3 py-3 text-left">Project</div>
+            @if (TimelineMonths.Count > 0 && TimelineRows.Count > 0)
+            {
+                <!-- Month labels row aligned to bar area -->
+                <div class="flex mb-2" style="padding-left: 160px;">
                     @foreach (var month in TimelineMonths)
                     {
-                        <div class="px-2 py-3">@month.ToString("MMM")</div>
+                        <div class="flex-1 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                            @month.ToString("MMM")
+                        </div>
                     }
                 </div>
 
-                <div class="divide-y divide-slate-200">
+                <!-- Project rows -->
+                <div class="space-y-2">
                     @foreach (var row in TimelineRows)
                     {
-                        <div class="grid items-center gap-0 px-3 py-4" style="@TimelineColumnsStyle">
-                            <div class="pr-3">
-                                <div class="text-sm font-semibold text-slate-900">@row.Name</div>
-                                <div class="mt-1 text-xs text-slate-500">@row.DateLabel</div>
-                            </div>
-                            <div class="relative h-8" style="@TimelineRowSpanStyle">
-                                <div class="absolute inset-y-3 left-0 right-0 rounded-full bg-slate-200"></div>
-                                <div class="absolute inset-y-3 rounded-full" style="left: @row.Left%; width: @row.Width%; min-width: 28px; background-color: @row.Color;"></div>
-                                <div class="absolute inset-y-3 left-0 right-0 border-l-2 border-violet-400/60" style="left: @TodayMarkerLeft;"></div>
+                        <div class="flex items-center h-9">
+                            <!-- Project name -->
+                            <div class="w-40 shrink-0 pr-4 text-sm font-medium text-slate-700 truncate">@row.Name</div>
+
+                            <!-- Bar area: full width, months are equal-width columns -->
+                            <div class="flex-1 relative h-full">
+                                <!-- Today vertical line (violet, spans full row height) -->
+                                <div class="absolute inset-y-0 w-0.5 bg-violet-500 z-10 rounded-full" style="left: @TodayMarkerLeft;"></div>
+
+                                <!-- Slate track: the project's full duration window -->
+                                <div class="absolute top-1 bottom-1 rounded-lg bg-slate-100"
+                                     style="left: @(row.Left.ToString("0.##"))%; width: @(row.Width.ToString("0.##"))%;">
+                                    <!-- Colored progress fill from the left of the track -->
+                                    <div class="absolute inset-0 rounded-lg flex items-center overflow-hidden"
+                                         style="width: @(Math.Clamp(row.CompletionPercentage, 0, 100).ToString("0.##"))%; background-color: @row.Color;">
+                                        @if (row.CompletionPercentage > 8)
+                                        {
+                                            <span class="pl-2.5 text-xs font-bold text-white whitespace-nowrap drop-shadow">@((int)row.CompletionPercentage)%</span>
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     }
                 </div>
 
-                <div class="flex flex-wrap items-center gap-4 px-4 py-4 text-xs text-slate-500">
-                    <div class="flex items-center gap-2"><span class="h-4 w-1 rounded-full bg-violet-400"></span> Today</div>
-                    <div class="flex items-center gap-2"><span class="h-4 w-4 rounded-full bg-slate-300"></span> Planned span</div>
-                    <div class="flex items-center gap-2"><span class="h-4 w-4 rounded-full bg-sky-400"></span> Project window</div>
+                <!-- Legend -->
+                <div class="flex items-center gap-6 mt-5 text-xs text-slate-500">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block h-4 w-0.5 rounded-full bg-violet-500"></span>
+                        <span>Today</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block h-3 w-4 rounded bg-slate-200"></span>
+                        <span>Remaining</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block h-3 w-4 rounded bg-violet-500"></span>
+                        <span>Progress fill</span>
+                    </div>
                 </div>
-            </div>
+            }
+            else
+            {
+                <div class="flex items-center justify-center py-16 text-slate-400 text-sm">No projects to display.</div>
+            }
         </div>
 
         <div class="rounded-[28px] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60">
@@ -573,33 +602,53 @@
 
     private List<DistributionSlice> BuildDonutSlices()
     {
-        var counts = new[]
+        // 1. Calculate counts entirely from the same taskList to fix data mismatches
+        var todoCount = taskList.Count(t => t.StatusId == AppTaskStatus.Todo);
+        var inProgressCount = taskList.Count(t => t.StatusId == AppTaskStatus.InProgress);
+        var overdueCount = taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done);
+
+        var rawCounts = new[]
         {
-            CompletedTasksCount,
-            taskStatuses.FirstOrDefault(s => s.StatusId == AppTaskStatus.InProgress)?.TaskCount ?? 0,
-            taskStatuses.FirstOrDefault(s => s.StatusId == AppTaskStatus.Todo)?.TaskCount ?? 0,
-            Math.Max(taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done), 0)
+            CompletedTasksCount, // Already calculated from taskList
+            inProgressCount,
+            todoCount,
+            overdueCount
         };
 
         var colors = new[] { "#10b981", "#8b5cf6", "#06b6d4", "#ef4444" };
 
-        var total = counts.Sum();
-        if (total <= 0)
-        {
-            total = 1;
-        }
-
-        var circumference = 2 * Math.PI * 74;
+        // 2. Adjust total so it maps 100% cleanly to the math displayed
+        var total = Math.Max(TotalTasksCount, 1);
+        var circumference = 2 * Math.PI * 74;  // 2πr for r=74
         var slices = new List<DistributionSlice>();
-        var offset = 0.0;
+        var cumulativeArc = 0.0;
 
-        for (var i = 0; i < counts.Length; i++)
+        for (var i = 0; i < rawCounts.Length; i++)
         {
-            var fraction = counts[i] / (double)total;
-            var dash = $"{circumference * fraction:0.##} {circumference:0.##}";
-            var dashOffset = circumference - (circumference * offset);
-            slices.Add(new DistributionSlice(GetDistributionLabel(i), counts[i], colors[i], dash, dashOffset));
-            offset += fraction;
+            if (rawCounts[i] <= 0)
+            {
+                // Arc length 0 with a full-circumference gap → invisible.
+                // Avoids stroke-linecap="round" rendering a phantom dot.
+                slices.Add(new DistributionSlice(GetDistributionLabel(i), 0, colors[i], $"0 {circumference:0.##}", 0));
+                continue;
+            }
+
+            var fraction  = rawCounts[i] / (double)total;
+            var arcLength = circumference * fraction;
+
+            // dasharray: "{draw} {gap}" where gap = circumference - arcLength so the
+            // pattern period equals exactly one full revolution. This prevents any
+            // slice from bleeding into the next revolution of the ring.
+            var dash = $"{arcLength:0.##} {(circumference - arcLength):0.##}";
+
+            // dashOffset = -cumulativeArc:
+            // A negative offset shifts the start of the dash pattern forward along the
+            // path by cumulativeArc pixels, so this slice begins exactly where the
+            // previous slice ended. (The circle starts at 12 o'clock via rotate=-90.)
+            var dashOffset = -cumulativeArc;
+
+            slices.Add(new DistributionSlice(GetDistributionLabel(i), rawCounts[i], colors[i], dash, dashOffset));
+            cumulativeArc += arcLength;
         }
 
         return slices;
@@ -684,22 +733,25 @@
         }
 
         var first = months.First();
-        var monthSpan = Math.Max(months.Count - 1, 1);
+        var n = months.Count; // total columns — each flex-1 month slot = 1/n of bar width
 
         return FeaturedProjects.Select(project =>
         {
             var startIndex = ((project.StartDate.Year - first.Year) * 12) + project.StartDate.Month - first.Month;
-            var endIndex = ((project.EndDate.Year - first.Year) * 12) + project.EndDate.Month - first.Month;
-            startIndex = Math.Clamp(startIndex, 0, monthSpan);
-            endIndex = Math.Clamp(endIndex, startIndex, monthSpan);
+            var endIndex   = ((project.EndDate.Year   - first.Year) * 12) + project.EndDate.Month   - first.Month;
+            startIndex = Math.Clamp(startIndex, 0, n - 1);
+            endIndex   = Math.Clamp(endIndex,   startIndex, n - 1);
 
-            var left = (startIndex / (double)monthSpan) * 100;
-            var width = Math.Max(6, ((endIndex - startIndex + 1) / (double)(monthSpan + 1)) * 100);
+            // Use n as divisor so positions match the flex-1 month columns.
+            var left  = (startIndex / (double)n) * 100;
+            var width = ((endIndex - startIndex + 1) / (double)n) * 100;
+            width = Math.Max(2, width);
+
             var progress = GetProjectProgress(project.Id);
 
             return new TimelineRow(
                 project.Name,
-                $"{DisplayFormats.Date(project.StartDate)} to {DisplayFormats.Date(project.EndDate)}",
+                $"{DisplayFormats.Date(project.StartDate)} – {DisplayFormats.Date(project.EndDate)}",
                 GetProjectColor(project.Id),
                 left,
                 width,
@@ -710,16 +762,18 @@
     private string GetTimelineTodayMarkerLeft()
     {
         var months = TimelineMonths;
-        if (months.Count == 0)
-        {
-            return "0%";
-        }
+        if (months.Count == 0) return "0%";
 
         var first = months.First();
-        var monthSpan = Math.Max(months.Count - 1, 1);
-        var currentIndex = ((DateTime.Today.Year - first.Year) * 12) + DateTime.Today.Month - first.Month;
-        currentIndex = Math.Clamp(currentIndex, 0, monthSpan);
-        return $"{(currentIndex / (double)monthSpan) * 100:0.##}%";
+        var n = months.Count;
+        var monthIndex = ((DateTime.Today.Year - first.Year) * 12) + DateTime.Today.Month - first.Month;
+
+        // Clamp to visible range; if today is outside the timeline keep it at the edge.
+        monthIndex = Math.Clamp(monthIndex, 0, n - 1);
+
+        // Add fractional day-of-month so the line sits at the correct intra-month position.
+        var dayFraction = (DateTime.Today.Day - 1.0) / DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month);
+        return $"{((monthIndex + dayFraction) / n * 100):0.##}%";
     }
 
     private ProjectProgressDto GetProjectProgress(long projectId)
