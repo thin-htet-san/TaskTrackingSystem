@@ -197,12 +197,16 @@
                     <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <h3 class="text-2xl font-bold text-slate-950">@CalendarMonthLabel</h3>
-                                <p class="mt-1 text-sm text-slate-500">@CalendarTodayLabel</p>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm font-semibold text-violet-700">@CurrentTimeLabel</div>
-                                <div class="text-xs text-slate-500">@TimeZoneLabel</div>
+                                <div class="flex items-center gap-3">
+                                    <button type="button" @onclick="PrevMonth" class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50">
+                                        <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                                    </button>
+                                    <h3 class="text-2xl font-bold text-slate-950 min-w-[120px]">@CalendarMonthLabel</h3>
+                                    <button type="button" @onclick="NextMonth" class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50">
+                                        <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                                    </button>
+                                </div>
+                                <p class="mt-2 text-sm text-slate-500">@CalendarTodayLabel</p>
                             </div>
                         </div>
 
@@ -279,7 +283,7 @@
     private List<ProjectDto> projects = new();
     private DateTime selectedDate = DateTime.Today;
 
-    private readonly string[] WeekdayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+    private readonly string[] WeekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     private List<CalendarCellViewModel> CalendarCells => BuildCalendarCells();
     private List<TaskDto> SelectedDateTasks => tasks
@@ -356,15 +360,12 @@
             if (tasksResult?.IsSuccess == true && tasksResult.Value != null)
             {
                 tasks = tasksResult.Value.ToList();
-                selectedDate = tasks
-                    .OrderBy(task => Math.Abs((task.DueDate.Date - DateTime.Today).TotalDays))
-                    .Select(task => task.DueDate.Date)
-                    .FirstOrDefault(DateTime.Today);
             }
             else
             {
                 tasks = new List<TaskDto>();
             }
+            selectedDate = DateTime.Today;
 
             projects = projectsResult ?? new List<ProjectDto>();
         }
@@ -381,6 +382,16 @@
     private void SelectDate(DateTime date)
     {
         selectedDate = date.Date;
+    }
+
+    private void PrevMonth()
+    {
+        selectedDate = selectedDate.AddMonths(-1);
+    }
+
+    private void NextMonth()
+    {
+        selectedDate = selectedDate.AddMonths(1);
     }
 
     private List<SummaryMetricViewModel> BuildSummaryMetrics()
@@ -404,7 +415,7 @@
     private List<CalendarCellViewModel> BuildCalendarCells()
     {
         var firstOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
-        var start = firstOfMonth.AddDays(-(int)((((int)firstOfMonth.DayOfWeek + 6) % 7)));
+        var start = firstOfMonth.AddDays(-(int)firstOfMonth.DayOfWeek);
         var end = start.AddDays(42);
 
         var dateMap = tasks

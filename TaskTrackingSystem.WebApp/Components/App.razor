@@ -222,6 +222,8 @@
             }
         }
     </script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/gantt/modules/gantt.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <HeadOutlet />
 </head>
@@ -230,6 +232,195 @@
     <Routes />
     <script src="_framework/blazor.web.js"></script>
     <script>
+        window.renderPieChart = function (containerId, data) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            Highcharts.chart(containerId, {
+                chart: {
+                    type: 'pie',
+                    backgroundColor: 'transparent',
+                    height: 260,
+                    margin: [0, 0, 0, 0],
+                    spacing: [0, 0, 0, 0]
+                },
+                title: {
+                    text: null
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderWidth: 1,
+                    borderColor: '#e2e8f0',
+                    borderRadius: 12,
+                    shadow: true,
+                    style: {
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '13px',
+                        color: '#0f172a'
+                    },
+                    pointFormat: '<b>{point.name}</b>: <b>{point.y}</b> tasks ({point.percentage:.1f}%)'
+                },
+                plotOptions: {
+                    pie: {
+                        borderWidth: 0,
+                        borderColor: 'transparent',
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            distance: -30,
+                            format: '{point.percentage:.0f}%',
+                            style: {
+                                color: 'white',
+                                textOutline: 'none',
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '12px',
+                                fontWeight: 'bold'
+                            },
+                            filter: {
+                                property: 'percentage',
+                                operator: '>',
+                                value: 5
+                            }
+                        },
+                        showInLegend: false
+                    }
+                },
+                series: [{
+                    name: 'Tasks',
+                    colorByPoint: true,
+                    data: data
+                }],
+                credits: {
+                    enabled: false
+                }
+            });
+        };
+
+        window.renderGanttChart = function (containerId, data) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            Highcharts.ganttChart(containerId, {
+                chart: {
+                    backgroundColor: 'transparent',
+                    height: 250,
+                    style: {
+                        fontFamily: 'Inter, sans-serif'
+                    }
+                },
+                title: {
+                    text: null
+                },
+                credits: {
+                    enabled: false
+                },
+                navigator: {
+                    enabled: false
+                },
+                scrollbar: {
+                    enabled: false
+                },
+                rangeSelector: {
+                    enabled: false
+                },
+                legend: {
+                    enabled: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderWidth: 1,
+                    borderColor: '#e2e8f0',
+                    borderRadius: 12,
+                    shadow: true,
+                    style: {
+                        fontSize: '13px',
+                        color: '#0f172a'
+                    },
+                    pointFormatter: function() {
+                        const start = Highcharts.dateFormat('%b %e, %Y', this.start);
+                        const end = Highcharts.dateFormat('%b %e, %Y', this.end);
+                        const progress = this.completed && this.completed.amount !== undefined 
+                            ? Math.round(this.completed.amount * 100) + '%' 
+                            : '0%';
+                        return `<b>${this.name}</b><br/>Start: ${start}<br/>End: ${end}<br/>Progress: ${progress}`;
+                    }
+                },
+                xAxis: [{
+                    gridLineWidth: 1,
+                    gridLineColor: '#f1f5f9',
+                    lineColor: '#e2e8f0',
+                    tickColor: '#e2e8f0',
+                    labels: {
+                        style: {
+                            color: '#64748b',
+                            fontSize: '11px'
+                        }
+                    },
+                    currentDateIndicator: {
+                        color: '#7c3aed',
+                        dashStyle: 'ShortDash',
+                        width: 2,
+                        label: {
+                            format: 'Today',
+                            style: {
+                                color: '#7c3aed',
+                                fontWeight: 'bold'
+                            }
+                        }
+                    }
+                }],
+                yAxis: {
+                    gridLineWidth: 1,
+                    gridLineColor: '#f1f5f9',
+                    labels: {
+                        style: {
+                            color: '#334155',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                        }
+                    }
+                },
+                plotOptions: {
+                    gantt: {
+                        borderWidth: 0,
+                        borderColor: 'transparent',
+                        dataLabels: {
+                            enabled: true,
+                            formatter: function() {
+                                if (this.point.completed && this.point.completed.amount !== undefined) {
+                                    return Math.round(this.point.completed.amount * 100) + '%';
+                                }
+                                return '0%';
+                            },
+                            style: {
+                                cursor: 'default',
+                                pointerEvents: 'none',
+                                textOutline: 'none',
+                                color: '#ffffff',
+                                fontSize: '11px',
+                                fontWeight: 'bold'
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Projects',
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    data: data.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        start: item.start,
+                        end: item.end,
+                        completed: {
+                            amount: item.completed,
+                            fill: item.color
+                        },
+                        color: '#e2e8f0'
+                    }))
+                }]
+            });
+        };
+
         function initIcons() {
             if (window.lucide) {
                 window.lucide.createIcons();
