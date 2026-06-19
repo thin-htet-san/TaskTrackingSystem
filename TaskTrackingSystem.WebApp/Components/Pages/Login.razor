@@ -4,6 +4,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 @inject IJSRuntime JS
 
 <PageTitle>Sign In — TaskFlow</PageTitle>
@@ -114,7 +115,7 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated == true)
             {
-                Navigation.NavigateTo("/dashboard", forceLoad: true);
+                Navigation.NavigateTo(await ResolveLandingPageAsync(authState.User), forceLoad: true);
             }
         }
     }
@@ -125,5 +126,57 @@
     {
         showPassword = !showPassword;
         await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task<string> ResolveLandingPageAsync(System.Security.Claims.ClaimsPrincipal user)
+    {
+        try
+        {
+            var menus = await MenuAuthorization.GetUserMenusAsync(user);
+            var landing = FindFirstDashboardMenu(menus);
+            if (!string.IsNullOrWhiteSpace(landing))
+            {
+                return landing;
+            }
+        }
+        catch
+        {
+        }
+
+        return "/dashboard";
+    }
+
+    private static string? FindFirstDashboardMenu(IEnumerable<TaskTrackingSystem.Shared.Models.Menu.MenuDto> menus)
+    {
+        foreach (var menu in menus)
+        {
+            var found = FindFirstDashboardMenu(menu);
+            if (!string.IsNullOrWhiteSpace(found))
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? FindFirstDashboardMenu(TaskTrackingSystem.Shared.Models.Menu.MenuDto menu)
+    {
+        if (!string.IsNullOrWhiteSpace(menu.MenuUrl) &&
+            menu.MenuUrl.StartsWith("/dashboard", StringComparison.OrdinalIgnoreCase))
+        {
+            return menu.MenuUrl;
+        }
+
+        foreach (var subMenu in menu.SubMenus)
+        {
+            var found = FindFirstDashboardMenu(subMenu);
+            if (!string.IsNullOrWhiteSpace(found))
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 }

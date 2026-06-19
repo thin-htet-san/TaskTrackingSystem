@@ -23,6 +23,7 @@ public static class AccountEndpoints
     private static async Task<IResult> LoginAsync(
         HttpContext context,
         IHttpClientFactory httpClientFactory,
+        MenuAuthorizationService menuAuthorization,
         [FromForm] string usernameOrEmail,
         [FromForm] string password,
         [FromForm] bool? rememberMe,
@@ -60,12 +61,14 @@ public static class AccountEndpoints
         }
 
         await SignInUserAsync(context, result.Value, rememberMe ?? false);
-        return Results.Redirect(GetSafeReturnUrl(returnUrl));
+        var landingPage = await ResolveLandingPageAsync(menuAuthorization, result.Value);
+        return Results.Redirect(GetSafeReturnUrl(returnUrl, landingPage));
     }
 
     private static async Task<IResult> RegisterAsync(
         HttpContext context,
         IHttpClientFactory httpClientFactory,
+        MenuAuthorizationService menuAuthorization,
         [FromForm] RegisterDto registerDto)
     {
         HttpResponseMessage response;
@@ -87,7 +90,8 @@ public static class AccountEndpoints
             if (result?.IsSuccess == true && result.Value != null && !string.IsNullOrWhiteSpace(result.Value.Username))
             {
                 await SignInUserAsync(context, result.Value, false);
-                return Results.Redirect("/dashboard");
+                var landingPage = await ResolveLandingPageAsync(menuAuthorization, result.Value);
+                return Results.Redirect(GetSafeReturnUrl(null, landingPage));
             }
             else if (result != null && !string.IsNullOrEmpty(result.ErrorMessage))
             {
@@ -305,13 +309,69 @@ public static class AccountEndpoints
         return Results.Redirect($"/login?error={error}{safeReturnUrl}");
     }
 
-    private static string GetSafeReturnUrl(string? returnUrl)
+    private static string GetSafeReturnUrl(string? returnUrl, string landingPage)
     {
         if (string.IsNullOrWhiteSpace(returnUrl) || !returnUrl.StartsWith('/') || returnUrl.StartsWith("//"))
         {
-            return "/dashboard";
+            return landingPage;
         }
 
         return returnUrl;
+    }
+
+    private static async Task<string> ResolveLandingPageAsync(MenuAuthorizationService menuAuthorization, AuthResponseDto authResult)
+    {
+        var principal = BuildTemporaryPrincipal(authResult);
+        var menus = await menuAuthorization.GetUserMenusAsync(principal);
+        var dashboardMenu = FindFirstDashboardMenu(menus);
+        return dashboardMenu ?? "/dashboard";
+    }
+
+    private static ClaimsPrincipal BuildTemporaryPrincipal(AuthResponseDto authResult)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, authResult.Username),
+            new(ClaimTypes.Email, authResult.Email),
+            new(ClaimTypes.Role, authResult.RoleName),
+            new("role_id", authResult.RoleId.ToString()),
+            new("jwt_token", authResult.Token)
+        };
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+    }
+
+    private static string? FindFirstDashboardMenu(IEnumerable<TaskTrackingSystem.Shared.Models.Menu.MenuDto> menus)
+    {
+        foreach (var menu in menus)
+        {
+            var found = FindFirstDashboardMenu(menu);
+            if (!string.IsNullOrWhiteSpace(found))
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? FindFirstDashboardMenu(TaskTrackingSystem.Shared.Models.Menu.MenuDto menu)
+    {
+        if (!string.IsNullOrWhiteSpace(menu.MenuUrl) &&
+            menu.MenuUrl.StartsWith("/dashboard", StringComparison.OrdinalIgnoreCase))
+        {
+            return menu.MenuUrl;
+        }
+
+        foreach (var subMenu in menu.SubMenus)
+        {
+            var found = FindFirstDashboardMenu(subMenu);
+            if (!string.IsNullOrWhiteSpace(found))
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 }

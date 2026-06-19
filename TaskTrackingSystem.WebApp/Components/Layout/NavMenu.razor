@@ -109,14 +109,13 @@
 
     private List<MenuDto> ProcessMenus(List<MenuDto> rawMenus)
     {
-        var result = new List<MenuDto>();
-
-        foreach (var m in rawMenus)
-        {
-            result.Add(m);
-        }
-
-        return result;
+        return rawMenus
+            .Where(menu => !string.Equals(menu.MenuCode, "ROLE_LAYOUTS", StringComparison.OrdinalIgnoreCase) &&
+                           !string.Equals(menu.MenuName, "Role Layouts", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(menu => string.Equals(menu.MenuCode, "DASHBOARD", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(menu => menu.OrderNo)
+            .ThenBy(menu => menu.MenuName)
+            .ToList();
     }
 
     private async Task RefreshMenusAsync()

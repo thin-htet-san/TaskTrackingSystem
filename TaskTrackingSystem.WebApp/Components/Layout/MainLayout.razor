@@ -89,7 +89,7 @@
                     <p class="text-center mt-2 max-w-sm text-sm" style="color: var(--text-muted);">
                         You do not have permission to access this page. Please contact your system administrator.
                     </p>
-                    <a href="/dashboard" class="mt-6 inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors shadow-sm hover:opacity-90" style="background-color: var(--brand-primary);">
+                    <a href="@dashboardHref" class="mt-6 inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors shadow-sm hover:opacity-90" style="background-color: var(--brand-primary);">
                         <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
                         Back to Dashboard
                     </a>
@@ -106,6 +106,7 @@
     [Inject] private Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
     private bool isAuthorizedPage = true;
+    private string dashboardHref = "/dashboard";
 
     private bool IsDashboardPage => 
         string.IsNullOrEmpty(Navigation.ToBaseRelativePath(Navigation.Uri)) || 
@@ -118,6 +119,9 @@
         "reports" => "Reports",
         "roles" => "Roles & Access",
         "users" => "Users",
+        "dashboard" => "Dashboard",
+        "dashboard/manager" => "Manager Dashboard",
+        "dashboard/employee" => "Employee Dashboard",
         _ => "Workspace"
     };
 
@@ -159,6 +163,7 @@
         }
 
         var menus = await MenuAuthorization.GetUserMenusAsync(user);
+        dashboardHref = ResolveDashboardHref(menus);
         var allowed = MenuAuthorization.IsRouteAllowed(user, relativePath);
         Console.WriteLine($"[DEBUG MainLayout] User: {user.Identity?.Name}, Path: {relativePath}, Allowed: {allowed}");
         if (menus != null)
@@ -187,5 +192,39 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private static string ResolveDashboardHref(IEnumerable<TaskTrackingSystem.Shared.Models.Menu.MenuDto> menus)
+    {
+        foreach (var menu in menus)
+        {
+            var found = ResolveDashboardHref(menu);
+            if (!string.IsNullOrWhiteSpace(found))
+            {
+                return found;
+            }
+        }
+
+        return "/dashboard";
+    }
+
+    private static string? ResolveDashboardHref(TaskTrackingSystem.Shared.Models.Menu.MenuDto menu)
+    {
+        if (!string.IsNullOrWhiteSpace(menu.MenuUrl) &&
+            menu.MenuUrl.StartsWith("/dashboard", StringComparison.OrdinalIgnoreCase))
+        {
+            return menu.MenuUrl;
+        }
+
+        foreach (var subMenu in menu.SubMenus)
+        {
+            var found = ResolveDashboardHref(subMenu);
+            if (!string.IsNullOrWhiteSpace(found))
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 }
