@@ -1,46 +1,533 @@
 @page "/dashboard/employee"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize(Roles = "Employee")]
+@inject ApiClientService ApiClient
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Employee Dashboard</PageTitle>
 
-<div class="space-y-6 text-slate-900">
-    <div class="rounded-[32px] border border-slate-200 bg-white px-8 py-8 shadow-sm shadow-slate-200/60">
-        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">Work View</p>
-        <h2 class="mt-2 text-4xl font-bold tracking-tight text-slate-900">Welcome back, team member</h2>
-        <p class="mt-3 max-w-2xl text-sm text-slate-600">
-            This dashboard is reserved for personal tasks, due dates, and daily progress.
-        </p>
-    </div>
+<div class="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-[1440px] space-y-6">
+        <div class="rounded-[32px] border border-slate-200 bg-white px-8 py-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.22em] text-violet-700">Team Member</p>
+                    <h2 class="mt-2 text-4xl font-bold tracking-tight text-slate-950">My Work</h2>
+                    <p class="mt-3 max-w-2xl text-sm text-slate-600">
+                        Tasks, deadlines, and your progress in one place.
+                    </p>
+                </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">In Progress</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/tasks/all" class="inline-flex items-center rounded-2xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/20 transition-colors hover:bg-violet-600">
+                        <i data-lucide="check-square" class="mr-2 h-4 w-4"></i>
+                        View Tasks
+                    </a>
+                    <a href="/reports/tasks" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+                        <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
+                        Reports
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">To Do</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
-        </div>
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">Due Soon</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
-        </div>
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">Completed</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
-        </div>
-    </div>
 
-    <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60">
-        <h3 class="text-2xl font-bold text-slate-900">Employee dashboard shell</h3>
-        <p class="mt-2 text-sm text-slate-500">
-            We’ll plug the real task list, calendar, and progress widgets into this page next.
-        </p>
+        @if (isLoading)
+        {
+            <div class="rounded-[28px] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                <div class="mx-auto flex items-center justify-center gap-3 text-slate-500">
+                    <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Loading dashboard...</span>
+                </div>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="rounded-[28px] border border-rose-200 bg-rose-50 px-6 py-5 text-sm text-rose-700 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                @errorMessage
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                @foreach (var metric in SummaryMetrics)
+                {
+                    <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-1">
+                        <div class="flex items-center justify-between">
+                            <div class="@metric.IconWrapClass">
+                                <i data-lucide="@metric.Icon" class="h-5 w-5"></i>
+                            </div>
+                            <span class="text-sm font-semibold @metric.BadgeClass">@metric.BadgeText</span>
+                        </div>
+                        <p class="mt-5 text-4xl font-bold text-slate-950">@metric.Value</p>
+                        <p class="mt-2 text-sm text-slate-500">@metric.Label</p>
+                    </div>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,1fr)]">
+                <div class="space-y-5">
+                    <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                        <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-violet-200 bg-violet-50 text-violet-700">
+                                    <i data-lucide="timer-reset" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-slate-950">In Progress</h3>
+                                    <p class="text-sm text-slate-500">Tasks currently being worked on</p>
+                                </div>
+                            </div>
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@InProgressTasks.Count</span>
+                        </div>
+
+                        <div class="divide-y divide-slate-100">
+                            @if (InProgressTasks.Any())
+                            {
+                                @foreach (var task in InProgressTasks)
+                                {
+                                    <div class="flex items-center gap-4 px-6 py-5">
+                                        <span class="mt-1 h-2.5 w-2.5 rounded-full" style="background-color: @GetStatusColor(task.StatusId);"></span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm text-slate-500">@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                            <div class="text-sm font-semibold @GetDueTextClass(task)">@GetDueLabel(task)</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="px-6 py-10 text-sm text-slate-500">No tasks in progress right now.</div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                        <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sky-600">
+                                    <i data-lucide="clock-3" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-slate-950">To Do & Upcoming</h3>
+                                    <p class="text-sm text-slate-500">Tasks waiting for action or coming up soon</p>
+                                </div>
+                            </div>
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@TodoUpcomingTasks.Count</span>
+                        </div>
+
+                        <div class="divide-y divide-slate-100">
+                            @if (TodoUpcomingTasks.Any())
+                            {
+                                @foreach (var task in TodoUpcomingTasks)
+                                {
+                                    <div class="flex items-center gap-4 px-6 py-5">
+                                        <span class="mt-1 h-2.5 w-2.5 rounded-full" style="background-color: @GetStatusColor(task.StatusId);"></span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm text-slate-500">@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                            <div class="text-sm font-semibold @GetDueTextClass(task)">@GetDueLabel(task)</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="px-6 py-10 text-sm text-slate-500">No upcoming tasks found.</div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                        <div class="flex items-center justify-between gap-4 border-b border-rose-100 px-6 py-5">
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-600">
+                                    <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-slate-950">Overdue</h3>
+                                    <p class="text-sm text-slate-500">Tasks past their due date</p>
+                                </div>
+                            </div>
+                            <span class="rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-600">@OverdueTasks.Count</span>
+                        </div>
+
+                        <div class="divide-y divide-rose-100">
+                            @if (OverdueTasks.Any())
+                            {
+                                @foreach (var task in OverdueTasks)
+                                {
+                                    <div class="flex items-center gap-4 px-6 py-5">
+                                        <span class="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 text-rose-500">
+                                            <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm text-slate-500">@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                            <div class="text-sm font-semibold text-rose-600">@DaysOverdue(task)</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="px-6 py-10 text-sm text-slate-500">No overdue tasks. Nice work.</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-950">@CalendarMonthLabel</h3>
+                                <p class="mt-1 text-sm text-slate-500">@CalendarTodayLabel</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-semibold text-violet-700">@CurrentTimeLabel</div>
+                                <div class="text-xs text-slate-500">@TimeZoneLabel</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            @foreach (var day in WeekdayLabels)
+                            {
+                                <span>@day</span>
+                            }
+                        </div>
+
+                        <div class="mt-3 grid grid-cols-7 gap-2">
+                            @foreach (var cell in CalendarCells)
+                            {
+                                <button type="button" @onclick="() => SelectDate(cell.Date)" class="@GetCalendarCellClasses(cell)">
+                                    <div class="flex h-full flex-col justify-between">
+                                        <div class="text-sm font-semibold @(cell.IsCurrentMonth ? (cell.IsSelected ? "text-white" : "text-slate-900") : "text-slate-400")">@cell.Date.Day</div>
+                                        <div class="flex items-center gap-1">
+                                            @foreach (var dot in cell.TaskDots.Take(3))
+                                            {
+                                                <span class="h-1.5 w-1.5 rounded-full" style="background-color: @dot;"></span>
+                                            }
+                                            @if (cell.TaskDots.Count > 3)
+                                            {
+                                                <span class="text-[10px] leading-none text-slate-400">+@((cell.TaskDots.Count - 3))</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                        <div class="border-b border-slate-100 px-6 py-5">
+                            <h3 class="text-2xl font-bold text-slate-950">Related Tasks</h3>
+                            <p class="mt-1 text-sm text-slate-500">Tasks marked on @SelectedDateLabel</p>
+                        </div>
+
+                        <div class="divide-y divide-slate-100">
+                            @if (SelectedDateTasks.Any())
+                            {
+                                @foreach (var task in SelectedDateTasks)
+                                {
+                                    <div class="flex items-center gap-4 px-6 py-4">
+                                        <span class="mt-1 h-2.5 w-2.5 rounded-full" style="background-color: @GetStatusColor(task.StatusId);"></span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
+                                        </div>
+                                        <div class="text-right text-xs text-slate-500">
+                                            <div>@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                            <div class="@GetDueTextClass(task)">@GetDueLabel(task)</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="px-6 py-10 text-sm text-slate-500">No tasks are scheduled for this day.</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 </div>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private long currentUserId;
+    private List<TaskDto> tasks = new();
+    private List<ProjectDto> projects = new();
+    private DateTime selectedDate = DateTime.Today;
+
+    private readonly string[] WeekdayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+
+    private List<CalendarCellViewModel> CalendarCells => BuildCalendarCells();
+    private List<TaskDto> SelectedDateTasks => tasks
+        .Where(task => task.DueDate.Date == selectedDate.Date)
+        .OrderBy(task => task.StatusId)
+        .ThenBy(task => task.DueDate)
+        .ToList();
+
+    private string SelectedDateLabel => selectedDate.ToString("dddd, MMM d");
+    private string CalendarMonthLabel => selectedDate.ToString("MMMM yyyy");
+    private string CalendarTodayLabel => DateTime.Today.ToString("dddd, d");
+    private string CurrentTimeLabel => DateTime.Now.ToString("h:mm tt");
+    private string TimeZoneLabel
+    {
+        get
+        {
+            var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
+            var sign = offset >= TimeSpan.Zero ? "+" : "-";
+            var hours = Math.Abs(offset.Hours);
+            var minutes = Math.Abs(offset.Minutes);
+            return minutes == 0 ? $"GMT{sign}{hours}" : $"GMT{sign}{hours}:{minutes:00}";
+        }
+    }
+
+    private List<TaskDto> InProgressTasks => tasks
+        .Where(task => task.StatusId == AppTaskStatus.InProgress)
+        .OrderBy(task => task.DueDate)
+        .Take(3)
+        .ToList();
+
+    private List<TaskDto> TodoUpcomingTasks => tasks
+        .Where(task => task.StatusId == AppTaskStatus.Todo || (task.StatusId != AppTaskStatus.Done && task.DueDate.Date >= DateTime.Today))
+        .OrderBy(task => task.DueDate)
+        .Take(3)
+        .ToList();
+
+    private List<TaskDto> OverdueTasks => tasks
+        .Where(task => task.DueDate.Date < DateTime.Today && task.StatusId != AppTaskStatus.Done)
+        .OrderBy(task => task.DueDate)
+        .Take(3)
+        .ToList();
+
+    private List<SummaryMetricViewModel> SummaryMetrics => BuildSummaryMetrics();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task LoadDashboardData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var idStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (idStr != null)
+            {
+                long.TryParse(idStr, out currentUserId);
+            }
+
+            var client = ApiClient.CreateClient();
+            var tasksResult = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"User/{currentUserId}/tasks", Serialization.CaseInsensitive);
+            var projectsResult = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+
+            if (tasksResult?.IsSuccess == true && tasksResult.Value != null)
+            {
+                tasks = tasksResult.Value.ToList();
+                selectedDate = tasks
+                    .OrderBy(task => Math.Abs((task.DueDate.Date - DateTime.Today).TotalDays))
+                    .Select(task => task.DueDate.Date)
+                    .FirstOrDefault(DateTime.Today);
+            }
+            else
+            {
+                tasks = new List<TaskDto>();
+            }
+
+            projects = projectsResult ?? new List<ProjectDto>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load dashboard data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectDate(DateTime date)
+    {
+        selectedDate = date.Date;
+    }
+
+    private List<SummaryMetricViewModel> BuildSummaryMetrics()
+    {
+        var inProgress = tasks.Count(task => task.StatusId == AppTaskStatus.InProgress);
+        var todo = tasks.Count(task => task.StatusId == AppTaskStatus.Todo);
+        var dueSoon = tasks.Count(task => task.StatusId != AppTaskStatus.Done && task.DueDate.Date >= DateTime.Today && task.DueDate.Date <= DateTime.Today.AddDays(3));
+        var completed = tasks.Count(task => task.StatusId == AppTaskStatus.Done);
+        var overdue = tasks.Count(task => task.DueDate.Date < DateTime.Today && task.StatusId != AppTaskStatus.Done);
+
+        return new List<SummaryMetricViewModel>
+        {
+            new("timer-reset", "active", inProgress.ToString(), "In Progress", "rounded-2xl bg-violet-700 p-3 text-white", "text-violet-700"),
+            new("list-checks", "queued", todo.ToString(), "To Do", "rounded-2xl bg-cyan-600 p-3 text-white", "text-cyan-600"),
+            new("calendar-clock", "soon", dueSoon.ToString(), "Due Soon", "rounded-2xl bg-amber-500 p-3 text-white", "text-amber-600"),
+            new("circle-check-big", "done", completed.ToString(), "Completed", "rounded-2xl bg-emerald-600 p-3 text-white", "text-emerald-600"),
+            new("triangle-alert", "late", overdue.ToString(), "Overdue", "rounded-2xl bg-rose-600 p-3 text-white", "text-rose-600")
+        };
+    }
+
+    private List<CalendarCellViewModel> BuildCalendarCells()
+    {
+        var firstOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
+        var start = firstOfMonth.AddDays(-(int)((((int)firstOfMonth.DayOfWeek + 6) % 7)));
+        var end = start.AddDays(42);
+
+        var dateMap = tasks
+            .Where(task => task.DueDate.Date >= start.Date && task.DueDate.Date < end.Date)
+            .GroupBy(task => task.DueDate.Date)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        var cells = new List<CalendarCellViewModel>();
+        for (var i = 0; i < 42; i++)
+        {
+            var date = start.AddDays(i);
+            dateMap.TryGetValue(date.Date, out var dayTasks);
+            dayTasks ??= new List<TaskDto>();
+
+            cells.Add(new CalendarCellViewModel(
+                date,
+                date.Month == selectedDate.Month,
+                date.Date == selectedDate.Date,
+                dayTasks.Select(task => GetStatusColor(task.StatusId)).ToList(),
+                dayTasks.Count));
+        }
+
+        return cells;
+    }
+
+    private string GetProjectName(long projectId)
+    {
+        return projects.FirstOrDefault(project => project.Id == projectId)?.Name ?? $"Project #{projectId}";
+    }
+
+    private string GetStatusColor(AppTaskStatus statusId) => statusId switch
+    {
+        AppTaskStatus.Todo => "#22d3ee",
+        AppTaskStatus.InProgress => "#8b5cf6",
+        AppTaskStatus.Done => "#10b981",
+        _ => "#94a3b8"
+    };
+
+    private string GetCalendarCellClasses(CalendarCellViewModel cell)
+    {
+        var classes = new List<string>
+        {
+            "min-h-[52px] rounded-2xl border p-2 text-left transition-colors"
+        };
+
+        if (cell.IsSelected)
+        {
+            classes.Add("border-violet-500 bg-violet-600");
+        }
+        else if (cell.IsCurrentMonth)
+        {
+            classes.Add("border-slate-200 bg-white hover:border-violet-200 hover:bg-slate-50");
+        }
+        else
+        {
+            classes.Add("border-slate-100 bg-slate-50 text-slate-400");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetDueLabel(TaskDto task)
+    {
+        var days = (task.DueDate.Date - DateTime.Today).Days;
+
+        if (task.StatusId == AppTaskStatus.Done)
+        {
+            return "Done";
+        }
+
+        if (days < 0)
+        {
+            return $"{Math.Abs(days)}d ago";
+        }
+
+        if (days == 0)
+        {
+            return "Today";
+        }
+
+        return $"{days}d left";
+    }
+
+    private string GetDueTextClass(TaskDto task)
+    {
+        var days = (task.DueDate.Date - DateTime.Today).Days;
+
+        if (task.StatusId == AppTaskStatus.Done)
+        {
+            return "text-emerald-600";
+        }
+
+        if (days < 0)
+        {
+            return "text-rose-600";
+        }
+
+        if (days <= 3)
+        {
+            return "text-amber-500";
+        }
+
+        return "text-sky-600";
+    }
+
+    private string DaysOverdue(TaskDto task)
+    {
+        var days = (DateTime.Today - task.DueDate.Date).Days;
+        return days <= 0 ? "Due today" : $"{days}d ago";
+    }
+
+    private sealed record SummaryMetricViewModel(
+        string Icon,
+        string BadgeText,
+        string Value,
+        string Label,
+        string IconWrapClass,
+        string BadgeClass);
+
+    private sealed record CalendarCellViewModel(
+        DateTime Date,
+        bool IsCurrentMonth,
+        bool IsSelected,
+        List<string> TaskDots,
+        int TaskCount);
+}
