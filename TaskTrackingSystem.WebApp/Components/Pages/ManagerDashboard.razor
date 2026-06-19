@@ -2,45 +2,792 @@
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize(Roles = "Manager")]
+@inject ApiClientService ApiClient
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Manager Dashboard</PageTitle>
 
-<div class="space-y-6 text-slate-900">
-    <div class="rounded-[32px] border border-slate-200 bg-white px-8 py-8 shadow-sm shadow-slate-200/60">
-        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-sky-600">Team View</p>
-        <h2 class="mt-2 text-4xl font-bold tracking-tight text-slate-900">Welcome back, manager</h2>
-        <p class="mt-3 max-w-2xl text-sm text-slate-600">
-            This dashboard is reserved for project tracking, team health, and workload planning.
-        </p>
-    </div>
+<div class="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-[1440px] space-y-6">
+        <div class="rounded-[32px] border border-slate-200 bg-white px-8 py-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.22em] text-violet-700">Team View</p>
+                    <h2 class="mt-2 text-4xl font-bold tracking-tight text-slate-950">My Projects</h2>
+                    <p class="mt-3 max-w-2xl text-sm text-slate-600">
+                        Track your team, project health, and weekly task progress in one place.
+                        @if (summary.PendingTasksCount > 0)
+                        {
+                            <span class="text-slate-500"> @summary.PendingTasksCount tasks are still pending.</span>
+                        }
+                    </p>
+                </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">Projects</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/projects/all" class="inline-flex items-center rounded-2xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/20 transition-colors hover:bg-violet-600">
+                        <i data-lucide="folder-kanban" class="mr-2 h-4 w-4"></i>
+                        All Projects
+                    </a>
+                    <a href="/reports/tasks" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+                        <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
+                        Task Report
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">Team Members</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
-        </div>
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">Pending Tasks</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
-        </div>
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
-            <p class="text-sm font-semibold text-slate-500">Risk Items</p>
-            <p class="mt-4 text-4xl font-bold text-slate-900">--</p>
-            <p class="mt-2 text-sm text-slate-500">Placeholder metric</p>
-        </div>
-    </div>
 
-    <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60">
-        <h3 class="text-2xl font-bold text-slate-900">Manager dashboard shell</h3>
-        <p class="mt-2 text-sm text-slate-500">
-            We’ll plug the real charts, team views, and project blocks into this page next.
-        </p>
+        @if (isLoading)
+        {
+            <div class="rounded-[28px] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                <div class="mx-auto flex items-center justify-center gap-3 text-slate-500">
+                    <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Loading dashboard...</span>
+                </div>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="rounded-[28px] border border-rose-200 bg-rose-50 px-6 py-5 text-sm text-rose-700 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                @errorMessage
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach (var metric in SummaryMetrics)
+                {
+                    <div class="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-1">
+                        <div class="relative flex items-center justify-between">
+                            <div class="@metric.IconWrapClass">
+                                <i data-lucide="@metric.Icon" class="h-5 w-5"></i>
+                            </div>
+                            <span class="text-sm font-semibold @metric.AltTextClass">@metric.Badge</span>
+                        </div>
+                        <p class="relative mt-5 text-4xl font-bold text-slate-950">@metric.Value</p>
+                        <p class="relative mt-2 text-sm text-slate-500">@metric.Label</p>
+                    </div>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,1fr)]">
+                <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-950">Weekly Task Progress</h3>
+                            <p class="mt-1 text-sm text-slate-500">Completed vs pending tasks per week</p>
+                        </div>
+                        <div class="text-sm text-slate-500">@WeeklyRangeLabel</div>
+                    </div>
+
+                    <div class="relative mt-6 h-[280px]">
+                        <svg viewBox="0 0 760 280" class="h-full w-full overflow-visible">
+                            @for (var i = 0; i < YTicks.Count; i++)
+                            {
+                                var tick = YTicks[i];
+                                var y = TickToY(tick.Value);
+                                <g>
+                                    <line x1="56" y1="@y" x2="724" y2="@y" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" />
+                                    <text x="42" y="@(y + 4)" text-anchor="end" font-size="12" fill="#64748b">@tick.Label</text>
+                                </g>
+                            }
+
+                            @for (var i = 0; i < WeeklyProgress.Count; i++)
+                            {
+                                var index = i;
+                                var week = WeeklyProgress[index];
+                                <g @onmouseenter="() => SetHoveredWeek(index)" @onmouseleave="ClearHoveredWeek">
+                                    <rect x="@week.HoverX" y="40" width="@week.HoverWidth" height="160" rx="18" fill="@(hoveredWeekIndex == index ? "#f8fafc" : "transparent")" opacity="@(hoveredWeekIndex == index ? "1" : "0")" />
+
+                                    <rect x="@week.CompletedX" y="@(week.BaseY - week.CompletedHeight)" width="@BarWidth" height="@week.CompletedHeight" rx="8" fill="#8b5cf6" />
+                                    <rect x="@week.PendingX" y="@(week.BaseY - week.PendingHeight)" width="@BarWidth" height="@week.PendingHeight" rx="8" fill="#14b8a6" />
+
+                                    <text x="@week.LabelX" y="246" text-anchor="middle" font-size="13" fill="#64748b">@week.Label</text>
+                                </g>
+                            }
+                        </svg>
+
+                        @if (hoveredWeek is not null)
+                        {
+                            <div class="pointer-events-none absolute z-20 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.12)]"
+                                 style="@HoveredWeekTooltipStyle">
+                                <div class="text-sm font-semibold text-slate-950">@hoveredWeek.Label</div>
+                                <div class="mt-2 text-sm text-violet-700">Completed: @hoveredWeek.Completed</div>
+                                <div class="mt-1 text-sm text-teal-600">Pending: @hoveredWeek.Pending</div>
+                                <div class="mt-2 text-xs text-slate-500">@hoveredWeek.DateRangeLabel</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                        <div class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-violet-500"></span>
+                            Completed
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-teal-500"></span>
+                            Pending
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-slate-300"></span>
+                            Hover for week details
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                    <h3 class="text-2xl font-bold text-slate-950">Team Progress</h3>
+                    <p class="mt-1 text-sm text-slate-500">Members with active workload</p>
+
+                    <div class="mt-6 space-y-4">
+                        @if (TeamProgress.Any())
+                        {
+                            @foreach (var member in TeamProgress)
+                            {
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-12 w-12 items-center justify-center rounded-full border border-white text-sm font-bold text-white shadow-sm" style="background-color: @member.Color;">
+                                            @member.Initials
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <div class="truncate text-sm font-semibold text-slate-950">@member.FullName</div>
+                                                <div class="shrink-0 text-sm text-slate-500">@member.Completed/@member.Total</div>
+                                            </div>
+                                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                                                <div class="h-full rounded-full" style="width: @member.CompletionPercentage%; background-color: @member.Color;"></div>
+                                            </div>
+                                            <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
+                                                <span>@member.Label</span>
+                                                <span>@member.CompletionPercentage.ToString("F0")%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                                No assigned work yet.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+                <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-950">@CalendarMonthLabel</h3>
+                            <p class="mt-1 text-sm text-slate-500">@CalendarTodayLabel</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold text-violet-700">@CurrentTimeLabel</div>
+                            <div class="text-xs text-slate-500">@TimeZoneLabel</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        @foreach (var day in WeekdayLabels)
+                        {
+                            <span>@day</span>
+                        }
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-7 gap-2">
+                        @foreach (var cell in CalendarCells)
+                        {
+                            <div class="@GetCalendarCellClasses(cell)">
+                                <div class="flex h-full flex-col justify-between">
+                                    <div class="text-sm font-semibold @(cell.IsCurrentMonth ? (cell.IsToday ? "text-white" : "text-slate-900") : "text-slate-400")">@cell.Date.Day</div>
+                                    <div class="flex items-center gap-1">
+                                        @foreach (var dot in cell.DeadlineDots)
+                                        {
+                                            <span class="h-1.5 w-1.5 rounded-full" style="background-color: @dot;"></span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                    <h3 class="text-2xl font-bold text-slate-950">Upcoming Deadlines</h3>
+                    <p class="mt-1 text-sm text-slate-500">Projects ending soon</p>
+
+                    <div class="mt-6 space-y-3">
+                        @if (UpcomingDeadlines.Any())
+                        {
+                            @foreach (var item in UpcomingDeadlines)
+                            {
+                                <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <span class="h-2.5 w-2.5 rounded-full" style="background-color: @item.Color;"></span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="truncate text-sm font-semibold text-slate-950">@item.Name</div>
+                                        <div class="text-xs text-slate-500">ends @item.EndDateLabel</div>
+                                    </div>
+                                    <div class="@item.DaysLeftClass">@item.DaysLeftLabel</div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                                No upcoming deadlines.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                    <div>
+                        <h3 class="text-2xl font-bold text-slate-950">My Projects</h3>
+                        <p class="mt-1 text-sm text-slate-500">Click "View Tasks" to drill in</p>
+                    </div>
+                    <a href="/projects/all" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 shadow-sm transition-colors hover:bg-slate-50">
+                        View all
+                    </a>
+                </div>
+
+                <div class="divide-y divide-slate-100">
+                    @if (ProjectCards.Any())
+                    {
+                        @foreach (var project in ProjectCards)
+                        {
+                            <div class="px-6 py-6 transition-colors hover:bg-slate-50">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <span class="h-2.5 w-2.5 rounded-full" style="background-color: @project.Color;"></span>
+                                            <h4 class="truncate text-lg font-semibold text-slate-950">@project.Name</h4>
+                                            <span class="@project.StatusClass">@project.StatusLabel</span>
+                                        </div>
+
+                                        <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+                                            <span>@project.Completed/@project.Total tasks</span>
+                                            <span class="text-rose-600">@project.Overdue overdue</span>
+                                            <span>@project.TeamSize members</span>
+                                        </div>
+
+                                        <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                                            <div class="h-full rounded-full transition-all" style="width: @project.ProgressPercentage%; background-color: @project.Color;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col items-start gap-3 lg:items-end">
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold text-slate-950">@project.ProgressPercentage.ToString("F0")%</div>
+                                            <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Complete</div>
+                                        </div>
+                                        <button @onclick="() => ViewProjectTasks(project.Id)" class="inline-flex items-center rounded-2xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-600">
+                                            <i data-lucide="eye" class="mr-2 h-4 w-4"></i>
+                                            View Tasks
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="px-6 py-10 text-sm text-slate-500">No projects available for this account.</div>
+                    }
+                </div>
+            </div>
+        }
     </div>
 </div>
+
+@code {
+    private const double SvgWidth = 760;
+    private const double PlotLeft = 56;
+    private const double PlotRight = 724;
+    private const double PlotTop = 40;
+    private const double PlotBottom = 200;
+    private const double BarWidth = 18;
+
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private List<ProjectDto> projects = new();
+    private List<TaskDto> tasks = new();
+    private List<UserDto> users = new();
+    private List<ProjectProgressDto> projectProgress = new();
+    private DashboardSummaryDto summary = new();
+
+    private int? hoveredWeekIndex;
+
+    private List<WeeklyProgressViewModel> WeeklyProgress => BuildWeeklyProgress();
+    private WeeklyProgressViewModel? hoveredWeek => hoveredWeekIndex is int index && index >= 0 && index < WeeklyProgress.Count ? WeeklyProgress[index] : null;
+    private string HoveredWeekTooltipStyle => hoveredWeek is null
+        ? string.Empty
+        : $"left: {hoveredWeek.CenterPercent:F2}%; top: 34px; transform: translateX(-50%);";
+
+    private string WeeklyRangeLabel
+        => WeeklyProgress.Count > 0
+            ? $"{WeeklyProgress.First().DateRangeLabel} - {WeeklyProgress.Last().DateRangeLabel}"
+            : DateTime.Today.ToString("MMMM yyyy");
+
+    private List<SummaryMetricViewModel> SummaryMetrics => BuildSummaryMetrics();
+    private List<ProjectCardViewModel> ProjectCards => BuildProjectCards();
+    private List<TeamProgressViewModel> TeamProgress => BuildTeamProgress();
+    private List<YAxisTickViewModel> YTicks => BuildYAxisTicks();
+    private List<CalendarCellViewModel> CalendarCells => BuildCalendarCells();
+    private List<DeadlineItemViewModel> UpcomingDeadlines => BuildUpcomingDeadlines();
+    private readonly string[] WeekdayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+    private string CalendarMonthLabel => DateTime.Today.ToString("MMMM yyyy");
+    private string CalendarTodayLabel => DateTime.Today.ToString("dddd, d");
+    private string CurrentTimeLabel => DateTime.Now.ToString("h:mm tt");
+    private string TimeZoneLabel
+    {
+        get
+        {
+            var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
+            var sign = offset >= TimeSpan.Zero ? "+" : "-";
+            var hours = Math.Abs(offset.Hours);
+            var minutes = Math.Abs(offset.Minutes);
+            return minutes == 0 ? $"GMT{sign}{hours}" : $"GMT{sign}{hours}:{minutes:00}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task LoadDashboardData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var client = ApiClient.CreateClient();
+
+            var summaryTask = client.GetFromJsonAsync<Result<DashboardSummaryDto>>("Dashboard/summary", Serialization.CaseInsensitive);
+            var progressTask = client.GetFromJsonAsync<Result<List<ProjectProgressDto>>>("Dashboard/project-progress", Serialization.CaseInsensitive);
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+            var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+
+            await Task.WhenAll(summaryTask, progressTask, projectsTask, tasksTask, usersTask);
+
+            var summaryResult = await summaryTask;
+            if (summaryResult?.IsSuccess == true)
+            {
+                summary = summaryResult.Value ?? new DashboardSummaryDto();
+            }
+
+            var progressResult = await progressTask;
+            if (progressResult?.IsSuccess == true)
+            {
+                projectProgress = progressResult.Value?.ToList() ?? new List<ProjectProgressDto>();
+            }
+
+            projects = (await projectsTask) ?? new List<ProjectDto>();
+            tasks = (await tasksTask) ?? new List<TaskDto>();
+            users = (await usersTask) ?? new List<UserDto>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load dashboard data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ViewProjectTasks(long projectId)
+    {
+        Navigation.NavigateTo($"/projects/{projectId}/tasks");
+    }
+
+    private void SetHoveredWeek(int index)
+    {
+        hoveredWeekIndex = index;
+        StateHasChanged();
+    }
+
+    private void ClearHoveredWeek()
+    {
+        if (hoveredWeekIndex is null)
+        {
+            return;
+        }
+
+        hoveredWeekIndex = null;
+        StateHasChanged();
+    }
+
+    private List<SummaryMetricViewModel> BuildSummaryMetrics()
+    {
+        var activeProjects = summary.ActiveProjectsCount > 0 ? summary.ActiveProjectsCount : projects.Count;
+        var totalTasks = tasks.Count;
+        var teamMembers = summary.TotalUsers > 0 ? summary.TotalUsers : users.Count;
+        var overdueTasks = tasks.Count(task => task.DueDate.Date < DateTime.Today && task.StatusId != AppTaskStatus.Done);
+
+        return new List<SummaryMetricViewModel>
+        {
+            new("folder-kanban", "all active", activeProjects.ToString(), "Active Projects", "rounded-2xl bg-violet-700 p-3 text-white", "text-emerald-700"),
+            new("check-square", "across projects", totalTasks.ToString(), "Total Tasks", "rounded-2xl bg-cyan-600 p-3 text-white", "text-emerald-700"),
+            new("users", "your team", teamMembers.ToString(), "Team Members", "rounded-2xl bg-emerald-700 p-3 text-white", "text-emerald-700"),
+            new("triangle-alert", "needs attention", overdueTasks.ToString(), "Overdue Tasks", "rounded-2xl bg-rose-600 p-3 text-white", "text-rose-600")
+        };
+    }
+
+    private List<ProjectCardViewModel> BuildProjectCards()
+    {
+        var progressByProject = projectProgress.ToDictionary(item => item.ProjectId, item => item);
+        var palette = new[] { "#7c3aed", "#0ea5e9", "#10b981", "#f59e0b", "#f97316" };
+
+        return projects
+            .OrderByDescending(project => progressByProject.TryGetValue(project.Id, out var progress) ? progress.CompletionPercentage : 0)
+            .ThenBy(project => project.EndDate)
+            .Take(4)
+            .Select((project, index) =>
+            {
+                progressByProject.TryGetValue(project.Id, out var progress);
+                var projectTasks = tasks.Where(task => task.ProjectId == project.Id).ToList();
+                var total = progress?.TotalTasksCount ?? projectTasks.Count;
+                var completed = progress?.CompletedTasksCount ?? projectTasks.Count(task => task.StatusId == AppTaskStatus.Done);
+                var percentage = total > 0 ? Math.Round((double)completed / total * 100, 2) : 0;
+                var overdue = projectTasks.Count(task => task.DueDate.Date < DateTime.Today && task.StatusId != AppTaskStatus.Done);
+                var teamSize = projectTasks
+                    .Where(task => task.AssignedTo.HasValue)
+                    .Select(task => task.AssignedTo!.Value)
+                    .Distinct()
+                    .Count();
+
+                var isOverdue = project.EndDate.Date < DateTime.Today && percentage < 100;
+                var isUpcoming = project.StartDate.Date > DateTime.Today;
+                var statusLabel = isOverdue ? "At Risk" : isUpcoming ? "Upcoming" : "Active";
+                var statusClass = isOverdue
+                    ? "rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-300"
+                    : isUpcoming
+                        ? "rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300"
+                        : "rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300";
+
+                return new ProjectCardViewModel(
+                    project.Id,
+                    project.Name,
+                    completed,
+                    total,
+                    overdue,
+                    teamSize,
+                    percentage,
+                    statusLabel,
+                    statusClass,
+                    palette[index % palette.Length]);
+            })
+            .ToList();
+    }
+
+    private List<TeamProgressViewModel> BuildTeamProgress()
+    {
+        var palette = new[] { "#7c3aed", "#0ea5e9", "#10b981", "#f59e0b", "#f97316", "#ec4899" };
+
+        return users
+            .Select((user, index) =>
+            {
+                var userTasks = tasks.Where(task => task.AssignedTo == user.Id).ToList();
+                var total = userTasks.Count;
+                if (total == 0)
+                {
+                    return null;
+                }
+
+                var completed = userTasks.Count(task => task.StatusId == AppTaskStatus.Done);
+                var percentage = Math.Round((double)completed / total * 100, 2);
+                var initials = BuildInitials(user.FirstName, user.LastName);
+                var label = total == 1 ? "1 task" : $"{total} tasks";
+
+                return new TeamProgressViewModel(
+                    user.Id,
+                    $"{user.FirstName} {user.LastName}".Trim(),
+                    initials,
+                    completed,
+                    total,
+                    percentage,
+                    label,
+                    palette[index % palette.Length]);
+            })
+            .Where(item => item is not null)
+            .Cast<TeamProgressViewModel>()
+            .OrderByDescending(item => item.Total)
+            .ThenBy(item => item.FullName)
+            .Take(5)
+            .ToList();
+    }
+
+    private List<CalendarCellViewModel> BuildCalendarCells()
+    {
+        var today = DateTime.Today;
+        var firstOfMonth = new DateTime(today.Year, today.Month, 1);
+        var start = firstOfMonth.AddDays(-(int)((((int)firstOfMonth.DayOfWeek + 6) % 7)));
+        var deadlineMap = projects
+            .Where(project => project.EndDate.Date >= start.Date && project.EndDate.Date < start.AddDays(42))
+            .GroupBy(project => project.EndDate.Date)
+            .ToDictionary(group => group.Key, group => group.Select(project => GetProjectColor(project.Id)).ToList());
+
+        var cells = new List<CalendarCellViewModel>();
+        for (var i = 0; i < 42; i++)
+        {
+            var date = start.AddDays(i);
+            deadlineMap.TryGetValue(date.Date, out var dots);
+
+            cells.Add(new CalendarCellViewModel(
+                date,
+                date.Month == today.Month,
+                date.Date == today.Date,
+                dots ?? new List<string>()));
+        }
+
+        return cells;
+    }
+
+    private List<DeadlineItemViewModel> BuildUpcomingDeadlines()
+    {
+        return projects
+            .Where(project => project.EndDate.Date >= DateTime.Today)
+            .OrderBy(project => project.EndDate)
+            .Take(5)
+            .Select(project =>
+            {
+                var daysLeft = (project.EndDate.Date - DateTime.Today).Days;
+                var label = daysLeft == 0 ? "Today" : daysLeft == 1 ? "1d" : $"{daysLeft}d";
+                var labelClass = daysLeft <= 14 ? "text-amber-500 font-semibold" : "text-slate-500";
+
+                return new DeadlineItemViewModel(
+                    project.Id,
+                    project.Name,
+                    project.EndDate.ToString("yyyy-MM-dd"),
+                    label,
+                    labelClass,
+                    GetProjectColor(project.Id));
+            })
+            .ToList();
+    }
+
+    private List<WeeklyProgressViewModel> BuildWeeklyProgress()
+    {
+        var today = DateTime.Today;
+        var currentWeekStart = StartOfWeek(today);
+        var weekStarts = Enumerable.Range(-3, 4)
+            .Select(offset => currentWeekStart.AddDays(offset * 7))
+            .ToList();
+
+        var rows = new List<WeeklyProgressViewModel>();
+        var maxTotal = 1;
+
+        foreach (var weekStart in weekStarts)
+        {
+            var weekEnd = weekStart.AddDays(7);
+            var weekTasks = tasks.Where(task => task.CreatedAt >= weekStart && task.CreatedAt < weekEnd).ToList();
+            var completed = weekTasks.Count(task => task.StatusId == AppTaskStatus.Done);
+            var pending = weekTasks.Count - completed;
+            maxTotal = Math.Max(maxTotal, completed + pending);
+
+            rows.Add(new WeeklyProgressViewModel(
+                $"W{rows.Count + 1}",
+                weekStart,
+                weekEnd.AddDays(-1),
+                completed,
+                pending,
+                0,
+                0,
+                0,
+                0,
+                PlotBottom,
+                0,
+                0,
+                FormatDateRange(weekStart, weekEnd.AddDays(-1))));
+        }
+
+        if (rows.Count == 0)
+        {
+            return rows;
+        }
+
+        var slotWidth = (PlotRight - PlotLeft) / 4.0;
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+            var total = row.Completed + row.Pending;
+            var completedHeight = total > 0 ? Math.Round(row.Completed / (double)maxTotal * (PlotBottom - PlotTop), 2) : 0;
+            var pendingHeight = total > 0 ? Math.Round(row.Pending / (double)maxTotal * (PlotBottom - PlotTop), 2) : 0;
+            var centerX = PlotLeft + (slotWidth * i) + (slotWidth / 2);
+            var completedX = centerX - 22;
+            var pendingX = centerX + 4;
+            var hoverX = PlotLeft + (slotWidth * i) + 10;
+            var hoverWidth = slotWidth - 20;
+
+            rows[i] = row with
+            {
+                CompletedHeight = completedHeight,
+                PendingHeight = pendingHeight,
+                CompletedX = completedX,
+                PendingX = pendingX,
+                HoverX = hoverX,
+                HoverWidth = hoverWidth,
+                LabelX = centerX,
+                CenterPercent = centerX / SvgWidth * 100
+            };
+        }
+
+        return rows;
+    }
+
+    private List<YAxisTickViewModel> BuildYAxisTicks()
+    {
+        var max = Math.Max(1, WeeklyProgress.Max(item => item.Completed + item.Pending));
+        var interval = Math.Max(1, (int)Math.Ceiling(max / 4.0));
+        var highest = interval * 4;
+
+        return new List<YAxisTickViewModel>
+        {
+            new(0, "0"),
+            new(highest * 0.25, (highest * 0.25).ToString("0")),
+            new(highest * 0.5, (highest * 0.5).ToString("0")),
+            new(highest * 0.75, (highest * 0.75).ToString("0")),
+            new(highest, highest.ToString("0"))
+        };
+    }
+
+    private double TickToY(double tickValue)
+    {
+        var max = Math.Max(1, WeeklyProgress.Max(item => item.Completed + item.Pending));
+        var chartHeight = PlotBottom - PlotTop;
+        return PlotBottom - (Math.Min(tickValue, max) / max * chartHeight);
+    }
+
+    private static DateTime StartOfWeek(DateTime date)
+    {
+        var diff = ((int)date.DayOfWeek + 6) % 7;
+        return date.AddDays(-diff).Date;
+    }
+
+    private static string FormatDateRange(DateTime start, DateTime end)
+    {
+        if (start.Month == end.Month && start.Year == end.Year)
+        {
+            return $"{start:MMM d} - {end:dd}";
+        }
+
+        return $"{start:MMM d} - {end:MMM d}";
+    }
+
+    private static string BuildInitials(string firstName, string lastName)
+    {
+        var first = string.IsNullOrWhiteSpace(firstName) ? string.Empty : firstName.Trim()[0].ToString().ToUpperInvariant();
+        var last = string.IsNullOrWhiteSpace(lastName) ? string.Empty : lastName.Trim()[0].ToString().ToUpperInvariant();
+        return $"{first}{last}";
+    }
+
+    private string GetProjectColor(long projectId)
+    {
+        var palette = new[]
+        {
+            "#7c3aed",
+            "#0ea5e9",
+            "#10b981",
+            "#f59e0b",
+            "#f97316"
+        };
+
+        return palette[(int)(Math.Abs(projectId) % palette.Length)];
+    }
+
+    private string GetCalendarCellClasses(CalendarCellViewModel cell)
+    {
+        var classes = new List<string> { "min-h-[62px] rounded-2xl border p-2" };
+
+        if (cell.IsToday)
+        {
+            classes.Add("border-violet-600 bg-violet-600");
+        }
+        else if (cell.IsCurrentMonth)
+        {
+            classes.Add("border-slate-200 bg-white");
+        }
+        else
+        {
+            classes.Add("border-slate-100 bg-slate-50 text-slate-400");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private sealed record SummaryMetricViewModel(string Icon, string Badge, string Value, string Label, string IconWrapClass, string AltTextClass);
+
+    private sealed record ProjectCardViewModel(
+        long Id,
+        string Name,
+        int Completed,
+        int Total,
+        int Overdue,
+        int TeamSize,
+        double ProgressPercentage,
+        string StatusLabel,
+        string StatusClass,
+        string Color);
+
+    private sealed record TeamProgressViewModel(
+        long UserId,
+        string FullName,
+        string Initials,
+        int Completed,
+        int Total,
+        double CompletionPercentage,
+        string Label,
+        string Color);
+
+    private sealed record WeeklyProgressViewModel(
+        string Label,
+        DateTime StartDate,
+        DateTime EndDate,
+        int Completed,
+        int Pending,
+        double CompletedHeight,
+        double PendingHeight,
+        double CompletedX,
+        double PendingX,
+        double BaseY,
+        double HoverX,
+        double HoverWidth,
+        string DateRangeLabel)
+    {
+        public double LabelX { get; init; }
+        public double CenterPercent { get; init; }
+    }
+
+    private sealed record YAxisTickViewModel(double Value, string Label);
+
+    private sealed record CalendarCellViewModel(
+        DateTime Date,
+        bool IsCurrentMonth,
+        bool IsToday,
+        List<string> DeadlineDots);
+
+    private sealed record DeadlineItemViewModel(
+        long ProjectId,
+        string Name,
+        string EndDateLabel,
+        string DaysLeftLabel,
+        string DaysLeftClass,
+        string Color);
+}
