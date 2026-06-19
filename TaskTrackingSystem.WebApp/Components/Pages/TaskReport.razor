@@ -1,6 +1,7 @@
 @page "/reports/tasks"
 @using Microsoft.AspNetCore.Authorization
 @using TaskTrackingSystem.Shared.Models.Report
+@using TaskTrackingSystem.Shared.Enums
 @using TaskTrackingSystem.Shared.Models.Project
 @using System.Text
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -156,9 +157,9 @@
                         }
                         else
                         {
-                            var todo = FilteredList.Count(t => t.StatusId == 1);
-                            var inProgress = FilteredList.Count(t => t.StatusId == 2);
-                            var done = FilteredList.Count(t => t.StatusId == 3);
+                            var todo = FilteredList.Count(t => t.StatusId == AppTaskStatus.Todo);
+                            var inProgress = FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress);
+                            var done = FilteredList.Count(t => t.StatusId == AppTaskStatus.Done);
                             var max = Math.Max(1, Math.Max(todo, Math.Max(inProgress, done)));
                             var hTodo = (todo * 160) / max;
                             var hInProgress = (inProgress * 160) / max;
@@ -198,9 +199,9 @@
                         }
                         else
                         {
-                            var low = FilteredList.Count(t => t.PriorityId == 1);
-                            var med = FilteredList.Count(t => t.PriorityId == 2);
-                            var high = FilteredList.Count(t => t.PriorityId == 3);
+                            var low = FilteredList.Count(t => t.PriorityId == TaskPriority.Low);
+                            var med = FilteredList.Count(t => t.PriorityId == TaskPriority.Medium);
+                            var high = FilteredList.Count(t => t.PriorityId == TaskPriority.High);
                             var total = Math.Max(1, low + med + high);
                             var pctLow = (low * 100) / total;
                             var pctMed = (med * 100) / total;
@@ -479,7 +480,7 @@
                 taskReports = result.Value;
                 if (filterStatus == "overdue")
                 {
-                    taskReports = taskReports.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != 3).ToList();
+                    taskReports = taskReports.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done).ToList();
                 }
             }
         }
@@ -561,19 +562,19 @@
             Convert.ToBase64String(pdfBytes));
     }
 
-    private string GetStatusBadge(long statusId) => statusId switch
+    private string GetStatusBadge(AppTaskStatus statusId) => statusId switch
     {
-        1 => "bg-slate-100 text-slate-700",
-        2 => "bg-blue-100 text-blue-700",
-        3 => "bg-emerald-100 text-emerald-700",
+        AppTaskStatus.Todo => "bg-slate-100 text-slate-700",
+        AppTaskStatus.InProgress => "bg-blue-100 text-blue-700",
+        AppTaskStatus.Done => "bg-emerald-100 text-emerald-700",
         _ => "bg-slate-100 text-slate-600"
     };
 
-    private string GetPriorityBadge(long priorityId) => priorityId switch
+    private string GetPriorityBadge(TaskPriority priorityId) => priorityId switch
     {
-        1 => "bg-slate-100 text-slate-600",
-        2 => "bg-amber-100 text-amber-700",
-        3 => "bg-red-100 text-red-700",
+        TaskPriority.Low => "bg-slate-100 text-slate-600",
+        TaskPriority.Medium => "bg-amber-100 text-amber-700",
+        TaskPriority.High => "bg-red-100 text-red-700",
         _ => "bg-slate-100 text-slate-600"
     };
 }

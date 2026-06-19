@@ -145,11 +145,11 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 var userTasks = tasks.Where(t => t.AssignedTo == user.Id).ToList();
                 
                 int total = userTasks.Count;
-                var completedTasks = userTasks.Where(t => t.StatusId == 3).ToList();
+                var completedTasks = userTasks.Where(t => t.StatusId == AppTaskStatus.Done).ToList();
                 int done = completedTasks.Count;
                 
                 int onTimeCount = completedTasks.Count(t => 
-                    t.TaskHistories.Any(th => th.NewStatusId == 3 && th.CreatedAt <= t.DueDate)
+                    t.TaskHistories.Any(th => th.NewStatusId == AppTaskStatus.Done && th.CreatedAt <= t.DueDate)
                 );
                 
                 double onTimeDeliveryRate = done > 0 ? Math.Round(((double)onTimeCount / done) * 100, 2) : 0;
@@ -448,7 +448,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 var user = userId.HasValue ? await _db.Users.FindAsync(userId.Value) : null;
 
                 var total = group.Count();
-                var completed = group.Count(t => t.StatusId == 3);
+                var completed = group.Count(t => t.StatusId == AppTaskStatus.Done);
                 var est = group.Sum(t => t.EstimatedHours ?? 0m);
                 var comp = group.Sum(t => t.TimeLogs.Sum(tl => tl.HoursLogged));
                 var employeeVariance = est - comp;
@@ -478,7 +478,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             foreach (var group in projectGroups)
             {
                 var total = group.Count();
-                var completed = group.Count(t => t.StatusId == 3);
+                var completed = group.Count(t => t.StatusId == AppTaskStatus.Done);
                 var est = group.Sum(t => t.EstimatedHours ?? 0m);
                 var comp = group.Sum(t => t.TimeLogs.Sum(tl => tl.HoursLogged));
                 var projectVariance = est - comp;

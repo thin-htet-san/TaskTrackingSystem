@@ -367,15 +367,15 @@
             // Apply filter status on tasks if matching
             if (filterStatus == "overdue")
             {
-                projectTasks = projectTasks.Where(t => t.DueDate.Date < today && t.StatusId != 3).ToList();
+                projectTasks = projectTasks.Where(t => t.DueDate.Date < today && t.StatusId != AppTaskStatus.Done).ToList();
             }
-            else if (long.TryParse(filterStatus, out var statusId) && statusId > 0)
+            else if (Enum.TryParse<AppTaskStatus>(filterStatus, out var parsedStatus))
             {
-                projectTasks = projectTasks.Where(t => t.StatusId == statusId).ToList();
+                projectTasks = projectTasks.Where(t => t.StatusId == parsedStatus).ToList();
             }
 
             int totalTasks = projectTasks.Count;
-            int completedTasks = projectTasks.Count(t => t.StatusId == 3); // Done = 3
+            int completedTasks = projectTasks.Count(t => t.StatusId == AppTaskStatus.Done); // Done
             double progress = totalTasks > 0 ? ((double)completedTasks / totalTasks) * 100 : 0;
 
             // Ahead of schedule calculation
@@ -391,7 +391,7 @@
             bool isAhead = progress > elapsedPct && progress > 0 && progress < 100;
 
             // At risk calculation
-            bool isAtRisk = (projectTasks.Any(t => t.StatusId != 3 && t.DueDate.Date < today)) || (p.EndDate.Date < today && progress < 100);
+            bool isAtRisk = (projectTasks.Any(t => t.StatusId != AppTaskStatus.Done && t.DueDate.Date < today)) || (p.EndDate.Date < today && progress < 100);
 
             metrics.Add(new ProjectMetric
             {

@@ -41,7 +41,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == 3)
+                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
                         .OrderBy(th => th.CreatedAt)
                         .Select(th => th.CreatedAt)
                         .FirstOrDefault()
@@ -70,7 +70,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 DueDate = task.DueDate,
                 CreatedAt = task.CreatedAt ?? DateTime.UtcNow,
                 CompletedAt = task.TaskHistories
-                    .Where(th => th.NewStatusId == 3)
+                    .Where(th => th.NewStatusId == AppTaskStatus.Done)
                     .OrderBy(th => th.CreatedAt)
                     .Select(th => th.CreatedAt)
                     .FirstOrDefault()
@@ -235,7 +235,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == 3)
+                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
                         .OrderBy(th => th.CreatedAt)
                         .Select(th => th.CreatedAt)
                         .FirstOrDefault()

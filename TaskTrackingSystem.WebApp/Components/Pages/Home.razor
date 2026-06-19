@@ -341,7 +341,7 @@ else
     private int ChecklistCompletedCount => taskList.Count(t => t.StatusId == AppTaskStatus.Done);
 
     private int TotalTasksCount => taskStatuses.Sum(s => s.TaskCount);
-    private int CompletedTasksCount => taskStatuses.FirstOrDefault(s => s.StatusId == (int)AppTaskStatus.Done)?.TaskCount ?? 0;
+    private int CompletedTasksCount => taskStatuses.FirstOrDefault(s => s.StatusId == AppTaskStatus.Done)?.TaskCount ?? 0;
     private int TaskCompletionRate => TotalTasksCount > 0 ? (int)((double)CompletedTasksCount / TotalTasksCount * 100) : 0;
     private int OverdueTasksCount => taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done);
 

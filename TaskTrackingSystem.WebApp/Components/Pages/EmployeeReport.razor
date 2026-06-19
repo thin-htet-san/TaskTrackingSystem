@@ -338,18 +338,18 @@
             // Apply Status Filter if matching
             if (filterStatus == "overdue")
             {
-                userTasks = userTasks.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != 3).ToList();
+                userTasks = userTasks.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done).ToList();
             }
-            else if (long.TryParse(filterStatus, out var statusId) && statusId > 0)
+            else if (Enum.TryParse<AppTaskStatus>(filterStatus, out var parsedStatus))
             {
-                userTasks = userTasks.Where(t => t.StatusId == statusId).ToList();
+                userTasks = userTasks.Where(t => t.StatusId == parsedStatus).ToList();
             }
 
             int assignedCount = userTasks.Count;
-            int completedCount = userTasks.Count(t => t.StatusId == 3); // Done = 3
+            int completedCount = userTasks.Count(t => t.StatusId == AppTaskStatus.Done); // Done
             double efficiency = assignedCount > 0 ? ((double)completedCount / assignedCount) * 100 : 0;
 
-            var completedTasksList = userTasks.Where(t => t.StatusId == 3).ToList();
+            var completedTasksList = userTasks.Where(t => t.StatusId == AppTaskStatus.Done).ToList();
             int onTimeCompletedCount = completedTasksList.Count(t => t.CompletedAt.HasValue && t.CompletedAt.Value.Date <= t.DueDate.Date);
             double onTimeDeliveryRate = completedCount > 0 ? ((double)onTimeCompletedCount / completedCount) * 100 : 0;
 

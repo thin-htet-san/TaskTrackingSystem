@@ -1,6 +1,7 @@
 @page "/reports/timesheet"
 @using Microsoft.AspNetCore.Authorization
 @using TaskTrackingSystem.Shared.Models.Task
+@using TaskTrackingSystem.Shared.Enums
 @using TaskTrackingSystem.Shared.Models.User
 @using TaskTrackingSystem.Shared.Models.Project
 @using TaskTrackingSystem.Shared.Models.Report
@@ -303,9 +304,9 @@
                             @foreach (var entry in PagedDetailTasks.Select((task, index) => (task, index)))
                             {
                                 var task = entry.task;
-                                var (statusLabel, statusClass) = task.StatusId switch {
-                                    2 => ("In Progress", "bg-blue-50 text-blue-700"),
-                                    3 => ("Done", "bg-emerald-50 text-emerald-700"),
+                                var (statusLabel, statusClass) = (AppTaskStatus)task.StatusId switch {
+                                    AppTaskStatus.InProgress => ("In Progress", "bg-blue-50 text-blue-700"),
+                                    AppTaskStatus.Done => ("Done", "bg-emerald-50 text-emerald-700"),
                                     _ => ("To Do", "bg-slate-100 text-slate-600")
                                 };
                                 <tr class="hover:bg-slate-50/50 transition-colors">
@@ -485,7 +486,7 @@
     {
         var rows = FilteredDetailTasks.Select(task =>
         {
-            var status = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
+            var status = (AppTaskStatus)task.StatusId switch { AppTaskStatus.InProgress => "In Progress", AppTaskStatus.Done => "Done", _ => "To Do" };
             return new object?[]
             {
                 task.Title,
@@ -536,7 +537,7 @@
             task.EstimatedHours?.ToString("F1") ?? "-",
             task.CompletedHours.ToString("F1"),
             DisplayFormats.Date(task.DueDate),
-            task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" }
+            (AppTaskStatus)task.StatusId switch { AppTaskStatus.InProgress => "In Progress", AppTaskStatus.Done => "Done", _ => "To Do" }
         });
 
         var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
