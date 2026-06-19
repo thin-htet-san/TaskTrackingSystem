@@ -96,5 +96,17 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             }
             return Ok(result);
         }
+
+        [HttpPatch("archive-done")]
+        public async Task<ActionResult<Result<int>>> ArchiveDoneTasks([FromQuery] long? projectId)
+        {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Update"))
+            {
+                return Forbid();
+            }
+
+            var result = await _taskService.ArchiveDoneTasksAsync(projectId, User.GetRoleName(), User.GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

@@ -30,7 +30,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
         private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
         {
-            var query = _db.Tasks.Where(t => t.IsDeleted != true);
+            var query = _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
 
             if (IsAdmin(roleName))
             {

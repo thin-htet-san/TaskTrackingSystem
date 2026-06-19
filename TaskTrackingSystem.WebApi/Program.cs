@@ -137,9 +137,9 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
             MenuName = "Dashboard",
             MenuUrl = null,
             Icon = "layout-grid",
-            Visible = true,
+            Visible = false,
             OrderNo = 0,
-            IsDeleted = false,
+            IsDeleted = true,
             CreatedAt = DateTime.UtcNow
         };
         db.Menus.Add(dashboardMenu);
@@ -150,9 +150,9 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
         dashboardMenu.MenuName = "Dashboard";
         dashboardMenu.MenuUrl = null;
         dashboardMenu.Icon = "layout-grid";
-        dashboardMenu.Visible = true;
+        dashboardMenu.Visible = false;
         dashboardMenu.OrderNo = 0;
-        dashboardMenu.IsDeleted = false;
+        dashboardMenu.IsDeleted = true;
         dashboardMenu.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -162,12 +162,12 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
         adminDashboardMenu = new Menu
         {
             MenuCode = "DASHBOARD_ADMIN",
-            ParentMenuId = dashboardMenu.MenuId,
-            MenuName = "Admin Dashboard",
+            ParentMenuId = null,
+            MenuName = "Dashboard",
             MenuUrl = "/dashboard",
             Icon = "layout-dashboard",
             Visible = true,
-            OrderNo = 1,
+            OrderNo = 0,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -175,12 +175,12 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     }
     else
     {
-        adminDashboardMenu.ParentMenuId = dashboardMenu.MenuId;
-        adminDashboardMenu.MenuName = "Admin Dashboard";
+        adminDashboardMenu.ParentMenuId = null;
+        adminDashboardMenu.MenuName = "Dashboard";
         adminDashboardMenu.MenuUrl = "/dashboard";
         adminDashboardMenu.Icon = "layout-dashboard";
         adminDashboardMenu.Visible = true;
-        adminDashboardMenu.OrderNo = 1;
+        adminDashboardMenu.OrderNo = 0;
         adminDashboardMenu.IsDeleted = false;
         adminDashboardMenu.UpdatedAt = DateTime.UtcNow;
     }
@@ -191,12 +191,12 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
         managerDashboardMenu = new Menu
         {
             MenuCode = "DASHBOARD_MANAGER",
-            ParentMenuId = dashboardMenu.MenuId,
-            MenuName = "Manager Dashboard",
+            ParentMenuId = null,
+            MenuName = "Dashboard",
             MenuUrl = "/dashboard/manager",
             Icon = "layout-dashboard",
             Visible = true,
-            OrderNo = 2,
+            OrderNo = 0,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -204,12 +204,12 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     }
     else
     {
-        managerDashboardMenu.ParentMenuId = dashboardMenu.MenuId;
-        managerDashboardMenu.MenuName = "Manager Dashboard";
+        managerDashboardMenu.ParentMenuId = null;
+        managerDashboardMenu.MenuName = "Dashboard";
         managerDashboardMenu.MenuUrl = "/dashboard/manager";
         managerDashboardMenu.Icon = "layout-dashboard";
         managerDashboardMenu.Visible = true;
-        managerDashboardMenu.OrderNo = 2;
+        managerDashboardMenu.OrderNo = 0;
         managerDashboardMenu.IsDeleted = false;
         managerDashboardMenu.UpdatedAt = DateTime.UtcNow;
     }
@@ -220,12 +220,12 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
         employeeDashboardMenu = new Menu
         {
             MenuCode = "DASHBOARD_EMPLOYEE",
-            ParentMenuId = dashboardMenu.MenuId,
-            MenuName = "Employee Dashboard",
+            ParentMenuId = null,
+            MenuName = "Dashboard",
             MenuUrl = "/dashboard/employee",
             Icon = "layout-dashboard",
             Visible = true,
-            OrderNo = 3,
+            OrderNo = 0,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -233,12 +233,12 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     }
     else
     {
-        employeeDashboardMenu.ParentMenuId = dashboardMenu.MenuId;
-        employeeDashboardMenu.MenuName = "Employee Dashboard";
+        employeeDashboardMenu.ParentMenuId = null;
+        employeeDashboardMenu.MenuName = "Dashboard";
         employeeDashboardMenu.MenuUrl = "/dashboard/employee";
         employeeDashboardMenu.Icon = "layout-dashboard";
         employeeDashboardMenu.Visible = true;
-        employeeDashboardMenu.OrderNo = 3;
+        employeeDashboardMenu.OrderNo = 0;
         employeeDashboardMenu.IsDeleted = false;
         employeeDashboardMenu.UpdatedAt = DateTime.UtcNow;
     }

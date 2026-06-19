@@ -6,7 +6,7 @@
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #C77DFF; /* Soft muted lavender for inactive states */
+    color: #CBD5E1;
     transition: all 0.2s ease;
     border-left: 3px solid transparent;
 }
@@ -19,7 +19,7 @@
 ::deep a.nav-link-item.active {
     background-color: rgba(255, 255, 255, 0.15) !important;
     color: #FFFFFF !important;
-    border-left: 3px solid #E0AAFF !important;
+    border-left: 3px solid #FFFFFF !important;
     font-weight: 600;
 }
 
@@ -28,7 +28,7 @@
 }
 
 ::deep a.nav-link-item i {
-    color: #C77DFF;
+    color: #CBD5E1;
     transition: color 0.2s ease;
 }
 
@@ -45,7 +45,7 @@
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #C77DFF;
+    color: #CBD5E1;
     background: none;
     border: none;
     border-left: 3px solid transparent;
@@ -69,7 +69,7 @@
 }
 
 ::deep button.nav-dropdown-toggle i {
-    color: #C77DFF;
+    color: #CBD5E1;
 }
 
 /* Chevron rotation on expand */

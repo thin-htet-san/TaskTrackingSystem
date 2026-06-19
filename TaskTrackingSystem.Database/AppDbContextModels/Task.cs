@@ -24,6 +24,8 @@ public partial class Task
 
     public decimal? EstimatedHours { get; set; }
 
+    public decimal? ActualHours { get; set; }
+
     public DateTime DueDate { get; set; }
 
     public DateTime? CreatedAt { get; set; }
@@ -35,6 +37,8 @@ public partial class Task
     public long? UpdatedBy { get; set; }
 
     public bool IsDeleted { get; set; }
+
+    public bool IsArchived { get; set; }
 
     public virtual User? AssignedByNavigation { get; set; }
 

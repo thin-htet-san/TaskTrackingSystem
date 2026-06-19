@@ -10,7 +10,7 @@ main {
 }
 
 .sidebar {
-    background-color: #10002B;
+    background-color: #0F172A;
 }
 
 .top-row {
@@ -33,7 +33,7 @@ main {
 .top-row ::deep a:hover,
 .top-row ::deep .btn-link:hover {
     text-decoration: underline;
-    color: #10002B;
+    color: #111827;
 }
 
 @media (min-width: 641px) {
