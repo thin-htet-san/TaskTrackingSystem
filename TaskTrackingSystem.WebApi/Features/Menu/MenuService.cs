@@ -220,7 +220,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         public async Task<List<AccessMenuDto>> GetAllAccessItemsAsync()
         {
             var menus = await _db.Menus
-                .Where(m => !m.IsDeleted)
+                .Where(m => !m.IsDeleted && m.MenuCode != "ROLE_LAYOUTS" && m.MenuName != "Role Layouts")
                 .OrderBy(m => m.OrderNo)
                 .ToListAsync();
 
