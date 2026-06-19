@@ -158,6 +158,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
             var previousStatusId = task.StatusId;
+            var previousAssignedTo = task.AssignedTo;
 
             if (dto.AssignedTo.HasValue && !await IsProjectMemberAsync(task.ProjectId, dto.AssignedTo.Value))
             {
@@ -190,6 +191,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
+
+            if (previousAssignedTo != task.AssignedTo && task.AssignedTo.HasValue && currentUserId.HasValue)
+            {
+                await _notificationService.NotifyTaskAssignedAsync(task, currentUserId.Value);
+            }
 
             if (previousStatusId != dto.StatusId && currentUserId.HasValue)
             {

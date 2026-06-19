@@ -1,5 +1,7 @@
+@page "/board"
 @page "/projects/{ProjectId:long}/tasks"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared.Models.Project
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
@@ -24,7 +26,7 @@
             }
             <div>
                 <h2 class="text-3xl font-bold tracking-tight text-slate-900">Kanban Board</h2>
-                <p class="text-slate-500 mt-1">@(ProjectId > 0 ? $"Project #{ProjectId} â€” " : "Global View â€” ")Drag tasks between columns.</p>
+                <p class="text-slate-500 mt-1 font-medium">@(project != null ? project.Name : (ProjectId > 0 ? $"Project #{ProjectId}" : "All Projects"))</p>
             </div>
         </div>
         @if (canCreateTask)
@@ -174,6 +176,7 @@
     private bool canCreateTask = false;
     private bool canUpdateTask = false;
     private long currentUserId = 0;
+    private ProjectDto? project;
     private bool showTaskModal = false;
     private bool isSaving = false;
     private string? taskError;
@@ -257,12 +260,14 @@
             List<TaskDto> allTasks = new();
             if (ProjectId > 0)
             {
+                project = await client.GetFromJsonAsync<ProjectDto>($"Project/{ProjectId}", Serialization.CaseInsensitive);
                 var result = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"Project/{ProjectId}/tasks", Serialization.CaseInsensitive);
                 if (result?.IsSuccess == true && result.Value != null)
                     allTasks = result.Value;
             }
             else
             {
+                project = null;
                 var result = await client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
                 if (result != null) allTasks = result;
             }

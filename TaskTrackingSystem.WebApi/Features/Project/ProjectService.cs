@@ -15,10 +15,12 @@ namespace TaskTrackingSystem.WebApi.Features.Project
     public class ProjectService
     {
         private readonly AppDbContext _db;
+        private readonly TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService _notificationService;
 
-        public ProjectService(AppDbContext db)
+        public ProjectService(AppDbContext db, TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService)
         {
             _db = db;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync(string roleName, long currentUserId)
@@ -223,6 +225,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             var existingMembers = await _db.ProjectMembers
                 .Where(pm => pm.ProjectId == projectId)
                 .ToListAsync();
+            var previousMemberIds = existingMembers.Select(pm => pm.UserId).ToHashSet();
 
             if (existingMembers.Any())
             {
@@ -241,6 +244,17 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             }
 
             await _db.SaveChangesAsync();
+
+            var addedMemberIds = dto.UserIds.Except(previousMemberIds).ToList();
+            if (addedMemberIds.Count > 0)
+            {
+                var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == projectId && p.IsDeleted != true);
+                if (project != null)
+                {
+                    await _notificationService.NotifyProjectAssignedAsync(project, addedMemberIds, currentUserId);
+                }
+            }
+
             return Result.Success(200);
         }
 

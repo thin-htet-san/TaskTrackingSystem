@@ -408,6 +408,8 @@
     [Parameter] public long TaskId { get; set; }
     [Parameter] public string? ViewMode { get; set; }
     [Parameter] public EventCallback OnTaskUpdated { get; set; }
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? TabQuery { get; set; }
 
     private bool isLoading = true;
     private TaskDto? task;
@@ -477,6 +479,11 @@
             lastLoadedTaskId = TaskId;
             assignee = null;
             await LoadAllData();
+        }
+
+        if (!string.IsNullOrWhiteSpace(TabQuery))
+        {
+            currentTab = TabQuery.Equals("files", StringComparison.OrdinalIgnoreCase) ? "files" : "comments";
         }
     }
 

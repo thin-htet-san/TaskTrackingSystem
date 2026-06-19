@@ -1,6 +1,8 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@implements IAsyncDisposable
 @inject ApiClientService ApiClient
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 @inject IJSRuntime JS
 
 <div class="relative">
@@ -34,18 +36,6 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
-                <div>
-                    <p class="text-sm font-semibold text-slate-900">Browser Alerts</p>
-                    <p class="text-xs text-slate-500">Receive push alerts on this device</p>
-                </div>
-                <button type="button" 
-                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none @(IsNotificationsEnabled ? "bg-violet-600" : "bg-slate-200")" 
-                        @onclick="ToggleNotificationsAsync">
-                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out @(IsNotificationsEnabled ? "translate-x-5" : "translate-x-0")"></span>
-                </button>
-            </div>
-
             <div class="max-h-[26rem] overflow-y-auto">
                 @if (IsLoading)
                 {
@@ -67,7 +57,7 @@
                     {
                         <button type="button"
                                 class="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors @(item.IsRead ? "bg-white" : "bg-violet-50/40")"
-                                @onclick="() => MarkReadAsync(item)">
+                                @onclick="() => OpenNotificationAsync(item)">
                             <div class="flex items-start gap-3">
                                 <div class="mt-0.5 h-9 w-9 rounded-full flex items-center justify-center @(item.IsRead ? "bg-slate-100 text-slate-500" : "bg-violet-100 text-violet-700")">
                                     <i data-lucide="bell-ring" class="h-4 w-4"></i>
@@ -95,38 +85,13 @@
     }
 </div>
 
-@if (ShowDisableConfirm)
-{
-    <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="w-full max-w-md mx-4 rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
-            <div class="p-6">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
-                    <i data-lucide="bell-off" class="h-7 w-7"></i>
-                </div>
-                <h3 class="mt-4 text-center text-lg font-semibold text-slate-900">Disable browser alerts?</h3>
-                <p class="mt-2 text-center text-sm text-slate-500">
-                    This will remove the current browser token from your account and stop push notifications on this device.
-                </p>
-            </div>
-            <div class="flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
-                <button type="button" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" @onclick="CancelDisable">
-                    Cancel
-                </button>
-                <button type="button" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium bg-rose-600 text-white hover:bg-rose-700" @onclick="ConfirmDisableAsync">
-                    Disable
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
 @code {
+    private HubConnection? _hubConnection;
+    private bool _hubHandlersRegistered;
     private bool IsOpen;
     private bool IsLoading;
-    private bool ShowDisableConfirm;
     private int UnreadCount;
     private List<NotificationDto> Notifications = new();
-    private bool IsNotificationsEnabled;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,17 +102,95 @@
     {
         if (firstRender)
         {
-            try
-            {
-                IsNotificationsEnabled = await JS.InvokeAsync<bool>("ttsFirebase.areNotificationsEnabled");
-                await InvokeAsync(StateHasChanged);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[DEBUG NotificationBell] Error checking status on init: {ex.Message}");
-            }
+            await EnsureHubConnectionAsync();
         }
         await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task EnsureHubConnectionAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        if (_hubConnection != null)
+        {
+            return;
+        }
+
+        var token = ApiClient.GetCurrentToken(authState.User);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return;
+        }
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl($"{ApiClient.BaseUrl}/hubs/notifications", options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult<string?>(ApiClient.GetCurrentToken() ?? token);
+            })
+            .WithAutomaticReconnect()
+            .Build();
+
+        RegisterHubHandlers();
+
+        try
+        {
+            await _hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG NotificationBell] Hub connection failed: {ex.Message}");
+            await _hubConnection.DisposeAsync();
+            _hubConnection = null;
+            _hubHandlersRegistered = false;
+        }
+    }
+
+    private void RegisterHubHandlers()
+    {
+        if (_hubConnection == null || _hubHandlersRegistered)
+        {
+            return;
+        }
+
+        _hubConnection.On<NotificationDto>("NotificationCreated", async notification =>
+        {
+            await InvokeAsync(() =>
+            {
+                Notifications.Insert(0, notification);
+                UnreadCount++;
+                StateHasChanged();
+            });
+        });
+
+        _hubConnection.On<int>("UnreadCountChanged", async unreadCount =>
+        {
+            await InvokeAsync(() =>
+            {
+                UnreadCount = unreadCount;
+                StateHasChanged();
+            });
+        });
+
+        _hubConnection.On<long, int>("NotificationRead", async (notificationId, unreadCount) =>
+        {
+            await InvokeAsync(() =>
+            {
+                var item = Notifications.FirstOrDefault(n => n.Id == notificationId);
+                if (item != null)
+                {
+                    item.IsRead = true;
+                }
+
+                UnreadCount = unreadCount;
+                StateHasChanged();
+            });
+        });
+
+        _hubHandlersRegistered = true;
     }
 
     private async Task ToggleOpenAsync()
@@ -164,21 +207,12 @@
         IsOpen = false;
     }
 
-    private void OpenDisableConfirm()
-    {
-        ShowDisableConfirm = true;
-    }
-
-    private void CancelDisable()
-    {
-        ShowDisableConfirm = false;
-    }
-
     private async Task RefreshAsync()
     {
         IsLoading = true;
         try
         {
+            await EnsureHubConnectionAsync();
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated != true)
             {
@@ -193,7 +227,13 @@
 
             await Task.WhenAll(unreadTask, itemsTask);
             UnreadCount = unreadTask.Result;
-            Notifications = itemsTask.Result ?? new List<NotificationDto>();
+            Notifications = (itemsTask.Result ?? new List<NotificationDto>())
+                .Select(item =>
+                {
+                    item.TargetUrl = BuildTargetUrl(item);
+                    return item;
+                })
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -206,118 +246,11 @@
         }
     }
 
-    private async Task ToggleNotificationsAsync()
-    {
-        if (IsNotificationsEnabled)
-        {
-            OpenDisableConfirm();
-        }
-        else
-        {
-            await EnableBrowserNotificationsAsync();
-        }
-    }
-
-    private async Task EnableBrowserNotificationsAsync()
-    {
-        try
-        {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            if (authState.User.Identity?.IsAuthenticated != true)
-            {
-                return;
-            }
-
-            var token = await JS.InvokeAsync<string?>("ttsFirebase.getRegistrationToken");
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                Console.WriteLine("[DEBUG NotificationBell] Enable: FCM registration token is empty or null.");
-                return;
-            }
-
-            var client = ApiClient.CreateClient(authState.User);
-            var response = await client.PostAsJsonAsync("UserDevices/register", new RegisterDeviceTokenDto
-            {
-                FcmToken = token
-            });
-
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("[DEBUG NotificationBell] Enable: FCM token registered successfully.");
-                IsNotificationsEnabled = true;
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[DEBUG NotificationBell] Enable: API registration failed: {response.StatusCode} - {error}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[DEBUG NotificationBell] Enable: Exception occurred: {ex.Message}\n{ex.StackTrace}");
-        }
-        finally
-        {
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private async Task ConfirmDisableAsync()
-    {
-        try
-        {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            if (authState.User.Identity?.IsAuthenticated != true)
-            {
-                return;
-            }
-
-            var token = await JS.InvokeAsync<string?>("ttsFirebase.getRegistrationToken");
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                Console.WriteLine("[DEBUG NotificationBell] Disable: FCM token is null or empty.");
-                return;
-            }
-
-            // Call client side disable helper to delete token from firebase
-            await JS.InvokeVoidAsync("ttsFirebase.disableNotifications");
-
-            var client = ApiClient.CreateClient(authState.User);
-            var response = await client.PostAsJsonAsync("UserDevices/unregister", new RegisterDeviceTokenDto
-            {
-                FcmToken = token
-            });
-
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("[DEBUG NotificationBell] Disable: FCM token unregistered successfully.");
-                IsNotificationsEnabled = false;
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[DEBUG NotificationBell] Disable: API unregistration failed: {response.StatusCode} - {error}");
-                IsNotificationsEnabled = false;
-            }
-
-            ShowDisableConfirm = false;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[DEBUG NotificationBell] Disable: Exception occurred: {ex.Message}\n{ex.StackTrace}");
-            IsNotificationsEnabled = false;
-            ShowDisableConfirm = false;
-        }
-        finally
-        {
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
     private async Task MarkReadAsync(NotificationDto item)
     {
         if (item.IsRead)
         {
+            Navigation.NavigateTo(GetTargetUrl(item));
             return;
         }
 
@@ -339,12 +272,34 @@
                     UnreadCount--;
                 }
                 await InvokeAsync(StateHasChanged);
+                Navigation.NavigateTo(GetTargetUrl(item));
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[DEBUG NotificationBell] MarkRead failed: {ex.Message}");
         }
+    }
+
+    private async Task OpenNotificationAsync(NotificationDto item)
+    {
+        await MarkReadAsync(item);
+        IsOpen = false;
+    }
+
+    private static string GetTargetUrl(NotificationDto item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.TargetUrl))
+        {
+            return item.TargetUrl;
+        }
+
+        return BuildTargetUrl(item);
+    }
+
+    private static string BuildTargetUrl(NotificationDto item)
+    {
+        return NotificationNavigation.BuildTargetUrl(item.SourceType, item.SourceId, item.NotificationType);
     }
 
     private static string FormatSender(string? senderName)
@@ -361,5 +316,19 @@
 
         var value = createdAt.Value.ToLocalTime();
         return value.ToString("dd MMM, HH:mm");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection != null)
+        {
+            try
+            {
+                await _hubConnection.DisposeAsync();
+            }
+            catch
+            {
+            }
+        }
     }
 }

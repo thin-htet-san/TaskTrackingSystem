@@ -98,7 +98,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             _db.Comments.Add(comment);
             await _db.SaveChangesAsync();
 
-            await _notificationService.NotifyCommentAddedAsync(task, userId, $"{user.FirstName} {user.LastName}");
+            var actorName = $"{user.FirstName} {user.LastName}";
+            await _notificationService.NotifyCommentAddedAsync(task, userId, actorName, comment.Message);
+            await _notificationService.NotifyMentionedAsync(task, userId, actorName, comment.Message);
 
             var resultDto = new CommentDto
             {

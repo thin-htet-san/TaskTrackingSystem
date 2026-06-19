@@ -117,25 +117,6 @@
 
         foreach (var m in rawMenus)
         {
-            // Skip the global board
-            if (m.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) || 
-                (m.MenuUrl != null && m.MenuUrl.Trim('/').Equals("board", StringComparison.OrdinalIgnoreCase)))
-            {
-                continue;
-            }
-
-            var clonedSubMenus = new List<MenuDto>();
-            foreach (var sm in m.SubMenus)
-            {
-                if (sm.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) || 
-                    (sm.MenuUrl != null && sm.MenuUrl.Trim('/').Equals("board", StringComparison.OrdinalIgnoreCase)))
-                {
-                    continue;
-                }
-                clonedSubMenus.Add(sm);
-            }
-
-            m.SubMenus = clonedSubMenus;
             result.Add(m);
         }
 

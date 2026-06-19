@@ -10,6 +10,7 @@ public class NotificationDto
     public byte NotificationType { get; set; }
     public string SourceType { get; set; } = string.Empty;
     public long SourceId { get; set; }
+    public string TargetUrl { get; set; } = string.Empty;
     public bool IsRead { get; set; }
     public DateTime? CreatedAt { get; set; }
     public DateTime? ReadAt { get; set; }

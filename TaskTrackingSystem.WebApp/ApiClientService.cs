@@ -55,6 +55,8 @@ public class ApiClientService
         return client;
     }
 
+    public string? GetCurrentToken(ClaimsPrincipal? user = null) => ResolveToken(user);
+
     private string? ResolveToken(ClaimsPrincipal? user)
     {
         if (!string.IsNullOrEmpty(_sessionState.Token))

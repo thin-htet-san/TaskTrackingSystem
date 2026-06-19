@@ -140,10 +140,17 @@ public class MenuAuthorizationService
             }
         }
 
-        // Disable global board access
+        // Global board route
         if (cleanRelative.Equals("board", StringComparison.OrdinalIgnoreCase))
         {
-            return false;
+            var hasBoardAccess = accessItems.Any(m =>
+                m.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) ||
+                m.SubMenus.Any(sm => sm.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase)));
+
+            if (hasBoardAccess)
+            {
+                return true;
+            }
         }
 
         if (string.IsNullOrEmpty(cleanRelative) || 

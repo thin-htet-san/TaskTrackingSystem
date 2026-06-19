@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+builder.Services.AddSignalR();
 
 // CORS policy for WebApp
 builder.Services.AddCors(options =>
@@ -19,6 +20,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowWebApp", policy =>
     {
         policy.WithOrigins("http://localhost:5247", "https://localhost:7176")
+              .AllowCredentials()
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -35,6 +37,7 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Report.ReportServi
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Menu.MenuService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.UserDevice.UserDeviceService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService>();
+builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.NotificationRealtimeService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.NotificationService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Infrastructure.PermissionAuthorizationService>();
 builder.Services.AddScoped<IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>, PasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>>();
@@ -90,6 +93,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<TaskTrackingSystem.WebApi.Features.Notification.NotificationHub>("/hubs/notifications");
 
 app.Run();
 

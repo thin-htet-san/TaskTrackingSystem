@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,22 +16,26 @@ namespace TaskTrackingSystem.WebApi.Features.Notification;
 
 public class FirebaseNotificationService
 {
+    private static readonly Regex MentionRegex = new(@"@(?<username>[A-Za-z0-9._]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly SemaphoreSlim AccessTokenLock = new(1, 1);
     private static string? CachedAccessToken;
     private static DateTimeOffset CachedAccessTokenExpiresAt;
 
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly NotificationRealtimeService _realtimeService;
     private readonly string _serviceAccountPath;
 
     public FirebaseNotificationService(
         AppDbContext db,
         IHttpClientFactory httpClientFactory,
+        NotificationRealtimeService realtimeService,
         IHostEnvironment environment,
         IConfiguration configuration)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
+        _realtimeService = realtimeService;
 
         var configuredPath = configuration["Firebase:ServiceAccountPath"] ?? "Firebase/ttsfirebasekey.json";
         _serviceAccountPath = Path.IsPathRooted(configuredPath)
@@ -79,9 +84,42 @@ public class FirebaseNotificationService
             body);
     }
 
-    public async global::System.Threading.Tasks.Task NotifyCommentAddedAsync(Database.AppDbContextModels.Task task, long senderId, string actorName)
+    public async global::System.Threading.Tasks.Task NotifyProjectAssignedAsync(Database.AppDbContextModels.Project project, IEnumerable<long> recipientIds, long senderId)
+    {
+        var uniqueRecipientIds = recipientIds
+            .Where(id => id > 0 && id != senderId)
+            .Distinct()
+            .ToList();
+
+        if (uniqueRecipientIds.Count == 0)
+        {
+            return;
+        }
+
+        var title = "Project assigned";
+        var body = $"You have been assigned to project '{project.Name}'";
+
+        await SendAsync(
+            uniqueRecipientIds,
+            senderId,
+            NotificationType.ProjectUpdated,
+            "project",
+            project.Id,
+            title,
+            body);
+    }
+
+    public async global::System.Threading.Tasks.Task NotifyCommentAddedAsync(Database.AppDbContextModels.Task task, long senderId, string actorName, string message)
     {
         var recipientIds = BuildTaskAudience(task, senderId);
+        var mentionedIds = await FindMentionedUserIdsAsync(task.ProjectId, senderId, message);
+        if (mentionedIds.Count > 0)
+        {
+            recipientIds = recipientIds
+                .Except(mentionedIds)
+                .ToList();
+        }
+
         if (recipientIds.Count == 0)
         {
             return;
@@ -94,6 +132,27 @@ public class FirebaseNotificationService
             recipientIds,
             senderId,
             NotificationType.CommentAdded,
+            "task",
+            task.Id,
+            title,
+            body);
+    }
+
+    public async global::System.Threading.Tasks.Task NotifyMentionedAsync(Database.AppDbContextModels.Task task, long senderId, string actorName, string message)
+    {
+        var recipientIds = await FindMentionedUserIdsAsync(task.ProjectId, senderId, message);
+        if (recipientIds.Count == 0)
+        {
+            return;
+        }
+
+        var title = "You were mentioned";
+        var body = $"{actorName} mentioned you in task '{task.Title}'";
+
+        await SendAsync(
+            recipientIds,
+            senderId,
+            NotificationType.Mention,
             "task",
             task.Id,
             title,
@@ -120,6 +179,36 @@ public class FirebaseNotificationService
         }
 
         return audience.ToList();
+    }
+
+    private async global::System.Threading.Tasks.Task<List<long>> FindMentionedUserIdsAsync(long projectId, long senderId, string message)
+    {
+        var usernames = MentionRegex.Matches(message)
+            .Select(match => match.Groups["username"].Value)
+            .Where(username => !string.IsNullOrWhiteSpace(username))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (usernames.Count == 0)
+        {
+            return new List<long>();
+        }
+
+        var projectMemberIds = await _db.ProjectMembers
+            .Where(pm => pm.ProjectId == projectId)
+            .Select(pm => pm.UserId)
+            .ToListAsync();
+
+        if (projectMemberIds.Count == 0)
+        {
+            return new List<long>();
+        }
+
+        return await _db.Users
+            .Where(u => u.Id != senderId && projectMemberIds.Contains(u.Id) && usernames.Contains(u.Username))
+            .Select(u => u.Id)
+            .Distinct()
+            .ToListAsync();
     }
 
     private async global::System.Threading.Tasks.Task SendAsync(
@@ -152,6 +241,43 @@ public class FirebaseNotificationService
 
         _db.Notifications.AddRange(notifications);
         await _db.SaveChangesAsync();
+
+        var senderName = senderId > 0
+            ? await _db.Users
+                .Where(u => u.Id == senderId)
+                .Select(u => $"{u.FirstName} {u.LastName}")
+                .FirstOrDefaultAsync()
+            : null;
+
+        var unreadCounts = await _db.Notifications
+            .Where(n => uniqueRecipientIds.Contains(n.RecipientId) && !n.IsRead)
+            .GroupBy(n => n.RecipientId)
+            .Select(g => new { RecipientId = g.Key, Count = g.Count() })
+            .ToListAsync();
+        var unreadCountLookup = unreadCounts.ToDictionary(x => x.RecipientId, x => x.Count);
+
+        foreach (var notification in notifications)
+        {
+            var dto = new NotificationDto
+            {
+                Id = notification.Id,
+                Title = notification.Title,
+                Body = notification.Body,
+                NotificationType = notification.NotificationType,
+                SourceType = notification.SourceType,
+                SourceId = notification.SourceId,
+                TargetUrl = NotificationNavigation.BuildTargetUrl(notification.SourceType, notification.SourceId, notification.NotificationType),
+                IsRead = notification.IsRead,
+                CreatedAt = notification.CreatedAt,
+                SenderName = senderName
+            };
+
+            var recipientUnreadCount = unreadCountLookup.TryGetValue(notification.RecipientId, out var unreadCount)
+                ? unreadCount
+                : 0;
+
+            await _realtimeService.SendCreatedAsync(notification.RecipientId, dto, recipientUnreadCount);
+        }
 
         var tokens = await _db.UserDevices
             .Where(d => uniqueRecipientIds.Contains(d.UserId))
@@ -194,7 +320,8 @@ public class FirebaseNotificationService
                 {
                     ["sourceType"] = sourceType,
                     ["sourceId"] = sourceId.ToString(),
-                    ["notificationType"] = ((byte)notificationType).ToString()
+                    ["notificationType"] = ((byte)notificationType).ToString(),
+                    ["targetUrl"] = NotificationNavigation.BuildTargetUrl(sourceType, sourceId, (byte)notificationType)
                 }
             }
         };

@@ -9,15 +9,17 @@ namespace TaskTrackingSystem.WebApi.Features.Notification;
 public class NotificationService
 {
     private readonly AppDbContext _db;
+    private readonly NotificationRealtimeService _realtimeService;
 
-    public NotificationService(AppDbContext db)
+    public NotificationService(AppDbContext db, NotificationRealtimeService realtimeService)
     {
         _db = db;
+        _realtimeService = realtimeService;
     }
 
     public async Task<IReadOnlyList<NotificationDto>> GetRecentAsync(long userId, int take = 10)
     {
-        return await (
+        var items = await (
             from n in _db.Notifications
             where n.RecipientId == userId
             join sender in _db.Users on n.SenderId equals sender.Id into senderGroup
@@ -38,6 +40,13 @@ public class NotificationService
             })
             .Take(take)
             .ToListAsync();
+
+        foreach (var item in items)
+        {
+            item.TargetUrl = NotificationNavigation.BuildTargetUrl(item.SourceType, item.SourceId, item.NotificationType);
+        }
+
+        return items;
     }
 
     public async Task<int> GetUnreadCountAsync(long userId)
@@ -60,6 +69,9 @@ public class NotificationService
             notification.IsRead = true;
             notification.ReadAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+
+            var unreadCount = await GetUnreadCountAsync(userId);
+            await _realtimeService.SendReadAsync(userId, notificationId, unreadCount);
         }
 
         return Result.Success();
