@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using TaskTrackingSystem.Shared.Enums;
+using AppTaskStatus = TaskTrackingSystem.Shared.Enums.AppTaskStatus;
 
 namespace TaskTrackingSystem.Shared.Models.Task
 {
@@ -12,8 +13,8 @@ namespace TaskTrackingSystem.Shared.Models.Task
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public long ProjectId { get; set; }
-        public long StatusId { get; set; }
-        public long PriorityId { get; set; }
+        public AppTaskStatus StatusId { get; set; }
+        public TaskPriority PriorityId { get; set; }
         public long? AssignedTo { get; set; }
         public long? AssignedBy { get; set; }
         public decimal? EstimatedHours { get; set; }

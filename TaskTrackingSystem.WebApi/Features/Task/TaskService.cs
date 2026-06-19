@@ -6,18 +6,20 @@ using System.Threading.Tasks;
 using TaskTrackingSystem.Database;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared.Models.Task;
-
 using TaskTrackingSystem.Shared;
+using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.WebApi.Features.Task
 {
     public class TaskService
     {
         private readonly AppDbContext _db;
+        private readonly TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService _notificationService;
 
-        public TaskService(AppDbContext db)
+        public TaskService(AppDbContext db, TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService)
         {
             _db = db;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(string roleName, long currentUserId)
@@ -107,8 +109,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 Title = dto.Title,
                 Description = dto.Description,
                 ProjectId = dto.ProjectId,
-                StatusId = dto.StatusId == 0 ? 1 : dto.StatusId,
-                PriorityId = dto.PriorityId == 0 ? 2 : dto.PriorityId,
+                StatusId = dto.StatusId == 0 ? AppTaskStatus.Todo : dto.StatusId,
+                PriorityId = dto.PriorityId == 0 ? TaskPriority.Medium : dto.PriorityId,
                 AssignedTo = dto.AssignedTo,
                 AssignedBy = dto.AssignedBy,
                 EstimatedHours = dto.EstimatedHours,
@@ -120,6 +122,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();
+
+            if (task.AssignedTo.HasValue)
+            {
+                await _notificationService.NotifyTaskAssignedAsync(task, currentUserId);
+            }
 
             var resultDto = new TaskDto
             {
@@ -150,6 +157,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
+            var previousStatusId = task.StatusId;
+
             if (dto.AssignedTo.HasValue && !await IsProjectMemberAsync(task.ProjectId, dto.AssignedTo.Value))
             {
                 return Result.Failure("Task assignee must belong to the selected project.", 400);
@@ -166,8 +175,26 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
 
+            if (previousStatusId != dto.StatusId)
+            {
+                _db.TaskHistories.Add(new TaskHistory
+                {
+                    TaskId = task.Id,
+                    ModifiedById = currentUserId ?? task.UpdatedBy ?? task.CreatedBy ?? 0,
+                    OldStatusId = previousStatusId,
+                    NewStatusId = dto.StatusId,
+                    CreatedBy = currentUserId ?? task.CreatedBy ?? 0,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
+
+            if (previousStatusId != dto.StatusId && currentUserId.HasValue)
+            {
+                await _notificationService.NotifyTaskStatusChangedAsync(task, currentUserId.Value, previousStatusId, dto.StatusId);
+            }
             return Result.Success(200);
         }
 
@@ -218,7 +245,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result<IEnumerable<TaskDto>>.Success(tasks);
         }
 
-        public async Task<Result> UpdateTaskStatusAsync(long id, long statusId, string roleName, long currentUserId)
+        public async Task<Result> UpdateTaskStatusAsync(long id, AppTaskStatus statusId, string roleName, long currentUserId)
         {
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
             if (task == null)
@@ -226,12 +253,29 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Result.Failure(ResultMessages.TaskNotFound(id), 404);
             }
 
+            var previousStatusId = task.StatusId;
+
             task.StatusId = statusId;
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
 
+            _db.TaskHistories.Add(new TaskHistory
+            {
+                TaskId = task.Id,
+                ModifiedById = currentUserId,
+                OldStatusId = previousStatusId,
+                NewStatusId = statusId,
+                CreatedBy = currentUserId,
+                CreatedAt = DateTime.UtcNow
+            });
+
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
+
+            if (previousStatusId != statusId)
+            {
+                await _notificationService.NotifyTaskStatusChangedAsync(task, currentUserId, previousStatusId, statusId);
+            }
 
             return Result.Success(200);
         }

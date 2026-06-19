@@ -87,7 +87,10 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             await _auditLog.LogAsync("Create", "Role", $"Created new role '{role.Name}'");
 
-            var assignResult = await AssignAccessToRoleAsync(role.Id, new AssignAccessDto { AccessCodes = dto.AccessCodes ?? new List<string>() });
+            var assignResult = await AssignAccessToRoleAsync(
+                role.Id,
+                new AssignAccessDto { AccessCodes = dto.AccessCodes ?? new List<string>() },
+                currentUserId);
             if (!assignResult.IsSuccess)
             {
                 return Result<RoleDto>.Failure(assignResult.ErrorMessage ?? ResultMessages.FailedToCreateRole, assignResult.StatusCode);
@@ -132,7 +135,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             return Result.Success(200);
         }
 
-        public async Task<Result> SoftDeleteRoleAsync(long id)
+        public async Task<Result> SoftDeleteRoleAsync(long id, long? currentUserId = null)
         {
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted != true);
             if (role == null)
@@ -141,6 +144,8 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             }
 
             role.IsDeleted = true;
+            role.UpdatedAt = DateTime.UtcNow;
+            role.UpdatedBy = currentUserId;
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
             await _auditLog.LogAsync("Delete", "Role", $"Deleted role '{role.Name}'");
@@ -173,7 +178,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             return Result<List<string>>.Success(assignedCodes);
         }
 
-        public async Task<Result> AssignAccessToRoleAsync(long roleId, AssignAccessDto dto)
+        public async Task<Result> AssignAccessToRoleAsync(long roleId, AssignAccessDto dto, long? currentUserId = null)
         {
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.IsDeleted != true);
             if (role == null)
@@ -231,43 +236,15 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 .Distinct()
                 .ToList();
 
-            var existingRoleMenus = await _db.RoleMenus.Where(rm => rm.RoleId == role.Id).ToListAsync();
-            var existingRolePermissions = await _db.RolePermissions.Where(rp => rp.RoleId == role.Id).ToListAsync();
+            var now = DateTime.UtcNow;
+            var existingRoleMenus = await _db.RoleMenus
+                .Where(rm => rm.RoleId == role.Id)
+                .ToListAsync();
+            var existingRolePermissions = await _db.RolePermissions
+                .Where(rp => rp.RoleId == role.Id)
+                .ToListAsync();
 
-            if (existingRoleMenus.Any())
-            {
-                _db.RoleMenus.RemoveRange(existingRoleMenus);
-            }
-
-            if (existingRolePermissions.Any())
-            {
-                _db.RolePermissions.RemoveRange(existingRolePermissions);
-            }
-
-            foreach (var menuId in menuIdsToPersist)
-            {
-                _db.RoleMenus.Add(new RoleMenu
-                {
-                    RoleId = role.Id,
-                    MenuId = menuId,
-                    IsDeleted = false,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-
-            foreach (var permissionId in permissionIdsToPersist)
-            {
-                _db.RolePermissions.Add(new RolePermission
-                {
-                    RoleId = role.Id,
-                    PermissionId = permissionId,
-                    IsDeleted = false,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-
-            // Build a human-readable diff of what changed
-            var oldMenuCodes = existingRoleMenus
+            var oldMenuIds = existingRoleMenus
                 .Where(rm => !rm.IsDeleted)
                 .Select(rm => rm.MenuId)
                 .ToHashSet();
@@ -276,6 +253,86 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 .Select(rp => rp.PermissionId)
                 .ToHashSet();
 
+            var existingRoleMenusByMenuId = existingRoleMenus.ToDictionary(rm => rm.MenuId);
+            var existingRolePermissionsByPermissionId = existingRolePermissions.ToDictionary(rp => rp.PermissionId);
+
+            foreach (var existingMenu in existingRoleMenus)
+            {
+                var shouldBeActive = menuIdsToPersist.Contains(existingMenu.MenuId);
+
+                if (shouldBeActive)
+                {
+                    if (existingMenu.IsDeleted)
+                    {
+                        existingMenu.IsDeleted = false;
+                        existingMenu.UpdatedAt = now;
+                        existingMenu.UpdatedById = currentUserId;
+                    }
+                }
+                else if (!existingMenu.IsDeleted)
+                {
+                    existingMenu.IsDeleted = true;
+                    existingMenu.UpdatedAt = now;
+                    existingMenu.UpdatedById = currentUserId;
+                }
+            }
+
+            foreach (var menuId in menuIdsToPersist)
+            {
+                if (existingRoleMenusByMenuId.ContainsKey(menuId))
+                {
+                    continue;
+                }
+
+                _db.RoleMenus.Add(new RoleMenu
+                {
+                    RoleId = role.Id,
+                    MenuId = menuId,
+                    IsDeleted = false,
+                    CreatedAt = now,
+                    CreatedById = currentUserId
+                });
+            }
+
+            foreach (var existingPermission in existingRolePermissions)
+            {
+                var shouldBeActive = permissionIdsToPersist.Contains(existingPermission.PermissionId);
+
+                if (shouldBeActive)
+                {
+                    if (existingPermission.IsDeleted)
+                    {
+                        existingPermission.IsDeleted = false;
+                        existingPermission.UpdatedAt = now;
+                        existingPermission.UpdatedById = currentUserId;
+                    }
+                }
+                else if (!existingPermission.IsDeleted)
+                {
+                    existingPermission.IsDeleted = true;
+                    existingPermission.UpdatedAt = now;
+                    existingPermission.UpdatedById = currentUserId;
+                }
+            }
+
+            foreach (var permissionId in permissionIdsToPersist)
+            {
+                if (existingRolePermissionsByPermissionId.ContainsKey(permissionId))
+                {
+                    continue;
+                }
+
+                _db.RolePermissions.Add(new RolePermission
+                {
+                    RoleId = role.Id,
+                    PermissionId = permissionId,
+                    IsDeleted = false,
+                    CreatedAt = now,
+                    CreatedById = currentUserId
+                });
+            }
+
+            // Build a human-readable diff of what changed
             // Load all menu and permission names for diff display
             var allMenuNames = await _db.Menus
                 .Where(m => !m.IsDeleted)
@@ -292,12 +349,12 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 p => $"{p.MenuName} — {p.ActionName}");
 
             var addedMenuNames = menuIdsToPersist
-                .Except(oldMenuCodes)
+                .Except(oldMenuIds)
                 .Select(id => menuNameLookup.TryGetValue(id, out var n) ? n : id.ToString())
                 .OrderBy(n => n)
                 .ToList();
 
-            var removedMenuNames = oldMenuCodes
+            var removedMenuNames = oldMenuIds
                 .Except(menuIdsToPersist)
                 .Select(id => menuNameLookup.TryGetValue(id, out var n) ? n : id.ToString())
                 .OrderBy(n => n)

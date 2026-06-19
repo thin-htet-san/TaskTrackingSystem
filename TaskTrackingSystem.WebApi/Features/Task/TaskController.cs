@@ -5,6 +5,7 @@ using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Task;
 using TaskTrackingSystem.WebApi.Features.Task;
 using TaskTrackingSystem.WebApi.Infrastructure;
+using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.WebApi.Features.Task
 {
@@ -86,7 +87,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         }
 
         [HttpPatch("{id}/status")]
-        public async Task<IActionResult> UpdateTaskStatus(long id, [FromQuery] long statusId)
+        public async Task<IActionResult> UpdateTaskStatus(long id, [FromQuery] AppTaskStatus statusId)
         {
             var result = await _taskService.UpdateTaskStatusAsync(id, statusId, User.GetRoleName(), User.GetUserId());
             if (!result.IsSuccess)

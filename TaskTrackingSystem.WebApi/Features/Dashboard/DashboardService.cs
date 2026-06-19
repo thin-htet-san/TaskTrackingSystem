@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Dashboard;
+using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.WebApi.Features.Dashboard
 {
@@ -33,7 +34,7 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
                     .CountAsync();
 
             var activeProjectsCount = await projects.CountAsync();
-            var pendingTasksCount = await tasks.CountAsync(t => t.StatusId != 3);
+            var pendingTasksCount = await tasks.CountAsync(t => t.StatusId != AppTaskStatus.Done);
 
             var summary = new DashboardSummaryDto
             {
@@ -57,11 +58,11 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
                 .ToListAsync();
 
             // Status mappings (StatusId 1 = To Do, 2 = In Progress, 3 = Done etc.)
-            var statusMap = new Dictionary<long, string>
+            var statusMap = new Dictionary<AppTaskStatus, string>
             {
-                { 1, "To Do" },
-                { 2, "In Progress" },
-                { 3, "Done" }
+                { AppTaskStatus.Todo, "To Do" },
+                { AppTaskStatus.InProgress, "In Progress" },
+                { AppTaskStatus.Done, "Done" }
             };
 
             var overview = groupedTasks.Select(gt => new TaskStatusOverviewDto
@@ -102,7 +103,7 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
                     .ToListAsync();
 
                 int totalTasks = tasks.Count;
-                int completedTasks = tasks.Count(t => t.StatusId == 3); // StatusId 3 = Done
+                int completedTasks = tasks.Count(t => t.StatusId == AppTaskStatus.Done); // StatusId 3 = Done
 
                 double percentage = totalTasks > 0 ? Math.Round(((double)completedTasks / totalTasks) * 100, 2) : 0;
 

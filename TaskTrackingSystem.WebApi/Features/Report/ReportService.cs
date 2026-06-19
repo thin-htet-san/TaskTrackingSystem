@@ -8,14 +8,15 @@ using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Report;
+using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.WebApi.Features.Report
 {
     public class ReportService
     {
         private readonly AppDbContext _db;
-        private static readonly Dictionary<long, string> StatusMap = new() { { 1, "To Do" }, { 2, "In Progress" }, { 3, "Done" } };
-        private static readonly Dictionary<long, string> PriorityMap = new() { { 1, "Low" }, { 2, "Medium" }, { 3, "High" } };
+        private static readonly Dictionary<AppTaskStatus, string> StatusMap = new() { { AppTaskStatus.Todo, "To Do" }, { AppTaskStatus.InProgress, "In Progress" }, { AppTaskStatus.Done, "Done" } };
+        private static readonly Dictionary<TaskPriority, string> PriorityMap = new() { { TaskPriority.Low, "Low" }, { TaskPriority.Medium, "Medium" }, { TaskPriority.High, "High" } };
 
         public ReportService(AppDbContext db)
         {
@@ -78,7 +79,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
             return users.Where(u => u.Id == currentUserId || accessibleUserIds.Contains(u.Id));
         }
-        // ─── Legacy endpoints (kept for backward compatibility) ───────────────────
+        // â”€â”€â”€ Legacy endpoints (kept for backward compatibility) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public async Task<Result<IEnumerable<TaskReportDto>>> GetTasksReportAsync(
             DateTime? startDate, DateTime? endDate, string? status, int? projectId, string roleName, long currentUserId)
@@ -97,13 +98,13 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 var sl = status.Trim().ToLower();
                 if (sl == "uncompleted")
                 {
-                    query = query.Where(t => t.StatusId != 3);
+                    query = query.Where(t => t.StatusId != AppTaskStatus.Done);
                 }
                 else
                 {
-                    long? sid = sl switch { "to do" => 1, "in progress" => 2, "done" => 3, _ => null };
+                    AppTaskStatus? sid = sl switch { "to do" => AppTaskStatus.Todo, "in progress" => AppTaskStatus.InProgress, "done" => AppTaskStatus.Done, _ => null };
                     if (sid.HasValue) query = query.Where(t => t.StatusId == sid.Value);
-                    else if (long.TryParse(status, out var pid)) query = query.Where(t => t.StatusId == pid);
+                    else if (Enum.TryParse<AppTaskStatus>(status, true, out var parsedStatus)) query = query.Where(t => t.StatusId == parsedStatus);
                 }
             }
 
@@ -167,17 +168,17 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return Result<IEnumerable<UserProductivityDto>>.Success(list);
         }
 
-        // ─── Report 1: Task Status Summary ────────────────────────────────────────
+        // â”€â”€â”€ Report 1: Task Status Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public async Task<Result<IEnumerable<TaskStatusSummaryDto>>> GetTaskStatusSummaryAsync(
-            string? search, long? statusId, long? projectId, string roleName, long currentUserId)
+            string? search, AppTaskStatus? statusId, long? projectId, string roleName, long currentUserId)
         {
             var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Where(t => t.IsDeleted != true);
 
-            if (statusId.HasValue && statusId > 0)
+            if (statusId.HasValue)
                 query = query.Where(t => t.StatusId == statusId.Value);
             if (projectId.HasValue && projectId > 0)
                 query = query.Where(t => t.ProjectId == projectId.Value);
@@ -243,7 +244,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return ms.ToArray();
         }
 
-        // ─── Report 2: Team Productivity ──────────────────────────────────────────
+        // â”€â”€â”€ Report 2: Team Productivity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public async Task<Result<IEnumerable<TeamProductivityReportDto>>> GetTeamProductivityAsync(string? search, string roleName, long currentUserId)
         {
@@ -262,11 +263,11 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     FullName = $"{u.FirstName} {u.LastName}".Trim(),
                     Username = u.Username,
                     TotalAssigned = uTasks.Count,
-                    Completed = uTasks.Count(t => t.StatusId == 3),
-                    InProgress = uTasks.Count(t => t.StatusId == 2),
-                    ToDo = uTasks.Count(t => t.StatusId == 1),
-                    Overdue = uTasks.Count(t => t.DueDate < now && t.StatusId != 3),
-                    CompletionRate = uTasks.Count > 0 ? Math.Round((double)uTasks.Count(t => t.StatusId == 3) / uTasks.Count * 100, 1) : 0
+                    Completed = uTasks.Count(t => t.StatusId == AppTaskStatus.Done),
+                    InProgress = uTasks.Count(t => t.StatusId == AppTaskStatus.InProgress),
+                    ToDo = uTasks.Count(t => t.StatusId == AppTaskStatus.Todo),
+                    Overdue = uTasks.Count(t => t.DueDate < now && t.StatusId != AppTaskStatus.Done),
+                    CompletionRate = uTasks.Count > 0 ? Math.Round((double)uTasks.Count(t => t.StatusId == AppTaskStatus.Done) / uTasks.Count * 100, 1) : 0
                 };
             }).ToList();
 
@@ -312,7 +313,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return ms.ToArray();
         }
 
-        // ─── Report 3: Overdue & Critical Tasks ───────────────────────────────────
+        // â”€â”€â”€ Report 3: Overdue & Critical Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public async Task<Result<IEnumerable<OverdueCriticalTaskDto>>> GetOverdueCriticalTasksAsync(string? search, long? projectId, string roleName, long currentUserId)
         {
@@ -320,8 +321,8 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
-                .Where(t => t.IsDeleted != true && t.StatusId != 3 &&
-                            (t.DueDate < now || t.PriorityId == 3)); // overdue OR high priority
+                .Where(t => t.IsDeleted != true && t.StatusId != AppTaskStatus.Done &&
+                            (t.DueDate < now || t.PriorityId == TaskPriority.High)); // overdue OR high priority
 
             if (projectId.HasValue && projectId > 0)
                 query = query.Where(t => t.ProjectId == projectId.Value);
@@ -388,7 +389,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         }
 
         public async Task<Result<TimeTrackingReportDto>> GetTimeTrackingReportAsync(
-            string? search, long? projectId, long? statusId, string roleName, long currentUserId)
+            string? search, long? projectId, AppTaskStatus? statusId, string roleName, long currentUserId)
         {
             var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
@@ -398,7 +399,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
             if (projectId.HasValue && projectId > 0)
                 query = query.Where(t => t.ProjectId == projectId.Value);
-            if (statusId.HasValue && statusId > 0)
+            if (statusId.HasValue)
                 query = query.Where(t => t.StatusId == statusId.Value);
 
             var tasks = await query.ToListAsync();

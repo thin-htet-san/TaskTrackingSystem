@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.Database.AppDbContextModels;
 
@@ -11,13 +12,13 @@ public partial class TaskHistory
 
     public long ModifiedById { get; set; }
 
-    public long? OldStatusId { get; set; }
+    public AppTaskStatus? OldStatusId { get; set; }
 
-    public long? NewStatusId { get; set; }
+    public AppTaskStatus? NewStatusId { get; set; }
 
-    public long? OldPriorityId { get; set; }
+    public TaskPriority? OldPriorityId { get; set; }
 
-    public long? NewPriorityId { get; set; }
+    public TaskPriority? NewPriorityId { get; set; }
 
     public string? Remarks { get; set; }
 

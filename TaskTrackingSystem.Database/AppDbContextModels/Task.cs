@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.Database.AppDbContextModels;
 
@@ -13,9 +14,9 @@ public partial class Task
 
     public long ProjectId { get; set; }
 
-    public long StatusId { get; set; }
+    public AppTaskStatus StatusId { get; set; }
 
-    public long PriorityId { get; set; }
+    public TaskPriority PriorityId { get; set; }
 
     public long? AssignedTo { get; set; }
 

@@ -46,7 +46,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Forbid();
             }
 
-            long? currentUserId = null;
+            long? currentUserId = User.GetUserId();
             var result = await _roleService.CreateRoleAsync(createRoleDto, currentUserId);
             return StatusCode(result.StatusCode, result);
         }
@@ -59,7 +59,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Forbid();
             }
 
-            long? currentUserId = null;
+            long? currentUserId = User.GetUserId();
             var result = await _roleService.UpdateRoleAsync(id, updateRoleDto, currentUserId);
             return StatusCode(result.StatusCode, result);
         }
@@ -72,7 +72,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Forbid();
             }
 
-            var result = await _roleService.SoftDeleteRoleAsync(id);
+            var result = await _roleService.SoftDeleteRoleAsync(id, User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -103,7 +103,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Forbid();
             }
 
-            var result = await _roleService.AssignAccessToRoleAsync(id, dto);
+            var result = await _roleService.AssignAccessToRoleAsync(id, dto, User.GetUserId());
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });

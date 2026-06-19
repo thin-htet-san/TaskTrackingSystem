@@ -47,17 +47,17 @@
 
                     <div class="grid grid-cols-2 gap-2">
                         <select @bind="filterStatusId" class="rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-violet-600 transition-all">
-                            <option value="0">All Status</option>
-                            <option value="1">To Do</option>
-                            <option value="2">In Progress</option>
-                            <option value="3">Done</option>
+                            <option value="">All Status</option>
+                            <option value="@AppTaskStatus.Todo">To Do</option>
+                            <option value="@AppTaskStatus.InProgress">In Progress</option>
+                            <option value="@AppTaskStatus.Done">Done</option>
                         </select>
 
                         <select @bind="filterPriorityId" class="rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-violet-600 transition-all">
-                            <option value="0">All Priority</option>
-                            <option value="1">Low</option>
-                            <option value="2">Medium</option>
-                            <option value="3">High</option>
+                            <option value="">All Priority</option>
+                            <option value="@TaskPriority.Low">Low</option>
+                            <option value="@TaskPriority.Medium">Medium</option>
+                            <option value="@TaskPriority.High">High</option>
                         </select>
                     </div>
 
@@ -98,7 +98,7 @@
                                                         @GetPriorityLabel(task.PriorityId)
                                                     </span>
                                                 </div>
-                                                <h4 class="text-xs font-bold text-slate-800 line-clamp-2 @(task.StatusId == 3 ? "line-through text-slate-400" : "")">
+                                                <h4 class="text-xs font-bold text-slate-800 line-clamp-2 @(task.StatusId == AppTaskStatus.Done ? "line-through text-slate-400" : "")">
                                                     @task.Title
                                                 </h4>
                                                 <div class="flex items-center justify-between gap-2 mt-0.5">
@@ -169,8 +169,8 @@
     private string searchInput = "";
     private string searchQuery => searchInput.Trim().ToLower();
     private long filterProjectId = 0;
-    private long filterStatusId = 0;
-    private long filterPriorityId = 0;
+    private AppTaskStatus? filterStatusId = null;
+    private TaskPriority? filterPriorityId = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -260,47 +260,47 @@
             {
                 result = result.Where(t => t.ProjectId == filterProjectId);
             }
-            if (filterStatusId > 0)
+            if (filterStatusId.HasValue)
             {
-                result = result.Where(t => t.StatusId == filterStatusId);
+                result = result.Where(t => t.StatusId == filterStatusId.Value);
             }
-            if (filterPriorityId > 0)
+            if (filterPriorityId.HasValue)
             {
-                result = result.Where(t => t.PriorityId == filterPriorityId);
+                result = result.Where(t => t.PriorityId == filterPriorityId.Value);
             }
             return result;
         }
     }
 
-    private string GetStatusLabel(long statusId) => statusId switch
+    private string GetStatusLabel(AppTaskStatus statusId) => statusId switch
     {
-        1 => "To Do",
-        2 => "In Progress",
-        3 => "Done",
+        AppTaskStatus.Todo => "To Do",
+        AppTaskStatus.InProgress => "In Progress",
+        AppTaskStatus.Done => "Done",
         _ => "Unknown"
     };
 
-    private string GetStatusBadge(long statusId) => statusId switch
+    private string GetStatusBadge(AppTaskStatus statusId) => statusId switch
     {
-        1 => "bg-slate-100 text-slate-800 border border-slate-200",
-        2 => "bg-blue-50 text-blue-700 border border-blue-100",
-        3 => "bg-emerald-50 text-emerald-700 border border-emerald-100",
+        AppTaskStatus.Todo => "bg-slate-100 text-slate-800 border border-slate-200",
+        AppTaskStatus.InProgress => "bg-blue-50 text-blue-700 border border-blue-100",
+        AppTaskStatus.Done => "bg-emerald-50 text-emerald-700 border border-emerald-100",
         _ => "bg-slate-50 text-slate-600"
     };
 
-    private string GetPriorityLabel(long priorityId) => priorityId switch
+    private string GetPriorityLabel(TaskPriority priorityId) => priorityId switch
     {
-        1 => "Low",
-        2 => "Medium",
-        3 => "High",
+        TaskPriority.Low => "Low",
+        TaskPriority.Medium => "Medium",
+        TaskPriority.High => "High",
         _ => "Unknown"
     };
 
-    private string GetPriorityBadge(long priorityId) => priorityId switch
+    private string GetPriorityBadge(TaskPriority priorityId) => priorityId switch
     {
-        1 => "bg-slate-100 text-slate-600",
-        2 => "bg-amber-50 text-amber-700 border border-amber-100",
-        3 => "bg-rose-50 text-rose-700 border border-rose-100",
+        TaskPriority.Low => "bg-slate-100 text-slate-600",
+        TaskPriority.Medium => "bg-amber-50 text-amber-700 border border-amber-100",
+        TaskPriority.High => "bg-rose-50 text-rose-700 border border-rose-100",
         _ => "bg-slate-50 text-slate-600"
     };
 }

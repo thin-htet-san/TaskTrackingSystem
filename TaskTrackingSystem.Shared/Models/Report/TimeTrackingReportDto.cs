@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using TaskTrackingSystem.Shared.Enums;
+using AppTaskStatus = TaskTrackingSystem.Shared.Enums.AppTaskStatus;
 
 namespace TaskTrackingSystem.Shared.Models.Report
 {
@@ -54,6 +56,6 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public decimal? EstimatedHours { get; set; }
         public decimal CompletedHours { get; set; }
         public DateTime DueDate { get; set; }
-        public long StatusId { get; set; }
+        public AppTaskStatus StatusId { get; set; }
     }
 }

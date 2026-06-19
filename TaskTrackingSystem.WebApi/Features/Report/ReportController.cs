@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Report;
+using TaskTrackingSystem.Shared.Enums;
 using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Report
@@ -21,7 +22,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             _reportService = reportService;
         }
 
-        // ─── Legacy ───────────────────────────────────────────────────────────────
+        // â”€â”€â”€ Legacy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         [HttpGet("tasks")]
         public async Task<ActionResult<Result<IEnumerable<TaskReportDto>>>> GetTasksReport(
@@ -41,12 +42,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return StatusCode(result.StatusCode, result);
         }
 
-        // ─── Report 1: Task Status Summary ────────────────────────────────────────
+        // â”€â”€â”€ Report 1: Task Status Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         [HttpGet("task-status-summary")]
         public async Task<ActionResult<Result<IEnumerable<TaskStatusSummaryDto>>>> GetTaskStatusSummary(
             [FromQuery] string? search,
-            [FromQuery] long? statusId,
+            [FromQuery] AppTaskStatus? statusId,
             [FromQuery] long? projectId)
         {
             var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleName(), User.GetUserId());
@@ -56,7 +57,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         [HttpGet("task-status-summary/excel")]
         public async Task<IActionResult> DownloadTaskStatusSummaryExcel(
             [FromQuery] string? search,
-            [FromQuery] long? statusId,
+            [FromQuery] AppTaskStatus? statusId,
             [FromQuery] long? projectId)
         {
             var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleName(), User.GetUserId());
@@ -67,7 +68,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                         $"TaskStatusSummary_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
-        // ─── Report 2: Team Productivity ──────────────────────────────────────────
+        // â”€â”€â”€ Report 2: Team Productivity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         [HttpGet("team-productivity")]
         public async Task<ActionResult<Result<IEnumerable<TeamProductivityReportDto>>>> GetTeamProductivity(
@@ -88,7 +89,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                         $"TeamProductivity_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
-        // ─── Report 3: Overdue & Critical Tasks ───────────────────────────────────
+        // â”€â”€â”€ Report 3: Overdue & Critical Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         [HttpGet("overdue-critical")]
         public async Task<ActionResult<Result<IEnumerable<OverdueCriticalTaskDto>>>> GetOverdueCritical(
@@ -112,13 +113,13 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                         $"OverdueCriticalTasks_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
-        // ─── Report 4: Time Tracking ──────────────────────────────────────────────
+        // â”€â”€â”€ Report 4: Time Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         [HttpGet("time-tracking")]
         public async Task<ActionResult<Result<TimeTrackingReportDto>>> GetTimeTracking(
             [FromQuery] string? search,
             [FromQuery] long? projectId,
-            [FromQuery] long? statusId)
+            [FromQuery] AppTaskStatus? statusId)
         {
             var result = await _reportService.GetTimeTrackingReportAsync(search, projectId, statusId, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);

@@ -24,7 +24,7 @@
             }
             <div>
                 <h2 class="text-3xl font-bold tracking-tight text-slate-900">Kanban Board</h2>
-                <p class="text-slate-500 mt-1">@(ProjectId > 0 ? $"Project #{ProjectId} — " : "Global View — ")Drag tasks between columns.</p>
+                <p class="text-slate-500 mt-1">@(ProjectId > 0 ? $"Project #{ProjectId} â€” " : "Global View â€” ")Drag tasks between columns.</p>
             </div>
         </div>
         @if (canCreateTask)
@@ -125,9 +125,9 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
                         <select @bind="taskPriorityId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
-                            <option value="1">Low</option>
-                            <option value="2">Medium</option>
-                            <option value="3">High</option>
+                            <option value="@TaskPriority.Low">Low</option>
+                            <option value="@TaskPriority.Medium">Medium</option>
+                            <option value="@TaskPriority.High">High</option>
                         </select>
                     </div>
                     <div>
@@ -194,14 +194,14 @@
     // Task form
     private string taskTitle = "";
     private string? taskDescription;
-    private long taskPriorityId = 2;
+    private TaskPriority taskPriorityId = TaskPriority.Medium;
     private DateTime taskDueDate = DateTime.Today.AddDays(7);
 
     private List<KanbanColumn> columns = new()
     {
-        new(1, "To Do", "bg-slate-400"),
-        new(2, "In Progress", "bg-blue-500"),
-        new(3, "Done", "bg-emerald-500")
+        new(AppTaskStatus.Todo, "To Do", "bg-slate-400"),
+        new(AppTaskStatus.InProgress, "In Progress", "bg-blue-500"),
+        new(AppTaskStatus.Done, "Done", "bg-emerald-500")
     };
 
     private TaskDto? draggedTask;
@@ -216,7 +216,7 @@
         // Allow dropping
     }
 
-    private async Task HandleDrop(long newStatusId)
+    private async Task HandleDrop(AppTaskStatus newStatusId)
     {
         if (draggedTask != null && draggedTask.StatusId != newStatusId)
         {
@@ -282,7 +282,7 @@
         }
     }
 
-    private async Task MoveTask(long taskId, long newStatusId)
+    private async Task MoveTask(long taskId, AppTaskStatus newStatusId)
     {
         if (!canUpdateTask)
         {
@@ -312,7 +312,7 @@
     {
         taskTitle = "";
         taskDescription = null;
-        taskPriorityId = 2;
+        taskPriorityId = TaskPriority.Medium;
         taskDueDate = DateTime.Today.AddDays(7);
         taskError = null;
         showTaskModal = true;
@@ -374,7 +374,7 @@
                 Title = taskTitle,
                 Description = taskDescription,
                 ProjectId = ProjectId > 0 ? ProjectId : 1, // Default fallback if global board
-                StatusId = 1,
+                StatusId = AppTaskStatus.Todo,
                 PriorityId = taskPriorityId,
                 DueDate = taskDueDate
             };
@@ -399,21 +399,21 @@
         }
     }
 
-    private string GetPriorityBadge(long priorityId) => priorityId switch
+    private string GetPriorityBadge(TaskPriority priorityId) => priorityId switch
     {
-        1 => "bg-slate-100 text-slate-600",
-        2 => "bg-amber-100 text-amber-700",
-        3 => "bg-red-100 text-red-700",
+        TaskPriority.Low => "bg-slate-100 text-slate-600",
+        TaskPriority.Medium => "bg-amber-100 text-amber-700",
+        TaskPriority.High => "bg-red-100 text-red-700",
         _ => "bg-slate-100 text-slate-600"
     };
 
-    private string GetPriorityLabel(long priorityId) => priorityId switch
+    private string GetPriorityLabel(TaskPriority priorityId) => priorityId switch
     {
-        1 => "Low",
-        2 => "Medium",
-        3 => "High",
-        _ => "—"
+        TaskPriority.Low => "Low",
+        TaskPriority.Medium => "Medium",
+        TaskPriority.High => "High",
+        _ => "â€”"
     };
 
-    private record KanbanColumn(long StatusId, string Name, string DotColor);
+    private record KanbanColumn(AppTaskStatus StatusId, string Name, string DotColor);
 }

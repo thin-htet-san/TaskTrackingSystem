@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using TaskTrackingSystem.Shared.Enums;
+using AppTaskStatus = TaskTrackingSystem.Shared.Enums.AppTaskStatus;
 
 namespace TaskTrackingSystem.Shared.Models.Task
 {
@@ -16,11 +18,11 @@ namespace TaskTrackingSystem.Shared.Models.Task
         [Range(1, long.MaxValue)]
         public long ProjectId { get; set; }
 
-        [Range(0, 3)]
-        public long StatusId { get; set; }
+        [EnumDataType(typeof(AppTaskStatus))]
+        public AppTaskStatus StatusId { get; set; }
 
-        [Range(0, 3)]
-        public long PriorityId { get; set; }
+        [EnumDataType(typeof(TaskPriority))]
+        public TaskPriority PriorityId { get; set; }
 
         [Range(0, long.MaxValue)]
         public long? AssignedTo { get; set; }

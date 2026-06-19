@@ -8,6 +8,7 @@ using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.User;
 using TaskTrackingSystem.Shared.Models.Task;
 using TaskTrackingSystem.Shared.Models.Project;
+using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.WebApi.Features.Project
 {
@@ -136,6 +137,22 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             project.IsDeleted = true;
             _db.Projects.Update(project);
+
+            // Soft-delete all tasks associated with this project
+            var tasksToUpdate = await _db.Tasks
+                .Where(t => t.ProjectId == id && t.IsDeleted != true)
+                .ToListAsync();
+            foreach (var task in tasksToUpdate)
+            {
+                task.IsDeleted = true;
+                task.UpdatedAt = DateTime.UtcNow;
+                task.UpdatedBy = currentUserId;
+            }
+            if (tasksToUpdate.Any())
+            {
+                _db.Tasks.UpdateRange(tasksToUpdate);
+            }
+
             await _db.SaveChangesAsync();
             return Result.Success(200);
         }
@@ -277,7 +294,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == 3)
+                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
                         .OrderBy(th => th.CreatedAt)
                         .Select(th => th.CreatedAt)
                         .FirstOrDefault()

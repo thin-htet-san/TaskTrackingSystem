@@ -142,9 +142,9 @@
                         <div class="flex flex-col gap-1.5">
                             <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Status</span>
                             <select value="@task.StatusId" @onchange="OnStatusChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
-                                <option value="1">To Do</option>
-                                <option value="2">In Progress</option>
-                                <option value="3">Done</option>
+                                <option value="@AppTaskStatus.Todo">To Do</option>
+                                <option value="@AppTaskStatus.InProgress">In Progress</option>
+                                <option value="@AppTaskStatus.Done">Done</option>
                             </select>
                         </div>
 
@@ -154,9 +154,9 @@
                             @if (hasTaskManagePermission)
                             {
                                 <select value="@task.PriorityId" @onchange="OnPriorityChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
-                                    <option value="1">Low</option>
-                                    <option value="2">Medium</option>
-                                    <option value="3">High</option>
+                                    <option value="@TaskPriority.Low">Low</option>
+                                    <option value="@TaskPriority.Medium">Medium</option>
+                                    <option value="@TaskPriority.High">High</option>
                                 </select>
                             }
                             else
@@ -318,7 +318,7 @@
                                                 </span>
                                                 <div class="min-w-0">
                                                     <p class="text-xs font-semibold text-slate-800 truncate" title="@file.FileName">@file.FileName</p>
-                                                    <p class="text-[10px] text-slate-400 mt-0.5 font-sans">@FormatBytes(file.FileSizeInBytes) • by @file.CreatedByName</p>
+                                                    <p class="text-[10px] text-slate-400 mt-0.5 font-sans">@FormatBytes(file.FileSizeInBytes) â€¢ by @file.CreatedByName</p>
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-1.5 shrink-0">
@@ -584,20 +584,20 @@
         }
     }
 
-    // ─── INLINE MUTATIONS ───────────────────────────────────────────────────
+    // â”€â”€â”€ INLINE MUTATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task OnStatusChanged(ChangeEventArgs e)
     {
         if (task == null) return;
-        if (long.TryParse(e.Value?.ToString(), out var newStatusId))
+        if (Enum.TryParse<AppTaskStatus>(e.Value?.ToString(), out var newStatus))
         {
             var client = ApiClient.CreateClient();
             try
             {
-                var response = await client.PatchAsync($"Task/{task.Id}/status?statusId={newStatusId}", null);
+                var response = await client.PatchAsync($"Task/{task.Id}/status?statusId={(int)newStatus}", null);
                 if (response.IsSuccessStatusCode)
                 {
-                    task.StatusId = newStatusId;
+                    task.StatusId = newStatus;
                     await OnTaskUpdated.InvokeAsync();
                     await JS.InvokeVoidAsync("initIcons");
                 }
@@ -611,9 +611,9 @@
 
     private async Task OnPriorityChanged(ChangeEventArgs e)
     {
-        if (long.TryParse(e.Value?.ToString(), out var newPriorityId))
+        if (Enum.TryParse<TaskPriority>(e.Value?.ToString(), out var newPriority))
         {
-            await UpdateTaskProperty(dto => dto.PriorityId = newPriorityId);
+            await UpdateTaskProperty(dto => dto.PriorityId = newPriority);
         }
     }
 
@@ -729,7 +729,7 @@
         isSavingTitle = false;
     }
 
-    // ─── COMMENTS ACTIONS ───────────────────────────────────────────────────
+    // â”€â”€â”€ COMMENTS ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task PostComment()
     {
@@ -791,7 +791,7 @@
         }
     }
 
-    // ─── ATTACHMENTS ACTIONS ────────────────────────────────────────────────
+    // â”€â”€â”€ ATTACHMENTS ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
@@ -859,7 +859,7 @@
         }
     }
 
-    // ─── CONFIRM DIALOG LOGIC ───────────────────────────────────────────────
+    // â”€â”€â”€ CONFIRM DIALOG LOGIC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task ExecuteConfirmAction()
     {
@@ -877,37 +877,37 @@
         confirmAction = null;
     }
 
-    // ─── DISPLAY UTILITIES ──────────────────────────────────────────────────
+    // â”€â”€â”€ DISPLAY UTILITIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private string GetStatusLabel(long statusId) => statusId switch
+    private string GetStatusLabel(AppTaskStatus statusId) => statusId switch
     {
-        1 => "To Do",
-        2 => "In Progress",
-        3 => "Done",
+        AppTaskStatus.Todo => "To Do",
+        AppTaskStatus.InProgress => "In Progress",
+        AppTaskStatus.Done => "Done",
         _ => "Unknown"
     };
 
-    private string GetStatusBadge(long statusId) => statusId switch
+    private string GetStatusBadge(AppTaskStatus statusId) => statusId switch
     {
-        1 => "bg-slate-100 text-slate-800 border border-slate-200",
-        2 => "bg-blue-50 text-blue-700 border border-blue-100",
-        3 => "bg-emerald-50 text-emerald-700 border border-emerald-100",
+        AppTaskStatus.Todo => "bg-slate-100 text-slate-800 border border-slate-200",
+        AppTaskStatus.InProgress => "bg-blue-50 text-blue-700 border border-blue-100",
+        AppTaskStatus.Done => "bg-emerald-50 text-emerald-700 border border-emerald-100",
         _ => "bg-slate-50 text-slate-600"
     };
 
-    private string GetPriorityLabel(long priorityId) => priorityId switch
+    private string GetPriorityLabel(TaskPriority priorityId) => priorityId switch
     {
-        1 => "Low",
-        2 => "Medium",
-        3 => "High",
+        TaskPriority.Low => "Low",
+        TaskPriority.Medium => "Medium",
+        TaskPriority.High => "High",
         _ => "Unknown"
     };
 
-    private string GetPriorityBadge(long priorityId) => priorityId switch
+    private string GetPriorityBadge(TaskPriority priorityId) => priorityId switch
     {
-        1 => "bg-slate-100 text-slate-600",
-        2 => "bg-amber-50 text-amber-700 border border-amber-100",
-        3 => "bg-rose-50 text-rose-700 border border-rose-100",
+        TaskPriority.Low => "bg-slate-100 text-slate-600",
+        TaskPriority.Medium => "bg-amber-50 text-amber-700 border border-amber-100",
+        TaskPriority.High => "bg-rose-50 text-rose-700 border border-rose-100",
         _ => "bg-slate-50 text-slate-600"
     };
 

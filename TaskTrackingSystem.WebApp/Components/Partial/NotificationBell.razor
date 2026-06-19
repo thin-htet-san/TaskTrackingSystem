@@ -1,0 +1,365 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject ApiClientService ApiClient
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+
+<div class="relative">
+    <button type="button"
+            @onclick="ToggleOpenAsync"
+            class="relative rounded-full p-2 text-slate-400 hover:bg-slate-50 hover:text-violet-600 transition-all">
+        <i data-lucide="bell" class="h-5 w-5"></i>
+        @if (UnreadCount > 0)
+        {
+            <span class="absolute right-1 top-1 min-w-4 h-4 px-1 rounded-full bg-violet-600 text-white text-[10px] font-bold flex items-center justify-center">
+                @(UnreadCount > 99 ? "99+" : UnreadCount.ToString())
+            </span>
+        }
+    </button>
+
+    @if (IsOpen)
+    {
+        <div class="absolute right-0 mt-3 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+                <div>
+                    <p class="text-sm font-semibold text-slate-900">Notifications</p>
+                    <p class="text-xs text-slate-500">@UnreadCount unread</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="text-xs font-semibold text-violet-600 hover:text-violet-700" @onclick="RefreshAsync">
+                        Refresh
+                    </button>
+                    <button type="button" class="text-xs font-semibold text-slate-500 hover:text-slate-700" @onclick="Close">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div>
+                    <p class="text-sm font-semibold text-slate-900">Browser Alerts</p>
+                    <p class="text-xs text-slate-500">Receive push alerts on this device</p>
+                </div>
+                <button type="button" 
+                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none @(IsNotificationsEnabled ? "bg-violet-600" : "bg-slate-200")" 
+                        @onclick="ToggleNotificationsAsync">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out @(IsNotificationsEnabled ? "translate-x-5" : "translate-x-0")"></span>
+                </button>
+            </div>
+
+            <div class="max-h-[26rem] overflow-y-auto">
+                @if (IsLoading)
+                {
+                    <div class="p-4 text-sm text-slate-500">Loading notifications...</div>
+                }
+                else if (Notifications.Count == 0)
+                {
+                    <div class="p-6 text-center">
+                        <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                            <i data-lucide="inbox" class="h-5 w-5"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-700">No notifications yet</p>
+                        <p class="text-xs text-slate-500 mt-1">Your task alerts will show up here.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var item in Notifications)
+                    {
+                        <button type="button"
+                                class="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors @(item.IsRead ? "bg-white" : "bg-violet-50/40")"
+                                @onclick="() => MarkReadAsync(item)">
+                            <div class="flex items-start gap-3">
+                                <div class="mt-0.5 h-9 w-9 rounded-full flex items-center justify-center @(item.IsRead ? "bg-slate-100 text-slate-500" : "bg-violet-100 text-violet-700")">
+                                    <i data-lucide="bell-ring" class="h-4 w-4"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <p class="text-sm font-semibold text-slate-900 truncate">@item.Title</p>
+                                        @if (!item.IsRead)
+                                        {
+                                            <span class="mt-1 h-2.5 w-2.5 rounded-full bg-violet-600 shrink-0"></span>
+                                        }
+                                    </div>
+                                    <p class="mt-1 text-xs text-slate-600 leading-5">@item.Body</p>
+                                    <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+                                        <span>@FormatSender(item.SenderName)</span>
+                                        <span>@FormatTime(item.CreatedAt)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (ShowDisableConfirm)
+{
+    <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="w-full max-w-md mx-4 rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="p-6">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                    <i data-lucide="bell-off" class="h-7 w-7"></i>
+                </div>
+                <h3 class="mt-4 text-center text-lg font-semibold text-slate-900">Disable browser alerts?</h3>
+                <p class="mt-2 text-center text-sm text-slate-500">
+                    This will remove the current browser token from your account and stop push notifications on this device.
+                </p>
+            </div>
+            <div class="flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
+                <button type="button" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" @onclick="CancelDisable">
+                    Cancel
+                </button>
+                <button type="button" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium bg-rose-600 text-white hover:bg-rose-700" @onclick="ConfirmDisableAsync">
+                    Disable
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool IsOpen;
+    private bool IsLoading;
+    private bool ShowDisableConfirm;
+    private int UnreadCount;
+    private List<NotificationDto> Notifications = new();
+    private bool IsNotificationsEnabled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                IsNotificationsEnabled = await JS.InvokeAsync<bool>("ttsFirebase.areNotificationsEnabled");
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DEBUG NotificationBell] Error checking status on init: {ex.Message}");
+            }
+        }
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task ToggleOpenAsync()
+    {
+        IsOpen = !IsOpen;
+        if (IsOpen)
+        {
+            await RefreshAsync();
+        }
+    }
+
+    private void Close()
+    {
+        IsOpen = false;
+    }
+
+    private void OpenDisableConfirm()
+    {
+        ShowDisableConfirm = true;
+    }
+
+    private void CancelDisable()
+    {
+        ShowDisableConfirm = false;
+    }
+
+    private async Task RefreshAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                Notifications.Clear();
+                UnreadCount = 0;
+                return;
+            }
+
+            var client = ApiClient.CreateClient(authState.User);
+            var unreadTask = client.GetFromJsonAsync<int>("Notification/unread-count");
+            var itemsTask = client.GetFromJsonAsync<List<NotificationDto>>("Notification/mine?take=10");
+
+            await Task.WhenAll(unreadTask, itemsTask);
+            UnreadCount = unreadTask.Result;
+            Notifications = itemsTask.Result ?? new List<NotificationDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG NotificationBell] Failed to refresh: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ToggleNotificationsAsync()
+    {
+        if (IsNotificationsEnabled)
+        {
+            OpenDisableConfirm();
+        }
+        else
+        {
+            await EnableBrowserNotificationsAsync();
+        }
+    }
+
+    private async Task EnableBrowserNotificationsAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            var token = await JS.InvokeAsync<string?>("ttsFirebase.getRegistrationToken");
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                Console.WriteLine("[DEBUG NotificationBell] Enable: FCM registration token is empty or null.");
+                return;
+            }
+
+            var client = ApiClient.CreateClient(authState.User);
+            var response = await client.PostAsJsonAsync("UserDevices/register", new RegisterDeviceTokenDto
+            {
+                FcmToken = token
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[DEBUG NotificationBell] Enable: FCM token registered successfully.");
+                IsNotificationsEnabled = true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[DEBUG NotificationBell] Enable: API registration failed: {response.StatusCode} - {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG NotificationBell] Enable: Exception occurred: {ex.Message}\n{ex.StackTrace}");
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ConfirmDisableAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            var token = await JS.InvokeAsync<string?>("ttsFirebase.getRegistrationToken");
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                Console.WriteLine("[DEBUG NotificationBell] Disable: FCM token is null or empty.");
+                return;
+            }
+
+            // Call client side disable helper to delete token from firebase
+            await JS.InvokeVoidAsync("ttsFirebase.disableNotifications");
+
+            var client = ApiClient.CreateClient(authState.User);
+            var response = await client.PostAsJsonAsync("UserDevices/unregister", new RegisterDeviceTokenDto
+            {
+                FcmToken = token
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[DEBUG NotificationBell] Disable: FCM token unregistered successfully.");
+                IsNotificationsEnabled = false;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[DEBUG NotificationBell] Disable: API unregistration failed: {response.StatusCode} - {error}");
+                IsNotificationsEnabled = false;
+            }
+
+            ShowDisableConfirm = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG NotificationBell] Disable: Exception occurred: {ex.Message}\n{ex.StackTrace}");
+            IsNotificationsEnabled = false;
+            ShowDisableConfirm = false;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task MarkReadAsync(NotificationDto item)
+    {
+        if (item.IsRead)
+        {
+            return;
+        }
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            var client = ApiClient.CreateClient(authState.User);
+            var response = await client.PostAsync($"Notification/{item.Id}/read", null);
+            if (response.IsSuccessStatusCode)
+            {
+                item.IsRead = true;
+                if (UnreadCount > 0)
+                {
+                    UnreadCount--;
+                }
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG NotificationBell] MarkRead failed: {ex.Message}");
+        }
+    }
+
+    private static string FormatSender(string? senderName)
+    {
+        return string.IsNullOrWhiteSpace(senderName) ? "System" : senderName;
+    }
+
+    private static string FormatTime(DateTime? createdAt)
+    {
+        if (!createdAt.HasValue)
+        {
+            return string.Empty;
+        }
+
+        var value = createdAt.Value.ToLocalTime();
+        return value.ToString("dd MMM, HH:mm");
+    }
+}

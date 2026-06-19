@@ -524,35 +524,35 @@
         }
     }
 
-    private string GetStatusBadge(long statusId) => statusId switch
+    private string GetStatusBadge(AppTaskStatus statusId) => statusId switch
     {
-        1 => "bg-slate-100 text-slate-700",
-        2 => "bg-blue-100 text-blue-700",
-        3 => "bg-emerald-100 text-emerald-700",
+        AppTaskStatus.Todo => "bg-slate-100 text-slate-700",
+        AppTaskStatus.InProgress => "bg-blue-100 text-blue-700",
+        AppTaskStatus.Done => "bg-emerald-100 text-emerald-700",
         _ => "bg-slate-100 text-slate-600"
     };
 
-    private string GetStatusLabel(long statusId) => statusId switch
+    private string GetStatusLabel(AppTaskStatus statusId) => statusId switch
     {
-        1 => "To Do",
-        2 => "In Progress",
-        3 => "Done",
+        AppTaskStatus.Todo => "To Do",
+        AppTaskStatus.InProgress => "In Progress",
+        AppTaskStatus.Done => "Done",
         _ => "Unknown"
     };
 
-    private string GetPriorityBadge(long priorityId) => priorityId switch
+    private string GetPriorityBadge(TaskPriority priorityId) => priorityId switch
     {
-        1 => "bg-slate-100 text-slate-600",
-        2 => "bg-amber-100 text-amber-700",
-        3 => "bg-red-100 text-red-700",
+        TaskPriority.Low => "bg-slate-100 text-slate-600",
+        TaskPriority.Medium => "bg-amber-100 text-amber-700",
+        TaskPriority.High => "bg-red-100 text-red-700",
         _ => "bg-slate-100 text-slate-600"
     };
 
-    private string GetPriorityLabel(long priorityId) => priorityId switch
+    private string GetPriorityLabel(TaskPriority priorityId) => priorityId switch
     {
-        1 => "Low",
-        2 => "Medium",
-        3 => "High",
-        _ => "—"
+        TaskPriority.Low => "Low",
+        TaskPriority.Medium => "Medium",
+        TaskPriority.High => "High",
+        _ => "â€”"
     };
 }

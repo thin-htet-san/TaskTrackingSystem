@@ -112,7 +112,7 @@ else
                                                 <span class="font-semibold text-slate-700">@progress%</span>
                                             </div>
                                             <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-                                                <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: @(progress)%"></div>
+                                                <div class="h-full rounded-full bg-violet-600 transition-all" style="width: @(progress)%"></div>
                                             </div>
                                         </div>
                                         <span class="inline-block mt-3 rounded-full px-2 py-0.5 text-[10px] font-semibold @(daysLeft < 0 ? "bg-rose-50 text-rose-600" : daysLeft < 3 ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")">
@@ -145,7 +145,7 @@ else
                                         <span class="text-slate-500">@pp.CompletedTasksCount / @pp.TotalTasksCount</span>
                                     </div>
                                     <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                                        <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: @pp.CompletionPercentage%"></div>
+                                        <div class="h-full rounded-full bg-violet-600 transition-all" style="width: @pp.CompletionPercentage%"></div>
                                     </div>
                                 </div>
                             }
@@ -167,7 +167,7 @@ else
                         {
                             <div class="flex flex-col items-center space-y-2 flex-1">
                                 <div class="w-full max-w-[24px] rounded-t-lg bg-slate-100 h-32 flex items-end">
-                                    <div class="w-full rounded-t-lg bg-emerald-500 transition-all duration-700" style="height: @(chartBar.Height)%"></div>
+                                    <div class="w-full rounded-t-lg bg-violet-600 transition-all duration-700" style="height: @(chartBar.Height)%"></div>
                                 </div>
                                 <span class="text-[10px] font-medium text-slate-400 uppercase">@chartBar.Day</span>
                             </div>
@@ -224,9 +224,9 @@ else
                             @foreach (var task in ChecklistTasks)
                             {
                                 <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
-                                    <input type="checkbox" checked="@(task.StatusId == 3)" @onchange="() => ToggleTaskStatus(task)" disabled="@(!canUpdateTask)" class="h-4 w-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 mt-0.5 disabled:opacity-50 disabled:cursor-not-allowed" />
+                                    <input type="checkbox" checked="@(task.StatusId == AppTaskStatus.Done)" @onchange="() => ToggleTaskStatus(task)" disabled="@(!canUpdateTask)" class="h-4 w-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 mt-0.5 disabled:opacity-50 disabled:cursor-not-allowed" />
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-xs font-semibold text-slate-800 truncate @(task.StatusId == 3 ? "line-through text-slate-400" : "")">@task.Title</p>
+                                        <p class="text-xs font-semibold text-slate-800 truncate @(task.StatusId == AppTaskStatus.Done ? "line-through text-slate-400" : "")">@task.Title</p>
                                         <p class="text-[10px] text-slate-400">Due @DisplayFormats.Date(task.DueDate)</p>
                                     </div>
                                 </div>
@@ -336,25 +336,25 @@ else
         await JS.InvokeVoidAsync("initIcons");
     }
 
-    private IEnumerable<TaskDto> ActiveTasks => taskList.Where(t => t.StatusId == 2).Take(3);
-    private IEnumerable<TaskDto> ChecklistTasks => taskList.Where(t => t.StatusId != 3).Take(4);
-    private int ChecklistCompletedCount => taskList.Count(t => t.StatusId == 3);
+    private IEnumerable<TaskDto> ActiveTasks => taskList.Where(t => t.StatusId == AppTaskStatus.InProgress).Take(3);
+    private IEnumerable<TaskDto> ChecklistTasks => taskList.Where(t => t.StatusId != AppTaskStatus.Done).Take(4);
+    private int ChecklistCompletedCount => taskList.Count(t => t.StatusId == AppTaskStatus.Done);
 
     private int TotalTasksCount => taskStatuses.Sum(s => s.TaskCount);
-    private int CompletedTasksCount => taskStatuses.FirstOrDefault(s => s.StatusId == 3)?.TaskCount ?? 0;
+    private int CompletedTasksCount => taskStatuses.FirstOrDefault(s => s.StatusId == (int)AppTaskStatus.Done)?.TaskCount ?? 0;
     private int TaskCompletionRate => TotalTasksCount > 0 ? (int)((double)CompletedTasksCount / TotalTasksCount * 100) : 0;
-    private int OverdueTasksCount => taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != 3);
+    private int OverdueTasksCount => taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done);
 
     private IEnumerable<UserDto> GetTeamMembers()
     {
         return usersList.Where(u => !u.Username.Equals(currentUserName, StringComparison.OrdinalIgnoreCase)).Take(3);
     }
 
-    private int GetTaskProgress(long statusId) => statusId switch
+    private int GetTaskProgress(AppTaskStatus statusId) => statusId switch
     {
-        1 => 10,
-        2 => 50,
-        3 => 100,
+        AppTaskStatus.Todo => 10,
+        AppTaskStatus.InProgress => 50,
+        AppTaskStatus.Done => 100,
         _ => 0
     };
 
@@ -367,8 +367,8 @@ else
         for (int i = 0; i < 7; i++)
         {
             var day = startOfWeek.AddDays(i);
-            var completedCount = taskList.Count(t => t.StatusId == 3 && t.DueDate.Date == day);
-            var maxCount = Math.Max(taskList.Count(t => t.StatusId == 3), 1);
+            var completedCount = taskList.Count(t => t.StatusId == AppTaskStatus.Done && t.DueDate.Date == day);
+            var maxCount = Math.Max(taskList.Count(t => t.StatusId == AppTaskStatus.Done), 1);
             var height = (int)Math.Max(10, (double)completedCount / maxCount * 100);
             bars.Add(new ChartBar(day.ToString("ddd")[..1], height));
         }
@@ -383,14 +383,14 @@ else
             return;
         }
 
-        var newStatusId = task.StatusId == 3 ? 1 : 3;
+        var newStatus = task.StatusId == AppTaskStatus.Done ? AppTaskStatus.Todo : AppTaskStatus.Done;
         var client = ApiClient.CreateClient();
         try
         {
-            var response = await client.PatchAsync($"Task/{task.Id}/status?statusId={newStatusId}", null);
+            var response = await client.PatchAsync($"Task/{task.Id}/status?statusId={(int)newStatus}", null);
             if (response.IsSuccessStatusCode)
             {
-                task.StatusId = newStatusId;
+                task.StatusId = newStatus;
                 await LoadDashboardData();
             }
         }

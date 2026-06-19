@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 // CORS policy for WebApp
 builder.Services.AddCors(options =>
@@ -32,6 +33,9 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Task.TaskService>(
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Dashboard.DashboardService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Report.ReportService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Menu.MenuService>();
+builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.UserDevice.UserDeviceService>();
+builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService>();
+builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.NotificationService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Infrastructure.PermissionAuthorizationService>();
 builder.Services.AddScoped<IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>, PasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -118,6 +122,20 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
         backlogMenu.OrderNo = 25;
         backlogMenu.IsDeleted = false;
         backlogMenu.UpdatedAt = DateTime.UtcNow;
+    }
+
+    // Soft-delete existing tasks that belong to deleted projects
+    var orphanedTasks = await db.Tasks
+        .Where(t => t.IsDeleted != true && t.Project.IsDeleted == true)
+        .ToListAsync();
+    foreach (var task in orphanedTasks)
+    {
+        task.IsDeleted = true;
+        task.UpdatedAt = DateTime.UtcNow;
+    }
+    if (orphanedTasks.Any())
+    {
+        db.Tasks.UpdateRange(orphanedTasks);
     }
 
     await db.SaveChangesAsync();

@@ -1,4 +1,6 @@
 using System;
+using TaskTrackingSystem.Shared.Enums;
+using AppTaskStatus = TaskTrackingSystem.Shared.Enums.AppTaskStatus;
 
 namespace TaskTrackingSystem.Shared.Models.Report
 {
@@ -9,9 +11,9 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public string? Description { get; set; }
         public string ProjectName { get; set; } = string.Empty;
         public long ProjectId { get; set; }
-        public long StatusId { get; set; }
+        public AppTaskStatus StatusId { get; set; }
         public string StatusName { get; set; } = string.Empty;
-        public long PriorityId { get; set; }
+        public TaskPriority PriorityId { get; set; }
         public string PriorityName { get; set; } = string.Empty;
         public string? AssignedToUser { get; set; }
         public long? AssignedToUserId { get; set; }

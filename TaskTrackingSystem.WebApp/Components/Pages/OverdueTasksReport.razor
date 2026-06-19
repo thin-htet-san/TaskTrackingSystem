@@ -166,7 +166,7 @@
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center gap-1 text-sm text-slate-600">
                                         <i data-lucide="folder" class="h-3.5 w-3.5 text-violet-500"></i>
-                                        @(project?.Name ?? "—")
+                                        @(project?.Name ?? "â€”")
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
@@ -207,25 +207,25 @@
                                     }
                                 </td>
                                 <td class="px-6 py-4">
-                                    @{
-                                        var (priorityLabel, priorityClass) = task.PriorityId switch {
-                                            3 => ("High", "bg-rose-50 text-rose-700"),
-                                            2 => ("Medium", "bg-amber-50 text-amber-700"),
-                                            _ => ("Low", "bg-slate-100 text-slate-600")
-                                        };
-                                    }
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @priorityClass">@priorityLabel</span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    @{
-                                        var (statusLabel, statusClass) = task.StatusId switch {
-                                            2 => ("In Progress", "bg-blue-50 text-blue-700"),
-                                            3 => ("Done", "bg-emerald-50 text-emerald-700"),
-                                            _ => ("To Do", "bg-slate-100 text-slate-600")
-                                        };
-                                    }
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
-                                </td>
+                                     @{
+                                         var (priorityLabel, priorityClass) = task.PriorityId switch {
+                                             TaskPriority.High => ("High", "bg-rose-50 text-rose-700"),
+                                             TaskPriority.Medium => ("Medium", "bg-amber-50 text-amber-700"),
+                                             _ => ("Low", "bg-slate-100 text-slate-600")
+                                         };
+                                     }
+                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @priorityClass">@priorityLabel</span>
+                                 </td>
+                                 <td class="px-6 py-4">
+                                     @{
+                                         var (statusLabel, statusClass) = task.StatusId switch {
+                                             AppTaskStatus.InProgress => ("In Progress", "bg-blue-50 text-blue-700"),
+                                             AppTaskStatus.Done => ("Done", "bg-emerald-50 text-emerald-700"),
+                                             _ => ("To Do", "bg-slate-100 text-slate-600")
+                                         };
+                                     }
+                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
+                                 </td>
                                 <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
                                     <button @onclick="() => RemindAssignee(task)" class="text-xs font-semibold text-violet-600 hover:text-violet-900 transition-colors font-sans">
                                         Remind
@@ -326,7 +326,7 @@
             var result = allTasks.AsEnumerable();
 
             // Only show non-completed tasks that are overdue or due soon
-            result = result.Where(t => t.StatusId != 3); // exclude Done
+            result = result.Where(t => t.StatusId != AppTaskStatus.Done); // exclude Done
 
             if (appliedDelayType == "overdue")
                 result = result.Where(t => t.DueDate < today);
@@ -349,7 +349,7 @@
             }
 
             if (appliedPriority > 0)
-                result = result.Where(t => t.PriorityId == appliedPriority);
+                result = result.Where(t => (int)t.PriorityId == appliedPriority);
 
             return result.OrderBy(t => t.Title).ThenBy(t => t.DueDate);
         }
@@ -388,10 +388,10 @@
     private void ComputeSummary()
     {
         var today = DateTime.Today;
-        var activeTasks = allTasks.Where(t => t.StatusId != 3).ToList();
+        var activeTasks = allTasks.Where(t => t.StatusId != AppTaskStatus.Done).ToList();
         var overdueTasks = activeTasks.Where(t => t.DueDate < today).ToList();
         overdueCount = overdueTasks.Count;
-        criticalCount = overdueTasks.Count(t => t.PriorityId == 3);
+        criticalCount = overdueTasks.Count(t => t.PriorityId == TaskPriority.High);
         dueSoonCount = activeTasks.Count(t => t.DueDate >= today && t.DueDate <= today.AddDays(3));
         avgDaysOverdue = overdueTasks.Any()
             ? (int)overdueTasks.Average(t => (today - t.DueDate).Days)
@@ -427,8 +427,8 @@
             var daysOver = (DateTime.Today - task.DueDate).Days;
             var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
             var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
-            var priority = task.PriorityId switch { 3 => "High", 2 => "Medium", _ => "Low" };
-            var status = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
+            var priority = task.PriorityId switch { TaskPriority.High => "High", TaskPriority.Medium => "Medium", _ => "Low" };
+            var status = task.StatusId switch { AppTaskStatus.InProgress => "In Progress", AppTaskStatus.Done => "Done", _ => "To Do" };
 
             return new object?[]
             {
@@ -477,8 +477,8 @@
             var daysOver = (DateTime.Today - task.DueDate).Days;
             var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
             var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
-            var priority = task.PriorityId switch { 3 => "High", 2 => "Medium", _ => "Low" };
-            var status = task.StatusId switch { 2 => "In Progress", 3 => "Done", _ => "To Do" };
+            var priority = task.PriorityId switch { TaskPriority.High => "High", TaskPriority.Medium => "Medium", _ => "Low" };
+            var status = task.StatusId switch { AppTaskStatus.InProgress => "In Progress", AppTaskStatus.Done => "Done", _ => "To Do" };
             return new[]
             {
                 task.Title,
