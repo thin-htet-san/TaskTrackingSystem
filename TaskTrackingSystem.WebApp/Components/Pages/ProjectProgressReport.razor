@@ -369,7 +369,7 @@
             {
                 projectTasks = projectTasks.Where(t => t.DueDate.Date < today && t.StatusId != AppTaskStatus.Done).ToList();
             }
-            else if (Enum.TryParse<AppTaskStatus>(filterStatus, out var parsedStatus))
+            else if (filterStatus != "0" && Enum.TryParse<AppTaskStatus>(filterStatus, out var parsedStatus))
             {
                 projectTasks = projectTasks.Where(t => t.StatusId == parsedStatus).ToList();
             }

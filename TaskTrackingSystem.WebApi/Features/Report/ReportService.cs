@@ -178,7 +178,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 .Include(t => t.AssignedToNavigation)
                 .Where(t => t.IsDeleted != true);
 
-            if (statusId.HasValue)
+            if (statusId.HasValue && Convert.ToInt64(statusId.Value) > 0)
                 query = query.Where(t => t.StatusId == statusId.Value);
             if (projectId.HasValue && projectId > 0)
                 query = query.Where(t => t.ProjectId == projectId.Value);
@@ -399,7 +399,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
             if (projectId.HasValue && projectId > 0)
                 query = query.Where(t => t.ProjectId == projectId.Value);
-            if (statusId.HasValue)
+            if (statusId.HasValue && Convert.ToInt64(statusId.Value) > 0)
                 query = query.Where(t => t.StatusId == statusId.Value);
 
             var tasks = await query.ToListAsync();

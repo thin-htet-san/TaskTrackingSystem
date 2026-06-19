@@ -109,17 +109,17 @@
                     <option value="0">All Projects</option>
                     @foreach (var p in allProjects)
                     {
-                        <option value="@p.Id font-sans">@p.Name</option>
+                        <option value="@p.Id">@p.Name</option>
                     }
                 </select>
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1.5 font-sans">Status</label>
                 <select @bind="filterStatusId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all font-sans">
-                    <option value="0 font-sans">All</option>
-                    <option value="1 font-sans">To Do</option>
-                    <option value="2 font-sans">In Progress</option>
-                    <option value="3 font-sans">Done</option>
+                    <option value="0">All</option>
+                    <option value="1">To Do</option>
+                    <option value="2">In Progress</option>
+                    <option value="3">Done</option>
                 </select>
             </div>
             <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm font-sans">
@@ -430,7 +430,14 @@
         var client = ApiClient.CreateClient();
         try
         {
-            var query = $"Report/time-tracking?search={Uri.EscapeDataString(appliedSearch)}&projectId={appliedProjectId}&statusId={appliedStatusId}";
+            var queryParts = new System.Collections.Generic.List<string>();
+            if (!string.IsNullOrWhiteSpace(appliedSearch))
+                queryParts.Add($"search={Uri.EscapeDataString(appliedSearch)}");
+            if (appliedProjectId > 0)
+                queryParts.Add($"projectId={appliedProjectId}");
+            if (appliedStatusId > 0)
+                queryParts.Add($"statusId={appliedStatusId}");
+            var query = "Report/time-tracking" + (queryParts.Count > 0 ? "?" + string.Join("&", queryParts) : "");
             var result = await client.GetFromJsonAsync<Result<TimeTrackingReportDto>>(query, Serialization.CaseInsensitive);
             if (result?.IsSuccess == true && result.Value != null)
             {
