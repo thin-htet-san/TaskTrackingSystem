@@ -143,6 +143,12 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result.Failure(ResultMessages.RoleNotFound(id), 404);
             }
 
+            var usersCount = await _db.Users.CountAsync(u => u.RoleId == id && !u.IsDeleted);
+            if (usersCount > 0)
+            {
+                return Result.Failure($"you can't delete this role because there are {usersCount} users in this role.", 400);
+            }
+
             role.IsDeleted = true;
             role.UpdatedAt = DateTime.UtcNow;
             role.UpdatedBy = currentUserId;

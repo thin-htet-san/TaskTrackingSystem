@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using TaskTrackingSystem.Shared.Models.Menu
+@using TaskTrackingSystem.Shared.Models.User
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
@@ -605,6 +606,7 @@
                IconBgClass="@confirmIconBg"
                IconTextClass="@confirmIconText"
                ButtonClass="@confirmButtonClass"
+               HideCancel="@confirmHideCancel"
                OnConfirm="HandleConfirmAction"
                OnCancel="CloseConfirmDialog" />
 
@@ -624,6 +626,7 @@
 
     // Confirm dialog state
     private bool showConfirmDialog = false;
+    private bool confirmHideCancel = false;
     private string? successMessage;
     private string confirmTitle = "";
     private string confirmMessage = "";
@@ -634,6 +637,7 @@
     private string confirmButtonClass = "";
     private Func<Task>? confirmAction;
     private List<RoleDto> roleList = new();
+    private List<UserDto> userList = new();
 
     // Search state
     private string searchInput = "";
@@ -717,7 +721,11 @@
         var client = ApiClient.CreateClient();
         try
         {
-            roleList = await client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive) ?? new();
+            var rolesTask = client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive);
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+            await Task.WhenAll(rolesTask, usersTask);
+            roleList = rolesTask.Result ?? new();
+            userList = usersTask.Result ?? new();
         }
         catch (Exception ex)
         {
@@ -1106,6 +1114,7 @@
         confirmIconText = "text-rose-500";
         confirmButtonClass = "bg-violet-600 hover:bg-violet-700";
         confirmAction = () => DeleteRole(id);
+        confirmHideCancel = false;
         showConfirmDialog = true;
     }
 
@@ -1119,6 +1128,7 @@
     private void CloseConfirmDialog()
     {
         showConfirmDialog = false;
+        confirmHideCancel = false;
     }
 
     private async Task SaveRole()
@@ -1164,6 +1174,23 @@
 
     private async Task DeleteRole(long id)
     {
+        var usersCount = userList.Count(u => u.RoleId == id);
+        if (usersCount > 0)
+        {
+            confirmTitle = "Cannot Delete Role";
+            confirmMessage = $"you can't delete this role because there are {usersCount} users in this role.";
+            confirmButtonText = "OK";
+            confirmIcon = "alert-circle";
+            confirmIconBg = "bg-rose-50";
+            confirmIconText = "text-rose-500";
+            confirmButtonClass = "bg-rose-600 hover:bg-rose-700";
+            confirmAction = null;
+            confirmHideCancel = true;
+            showConfirmDialog = true;
+            StateHasChanged();
+            return;
+        }
+
         var client = ApiClient.CreateClient();
         try
         {
@@ -1171,7 +1198,17 @@
             var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
             if (res == null || !res.IsSuccess)
             {
-                await JS.InvokeVoidAsync("alert", res?.ErrorMessage ?? "Failed to delete role.");
+                confirmTitle = "Cannot Delete Role";
+                confirmMessage = res?.ErrorMessage ?? "Failed to delete role.";
+                confirmButtonText = "OK";
+                confirmIcon = "alert-circle";
+                confirmIconBg = "bg-rose-50";
+                confirmIconText = "text-rose-500";
+                confirmButtonClass = "bg-rose-600 hover:bg-rose-700";
+                confirmAction = null;
+                confirmHideCancel = true;
+                showConfirmDialog = true;
+                StateHasChanged();
                 return;
             }
             await LoadRoles();
@@ -1182,6 +1219,17 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Delete error: {ex.Message}");
+            confirmTitle = "Error";
+            confirmMessage = $"Delete error: {ex.Message}";
+            confirmButtonText = "OK";
+            confirmIcon = "alert-circle";
+            confirmIconBg = "bg-rose-50";
+            confirmIconText = "text-rose-500";
+            confirmButtonClass = "bg-rose-600 hover:bg-rose-700";
+            confirmAction = null;
+            confirmHideCancel = true;
+            showConfirmDialog = true;
+            StateHasChanged();
         }
     }
 

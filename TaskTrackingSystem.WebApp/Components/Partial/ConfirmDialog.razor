@@ -10,9 +10,12 @@
                 <p class="text-sm mt-2" style="color: var(--text-muted);">@Message</p>
             </div>
             <div class="flex items-center justify-center space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                <button @onclick="OnCancel" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-slate-200 bg-white hover:bg-slate-50" style="color: var(--text-muted);">
-                    Cancel
-                </button>
+                @if (!HideCancel)
+                {
+                    <button @onclick="OnCancel" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-slate-200 bg-white hover:bg-slate-50" style="color: var(--text-muted);">
+                        Cancel
+                    </button>
+                }
                 <button @onclick="OnConfirm" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors" style="background-color: @GetButtonBg();">
                     @ConfirmText
                 </button>
@@ -30,6 +33,7 @@
     [Parameter] public string IconBgClass { get; set; } = "";
     [Parameter] public string IconTextClass { get; set; } = "";
     [Parameter] public string ButtonClass { get; set; } = "";
+    [Parameter] public bool HideCancel { get; set; }
     [Parameter] public EventCallback OnConfirm { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
