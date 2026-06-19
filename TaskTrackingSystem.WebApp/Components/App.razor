@@ -17,12 +17,21 @@
     <script src="firebase-config.js"></script>
     <script src="firebase-messaging.js"></script>
     <script>
-        const brandDark = "#10002B";
-        const brandDarkAlt = "#240046";
-        const brandPrimary = "#5A189A";
-        const brandAccent = "#7B2CBF";
-        const brandLight = "#E0AAFF";
-        const brandMuted = "#9D4EDD";
+        (() => {
+            try {
+                const theme = localStorage.getItem('tts-theme') || 'light';
+                document.documentElement.classList.toggle('dark', theme === 'dark');
+            } catch {
+            }
+        })();
+    </script>
+    <script>
+        const brandDark = "#111827";
+        const brandDarkAlt = "#1F2937";
+        const brandPrimary = "#111827";
+        const brandAccent = "#374151";
+        const brandLight = "#E5E7EB";
+        const brandMuted = "#6B7280";
         
         const semanticRedBg = "#FFE4E6";
         const semanticRedText = "#991B1B";
@@ -30,13 +39,13 @@
         const semanticGreenBg = "#D1FAE5";
         const semanticGreenText = "#065F46";
         
-        const semanticPurpleBg = "#E0AAFF";
-        const semanticPurpleText = "#3C096C";
+        const semanticNeutralBg = "#F3F4F6";
+        const semanticNeutralText = "#374151";
         
         const neutralBg = "#F8F9FA";
         const neutralBorder = "#E5E7EB";
         const neutralMuted = "#6B7280";
-        const neutralDark = "#10002B";
+        const neutralDark = "#111827";
 
         const customGray = {
             50: neutralBg,
@@ -116,40 +125,40 @@
                         900: semanticGreenText
                     },
                     blue: {
-                        50: semanticPurpleBg,
-                        100: semanticPurpleBg,
-                        200: "#C77DFF",
-                        300: "#9D4EDD",
-                        400: "#7B2CBF",
-                        500: semanticPurpleText,
-                        600: semanticPurpleText,
-                        700: semanticPurpleText,
-                        800: semanticPurpleText,
-                        900: semanticPurpleText
+                        50: semanticNeutralBg,
+                        100: semanticNeutralBg,
+                        200: "#E5E7EB",
+                        300: "#D1D5DB",
+                        400: "#9CA3AF",
+                        500: semanticNeutralText,
+                        600: semanticNeutralText,
+                        700: "#1F2937",
+                        800: "#111827",
+                        900: "#111827"
                     },
                     amber: {
-                        50: semanticPurpleBg,
-                        100: semanticPurpleBg,
-                        200: "#C77DFF",
-                        300: "#9D4EDD",
-                        400: "#7B2CBF",
-                        500: semanticPurpleText,
-                        600: semanticPurpleText,
-                        700: semanticPurpleText,
-                        800: semanticPurpleText,
-                        900: semanticPurpleText
+                        50: "#FEF3C7",
+                        100: "#FDE68A",
+                        200: "#FCD34D",
+                        300: "#FBBF24",
+                        400: "#F59E0B",
+                        500: "#B45309",
+                        600: "#92400E",
+                        700: "#78350F",
+                        800: "#78350F",
+                        900: "#78350F"
                     },
                     yellow: {
-                        50: semanticPurpleBg,
-                        100: semanticPurpleBg,
-                        200: "#C77DFF",
-                        300: "#9D4EDD",
-                        400: "#7B2CBF",
-                        500: semanticPurpleText,
-                        600: semanticPurpleText,
-                        700: semanticPurpleText,
-                        800: semanticPurpleText,
-                        900: semanticPurpleText
+                        50: "#FEFCE8",
+                        100: "#FEF3C7",
+                        200: "#FDE68A",
+                        300: "#FCD34D",
+                        400: "#F59E0B",
+                        500: "#B45309",
+                        600: "#92400E",
+                        700: "#78350F",
+                        800: "#78350F",
+                        900: "#78350F"
                     },
                     violet: {
                         50: brandLight,
@@ -192,8 +201,8 @@
                     },
 
                     chart: {
-                        purple: "#5A189A",
-                        teal: "#06B6D4",
+                        purple: "#111827",
+                        teal: "#4B5563",
                         green: "#10B981",
                         neutral: "#E5E7EB"
                     },
@@ -429,6 +438,40 @@
                 initFlatpickr();
             }
         }
+        window.taskKanban = {
+            draggedTaskId: null,
+            setDraggedTask(taskId) {
+                this.draggedTaskId = taskId?.toString() ?? null;
+            },
+            getDraggedTask() {
+                return this.draggedTaskId;
+            },
+            clearDraggedTask() {
+                this.draggedTaskId = null;
+            }
+        };
+        window.themePreference = {
+            apply(theme) {
+                const isDark = theme === 'dark';
+                document.documentElement.classList.toggle('dark', isDark);
+                try {
+                    localStorage.setItem('tts-theme', isDark ? 'dark' : 'light');
+                } catch {
+                }
+                return isDark;
+            },
+            init() {
+                let theme = 'light';
+                try {
+                    theme = localStorage.getItem('tts-theme') || 'light';
+                } catch {
+                }
+                return this.apply(theme);
+            },
+            toggle() {
+                return this.apply(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+            }
+        };
         function downloadFile(filename, contentType, content) {
             const file = new Blob([content], {type: contentType});
             const exportUrl = URL.createObjectURL(file);

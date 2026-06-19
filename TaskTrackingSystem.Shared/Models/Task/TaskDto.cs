@@ -18,8 +18,10 @@ namespace TaskTrackingSystem.Shared.Models.Task
         public long? AssignedTo { get; set; }
         public long? AssignedBy { get; set; }
         public decimal? EstimatedHours { get; set; }
+        public decimal? ActualHours { get; set; }
         public DateTime DueDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
+        public bool IsArchived { get; set; }
     }
 }

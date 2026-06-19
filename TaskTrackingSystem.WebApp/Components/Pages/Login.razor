@@ -16,13 +16,6 @@
                 <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 text-white font-bold text-xl">T</span>
             </div>
             <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900">Sign in to your account</h2>
-            <p class="mt-2 text-center text-sm text-slate-600">
-                Or
-                <a href="/register" class="font-medium text-slate-900 hover:underline">register a new account</a>
-            </p>
-            <p class="mt-2 text-center text-sm text-slate-600">
-                <a href="/reset-password" class="font-medium text-violet-600 hover:underline">reset your password</a>
-            </p>
         </div>
 
         <form method="post" action="/account/login" class="mt-8 space-y-6">
@@ -79,11 +72,20 @@
                 </div>
             }
 
+            <p class="text-center text-sm text-slate-600">
+                Need an account?
+                <a href="/register" class="font-medium text-slate-900 hover:underline">Register</a>
+            </p>
+
             <div>
                 <button type="submit" class="group relative flex w-full justify-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
                     Sign In
                 </button>
             </div>
+
+            <p class="text-center text-sm text-slate-600">
+                <a href="/reset-password" class="font-medium text-slate-900 hover:underline">Reset password</a>
+            </p>
         </form>
     </div>
 </div>

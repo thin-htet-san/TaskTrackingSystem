@@ -38,8 +38,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
                     EstimatedHours = t.EstimatedHours,
+                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    IsArchived = t.IsArchived,
                     CompletedAt = t.TaskHistories
                         .Where(th => th.NewStatusId == AppTaskStatus.Done)
                         .OrderBy(th => th.CreatedAt)
@@ -67,8 +69,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 AssignedTo = task.AssignedTo,
                 AssignedBy = task.AssignedBy,
                 EstimatedHours = task.EstimatedHours,
+                ActualHours = task.ActualHours,
                 DueDate = task.DueDate,
                 CreatedAt = task.CreatedAt ?? DateTime.UtcNow,
+                IsArchived = task.IsArchived,
                 CompletedAt = task.TaskHistories
                     .Where(th => th.NewStatusId == AppTaskStatus.Done)
                     .OrderBy(th => th.CreatedAt)
@@ -114,8 +118,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 AssignedTo = dto.AssignedTo,
                 AssignedBy = dto.AssignedBy,
                 EstimatedHours = dto.EstimatedHours,
+                ActualHours = dto.ActualHours,
                 DueDate = dto.DueDate,
                 IsDeleted = false,
+                IsArchived = false,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = currentUserId
             };
@@ -139,9 +145,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 AssignedTo = task.AssignedTo,
                 AssignedBy = task.AssignedBy,
                 EstimatedHours = task.EstimatedHours,
+                ActualHours = task.ActualHours,
                 DueDate = task.DueDate,
                 CreatedAt = task.CreatedAt ?? DateTime.UtcNow,
-                CompletedAt = null
+                CompletedAt = null,
+                IsArchived = task.IsArchived
             };
 
             return Result<TaskDto>.Success(resultDto, 201);
@@ -154,7 +162,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Result.Failure(ResultMessages.TaskTitleRequired, 400);
             }
 
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
+            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true && !t.IsArchived);
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
             var previousStatusId = task.StatusId;
@@ -172,6 +180,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.AssignedTo = dto.AssignedTo;
             task.AssignedBy = dto.AssignedBy;
             task.EstimatedHours = dto.EstimatedHours;
+            task.ActualHours = dto.ActualHours;
             task.DueDate = dto.DueDate;
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
@@ -206,7 +215,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
         public async Task<Result> SoftDeleteTaskAsync(long id, long currentUserId)
         {
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
+            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true && !t.IsArchived);
             if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
             task.IsDeleted = true;
@@ -238,8 +247,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
                     EstimatedHours = t.EstimatedHours,
+                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    IsArchived = t.IsArchived,
                     CompletedAt = t.TaskHistories
                         .Where(th => th.NewStatusId == AppTaskStatus.Done)
                         .OrderBy(th => th.CreatedAt)
@@ -253,7 +264,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
         public async Task<Result> UpdateTaskStatusAsync(long id, AppTaskStatus statusId, string roleName, long currentUserId)
         {
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
+            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true && !t.IsArchived);
             if (task == null)
             {
                 return Result.Failure(ResultMessages.TaskNotFound(id), 404);
@@ -286,9 +297,50 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result.Success(200);
         }
 
+        public async Task<Result<int>> ArchiveDoneTasksAsync(long? projectId, string roleName, long currentUserId)
+        {
+            if (projectId.HasValue && projectId.Value > 0)
+            {
+                var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId.Value && p.IsDeleted != true);
+                if (!projectExists)
+                {
+                    return Result<int>.Failure(ResultMessages.ProjectNotFound(projectId.Value), 404);
+                }
+
+                if (!await CanAccessProjectAsync(projectId.Value, roleName, currentUserId))
+                {
+                    return Result<int>.Failure("You do not have access to this project.", 403);
+                }
+            }
+
+            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
+                .Where(t => t.StatusId == AppTaskStatus.Done);
+
+            if (projectId.HasValue && projectId.Value > 0)
+            {
+                query = query.Where(t => t.ProjectId == projectId.Value);
+            }
+
+            var tasksToArchive = await query.ToListAsync();
+            foreach (var task in tasksToArchive)
+            {
+                task.IsArchived = true;
+                task.UpdatedAt = DateTime.UtcNow;
+                task.UpdatedBy = currentUserId;
+            }
+
+            if (tasksToArchive.Count > 0)
+            {
+                _db.Tasks.UpdateRange(tasksToArchive);
+                await _db.SaveChangesAsync();
+            }
+
+            return Result<int>.Success(tasksToArchive.Count);
+        }
+
         private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
         {
-            var query = _db.Tasks.Where(t => t.IsDeleted != true);
+            var query = _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
 
             if (IsAdmin(roleName))
             {

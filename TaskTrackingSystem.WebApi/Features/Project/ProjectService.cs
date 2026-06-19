@@ -293,7 +293,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             }
 
             var tasks = await _db.Tasks
-                .Where(t => t.ProjectId == projectId && t.IsDeleted != true)
+                .Where(t => t.ProjectId == projectId && t.IsDeleted != true && !t.IsArchived)
                 .Select(t => new TaskDto
                 {
                     Id = t.Id,
@@ -305,8 +305,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
                     EstimatedHours = t.EstimatedHours,
+                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    IsArchived = t.IsArchived,
                     CompletedAt = t.TaskHistories
                         .Where(th => th.NewStatusId == AppTaskStatus.Done)
                         .OrderBy(th => th.CreatedAt)

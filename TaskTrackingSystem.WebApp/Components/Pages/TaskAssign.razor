@@ -494,7 +494,8 @@
                 PriorityId = SelectedTask.PriorityId,
                 DueDate = SelectedTask.DueDate,
                 AssignedTo = TargetAssigneeId,
-                EstimatedHours = SelectedTask.EstimatedHours
+                EstimatedHours = SelectedTask.EstimatedHours,
+                ActualHours = SelectedTask.ActualHours
             };
 
             var response = await client.PutAsJsonAsync($"Task/{SelectedTask.Id}", dto);

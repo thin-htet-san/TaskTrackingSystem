@@ -278,7 +278,9 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.DueDate).HasColumnType("datetime");
+            entity.Property(e => e.ActualHours).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.EstimatedHours).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.IsArchived).HasDefaultValue(false);
             entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
             entity.Property(e => e.StatusId).HasDefaultValue(AppTaskStatus.Todo);
             entity.Property(e => e.Title).HasMaxLength(200);

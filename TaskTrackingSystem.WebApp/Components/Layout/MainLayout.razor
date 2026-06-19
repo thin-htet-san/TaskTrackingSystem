@@ -3,7 +3,7 @@
 @using System.Security.Claims
 
 <div class="flex h-screen bg-background font-sans text-slate-800 antialiased overflow-hidden">
-    <aside class="flex w-64 flex-col border-r border-slate-900 bg-[#10002B] text-white shrink-0 overflow-hidden">
+    <aside class="flex w-64 flex-col border-r border-slate-800 bg-slate-950 text-white shrink-0 overflow-hidden">
         <div class="flex h-20 items-center px-6">
             <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white">
                 <i data-lucide="flame" class="h-5 w-5 fill-current"></i>
@@ -17,14 +17,14 @@
             <AuthorizeView>
                 <Authorized>
                     <div class="flex items-center rounded-xl p-2 hover:bg-white/10 transition-all">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white font-semibold text-sm shrink-0">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-white font-semibold text-sm shrink-0">
                             @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
                         </span>
                         <div class="ml-3 overflow-hidden flex flex-col">
                             <span class="text-sm font-semibold truncate max-w-[130px] text-white">@context.User.Identity?.Name</span>
                             <form id="logout-form" method="post" action="/account/logout" class="mt-0.5">
                                 <AntiforgeryToken />
-                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all text-[#C77DFF]">
+                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all text-slate-300">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
                                     Sign Out
                                 </button>
@@ -33,7 +33,7 @@
                     </div>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="/login" class="flex items-center justify-center rounded-xl bg-violet-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-violet-700 transition-all">
+                    <a href="/login" class="flex items-center justify-center rounded-xl bg-slate-800 text-white px-4 py-2.5 text-sm font-medium hover:bg-slate-700 transition-all">
                         Sign In
                     </a>
                 </NotAuthorized>
@@ -71,6 +71,9 @@
                     </Authorized>
                 </AuthorizeView>
                 <NotificationBell />
+                <button type="button" @onclick="ToggleTheme" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50" title="Toggle dark mode">
+                    <i data-lucide="@(isDarkMode ? "sun" : "moon")" class="h-4 w-4"></i>
+                </button>
             </div>
         </header>
 
@@ -107,6 +110,7 @@
 
     private bool isAuthorizedPage = true;
     private string dashboardHref = "/dashboard";
+    private bool isDarkMode = false;
 
     private bool IsDashboardPage => 
         string.IsNullOrEmpty(Navigation.ToBaseRelativePath(Navigation.Uri)) || 
@@ -186,6 +190,17 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await JS.InvokeVoidAsync("initIcons");
+        if (firstRender)
+        {
+            isDarkMode = await JS.InvokeAsync<bool>("themePreference.init");
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = await JS.InvokeAsync<bool>("themePreference.toggle");
         await JS.InvokeVoidAsync("initIcons");
     }
 

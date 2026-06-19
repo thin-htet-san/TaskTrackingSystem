@@ -95,7 +95,7 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             foreach (var project in activeProjects)
             {
                 var tasks = await _db.Tasks
-                    .Where(t => t.ProjectId == project.Id && t.IsDeleted != true)
+                    .Where(t => t.ProjectId == project.Id && t.IsDeleted != true && !t.IsArchived)
                     .ToListAsync();
 
                 int totalTasks = tasks.Count;
@@ -117,7 +117,7 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
 
         private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
         {
-            var query = _db.Tasks.Where(t => t.IsDeleted != true);
+            var query = _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
 
             if (IsAdmin(roleName))
             {

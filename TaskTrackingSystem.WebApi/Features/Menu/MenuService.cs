@@ -198,7 +198,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 return "0";
             }
 
-            var latestMenuChange = await _db.RoleMenus
+            var latestRoleMenuChange = await _db.RoleMenus
                 .Where(rm => rm.RoleId == roleId && !rm.IsDeleted)
                 .Select(rm => (DateTime?)(rm.UpdatedAt ?? rm.CreatedAt))
                 .MaxAsync();
@@ -208,10 +208,18 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 .Select(rp => (DateTime?)(rp.UpdatedAt ?? rp.CreatedAt))
                 .MaxAsync();
 
-            var latest = latestMenuChange ?? latestPermissionChange;
+            var latestMenuMetadataChange = await _db.Menus
+                .Select(m => (DateTime?)(m.UpdatedAt ?? m.CreatedAt))
+                .MaxAsync();
+
+            var latest = latestRoleMenuChange ?? latestPermissionChange;
             if (latestPermissionChange.HasValue && (!latest.HasValue || latestPermissionChange.Value > latest.Value))
             {
                 latest = latestPermissionChange;
+            }
+            if (latestMenuMetadataChange.HasValue && (!latest.HasValue || latestMenuMetadataChange.Value > latest.Value))
+            {
+                latest = latestMenuMetadataChange;
             }
 
             return latest.HasValue ? latest.Value.Ticks.ToString() : "0";
