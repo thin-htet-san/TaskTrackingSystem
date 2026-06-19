@@ -24,8 +24,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Menu> Menus { get; set; }
 
-    public virtual DbSet<DashboardWidget> DashboardWidgets { get; set; }
-
     public virtual DbSet<Notification> Notifications { get; set; }
 
     public virtual DbSet<Permission> Permissions { get; set; }
@@ -38,8 +36,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<RoleMenu> RoleMenus { get; set; }
 
-    public virtual DbSet<RoleDashboardWidget> RoleDashboardWidgets { get; set; }
-
     public virtual DbSet<RolePermission> RolePermissions { get; set; }
 
     public virtual DbSet<Task> Tasks { get; set; }
@@ -47,8 +43,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<TaskHistory> TaskHistories { get; set; }
 
     public virtual DbSet<TimeLog> TimeLogs { get; set; }
-
-    public virtual DbSet<UserDashboardLayout> UserDashboardLayouts { get; set; }
 
     public virtual DbSet<UserDevice> UserDevices { get; set; }
 
@@ -140,29 +134,6 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.ParentMenu).WithMany(p => p.InverseParentMenu)
                 .HasForeignKey(d => d.ParentMenuId)
                 .HasConstraintName("FK_Menus_ParentMenu");
-        });
-
-        modelBuilder.Entity<DashboardWidget>(entity =>
-        {
-            entity.HasKey(e => e.WidgetId);
-
-            entity.HasIndex(e => e.WidgetCode, "UQ_DashboardWidgets_WidgetCode").IsUnique();
-
-            entity.Property(e => e.Category).HasMaxLength(50);
-            entity.Property(e => e.ComponentKey).HasMaxLength(100);
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DataSourceKey).HasMaxLength(100);
-            entity.Property(e => e.DefaultHeight).HasDefaultValue(3);
-            entity.Property(e => e.DefaultOrder).HasDefaultValue(0);
-            entity.Property(e => e.DefaultWidth).HasDefaultValue(4);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
-            entity.Property(e => e.WidgetCode).HasMaxLength(50);
-            entity.Property(e => e.WidgetName).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Notification>(entity =>
@@ -289,39 +260,6 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK_RoleMenus_Roles");
         });
 
-        modelBuilder.Entity<RoleDashboardWidget>(entity =>
-        {
-            entity.HasKey(e => e.RoleDashboardWidgetId);
-
-            entity.HasIndex(e => e.RoleId, "IX_RoleDashboardWidgets_RoleId");
-            entity.HasIndex(e => e.WidgetId, "IX_RoleDashboardWidgets_WidgetId");
-            entity.HasIndex(e => new { e.RoleId, e.WidgetId }, "UQ_RoleDashboardWidgets_Role_Widget").IsUnique();
-
-            entity.Property(e => e.CanConfigure).HasDefaultValue(false);
-            entity.Property(e => e.CanView).HasDefaultValue(true);
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DefaultGridX).HasDefaultValue(0);
-            entity.Property(e => e.DefaultGridY).HasDefaultValue(0);
-            entity.Property(e => e.DefaultHeight).HasDefaultValue(3);
-            entity.Property(e => e.DefaultSortOrder).HasDefaultValue(0);
-            entity.Property(e => e.DefaultWidth).HasDefaultValue(4);
-            entity.Property(e => e.IsDefaultVisible).HasDefaultValue(true);
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
-
-            entity.HasOne(d => d.Role).WithMany(p => p.RoleDashboardWidgets)
-                .HasForeignKey(d => d.RoleId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK_RoleDashboardWidgets_Roles");
-
-            entity.HasOne(d => d.Widget).WithMany(p => p.RoleDashboardWidgets)
-                .HasForeignKey(d => d.WidgetId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK_RoleDashboardWidgets_DashboardWidgets");
-        });
-
         modelBuilder.Entity<RolePermission>(entity =>
         {
             entity.HasIndex(e => e.PermissionId, "IX_RolePermissions_PermissionId");
@@ -419,37 +357,6 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_TimeLogs_Users");
-        });
-
-        modelBuilder.Entity<UserDashboardLayout>(entity =>
-        {
-            entity.HasKey(e => e.UserDashboardLayoutId);
-
-            entity.HasIndex(e => e.UserId, "IX_UserDashboardLayouts_UserId");
-            entity.HasIndex(e => e.WidgetId, "IX_UserDashboardLayouts_WidgetId");
-            entity.HasIndex(e => new { e.UserId, e.WidgetId }, "UQ_UserDashboardLayouts_User_Widget").IsUnique();
-
-            entity.Property(e => e.ConfigJson).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.Height).HasDefaultValue(3);
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
-            entity.Property(e => e.IsHidden).HasDefaultValue(false);
-            entity.Property(e => e.IsPinned).HasDefaultValue(false);
-            entity.Property(e => e.SortOrder).HasDefaultValue(0);
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
-            entity.Property(e => e.Width).HasDefaultValue(4);
-
-            entity.HasOne(d => d.User).WithMany(p => p.UserDashboardLayouts)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK_UserDashboardLayouts_Users");
-
-            entity.HasOne(d => d.Widget).WithMany(p => p.UserDashboardLayouts)
-                .HasForeignKey(d => d.WidgetId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK_UserDashboardLayouts_DashboardWidgets");
         });
 
         modelBuilder.Entity<User>(entity =>

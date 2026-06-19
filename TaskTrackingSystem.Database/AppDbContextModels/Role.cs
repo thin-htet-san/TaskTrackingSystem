@@ -25,7 +25,5 @@ public partial class Role
 
     public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 
-    public virtual ICollection<RoleDashboardWidget> RoleDashboardWidgets { get; set; } = new List<RoleDashboardWidget>();
-
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

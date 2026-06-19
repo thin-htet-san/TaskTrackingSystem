@@ -53,5 +53,4 @@ public partial class User
 
     public virtual ICollection<TimeLog> TimeLogs { get; set; } = new List<TimeLog>();
 
-    public virtual ICollection<UserDashboardLayout> UserDashboardLayouts { get; set; } = new List<UserDashboardLayout>();
 }

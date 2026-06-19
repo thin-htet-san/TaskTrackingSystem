@@ -3,12 +3,11 @@
 @page "/dashboard"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using System.Security.Claims
 @using TaskTrackingSystem.Shared.Models.Task
 @using TaskTrackingSystem.Shared.Models.User
 @using TaskTrackingSystem.Shared.Models.Project
 @using TaskTrackingSystem.Shared.Models.Dashboard
-@using TaskTrackingSystem.Shared.Models.AuditLog
+@using TaskTrackingSystem.Shared.Enums
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
@@ -16,268 +15,251 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>Dashboard</PageTitle>
+<PageTitle>Overview</PageTitle>
 
-@if (isLoading)
-{
-    <div class="flex items-center justify-center py-40">
-        <div class="flex flex-col items-center space-y-4 text-violet-600">
-            <svg class="h-10 w-10 animate-spin" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            <span class="text-sm font-semibold text-slate-500">Loading dashboard widgets...</span>
-        </div>
-    </div>
-}
-else
-{
-    <div class="space-y-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+<div class="space-y-8 text-slate-900">
+    <div class="rounded-[32px] border border-slate-200 bg-white px-8 py-8 text-slate-900 shadow-sm shadow-slate-200/60">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-wider text-violet-600">Dashboard</p>
-                <h2 class="mt-1 text-3xl font-bold tracking-tight text-slate-900">Welcome back, @currentUserName</h2>
-                <p class="mt-1 text-slate-500">This dashboard is now driven only by role-aware widgets.</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.22em] text-violet-600">Overview</p>
+                <h2 class="mt-2 text-4xl font-bold tracking-tight text-slate-900">Welcome back, @currentUserName</h2>
+                <p class="mt-3 max-w-2xl text-sm text-slate-600">
+                    Projects, tasks, and team activity at a glance.
+                </p>
             </div>
             <div class="flex flex-wrap gap-3">
                 @if (canCreateTask)
                 {
-                    <a href="/tasks" class="inline-flex items-center rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-700">
+                    <a href="/tasks/all" class="inline-flex items-center rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/20 transition-colors hover:bg-violet-500">
                         <i data-lucide="plus" class="mr-2 h-4 w-4"></i>
                         New Task
                     </a>
                 }
-                <a href="/reports/tasks" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                <a href="/reports/tasks" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
                     <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
                     Reports
                 </a>
-                @if (currentUserRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-                {
-                    <a href="/widget-setup" class="inline-flex items-center rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100">
-                        <i data-lucide="layout-grid" class="mr-2 h-4 w-4"></i>
-                        Widget Setup
-                    </a>
-                }
             </div>
         </div>
+    </div>
 
-        @if (!string.IsNullOrWhiteSpace(widgetLayoutMessage))
-        {
-            <div class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-                <p class="text-sm font-medium text-emerald-700">@widgetLayoutMessage</p>
-            </div>
-        }
-
-        <div class="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-            <div class="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-5 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-violet-600">Widgets</p>
-                    <h3 class="mt-1 text-lg font-bold text-slate-900">Live role-based dashboard</h3>
-                    <p class="mt-1 text-sm text-slate-500">Drag to reorder when editing is enabled.</p>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-[24px] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
+            <div class="flex items-center justify-between">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500 text-white">
+                    <i data-lucide="users" class="h-5 w-5"></i>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button @onclick="ToggleWidgetEditMode" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
-                        <i data-lucide="grip-vertical" class="mr-2 h-4 w-4"></i>
-                        @(isWidgetEditMode ? "Done editing" : "Reorder widgets")
-                    </button>
-                    @if (isWidgetEditMode)
+                <span class="text-sm font-semibold text-emerald-500">+12 this month</span>
+            </div>
+            <p class="mt-5 text-4xl font-bold">@summary.TotalUsers</p>
+            <p class="mt-2 text-sm text-slate-500">Total users</p>
+        </div>
+
+        <div class="rounded-[24px] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
+            <div class="flex items-center justify-between">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white">
+                    <i data-lucide="folder-kanban" class="h-5 w-5"></i>
+                </div>
+                <span class="text-sm font-semibold text-emerald-500">+3 this month</span>
+            </div>
+            <p class="mt-5 text-4xl font-bold">@summary.ActiveProjectsCount</p>
+            <p class="mt-2 text-sm text-slate-500">Total projects</p>
+        </div>
+
+        <div class="rounded-[24px] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
+            <div class="flex items-center justify-between">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white">
+                    <i data-lucide="check-square" class="h-5 w-5"></i>
+                </div>
+                <span class="text-sm font-semibold text-emerald-500">+24 this week</span>
+            </div>
+            <p class="mt-5 text-4xl font-bold">@ActiveTasksCount</p>
+            <p class="mt-2 text-sm text-slate-500">Active tasks</p>
+        </div>
+
+        <div class="rounded-[24px] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
+            <div class="flex items-center justify-between">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white">
+                    <i data-lucide="trending-up" class="h-5 w-5"></i>
+                </div>
+                <span class="text-sm font-semibold text-emerald-500">+5% vs last mo</span>
+            </div>
+            <p class="mt-5 text-4xl font-bold">@CompletionRate%</p>
+            <p class="mt-2 text-sm text-slate-500">Completion rate</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,1fr)]">
+        <div class="rounded-[28px] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Project Activity</h3>
+                    <p class="mt-1 text-sm text-slate-500">Created and completed tasks over the last six months.</p>
+                </div>
+                <div class="text-sm text-slate-500">@ActivityRangeLabel</div>
+            </div>
+
+            <div class="mt-6">
+                <svg viewBox="0 0 760 340" class="h-[340px] w-full">
+                    <defs>
+                        <linearGradient id="activityFill" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.18" />
+                            <stop offset="100%" stop-color="#7c3aed" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+
+                    @for (var i = 0; i < 5; i++)
                     {
-                        <button @onclick="SaveWidgetLayoutAsync" disabled="@isSavingWidgetLayout" class="inline-flex items-center rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
-                            <i data-lucide="save" class="mr-2 h-4 w-4"></i>
-                            @(isSavingWidgetLayout ? "Saving..." : "Save layout")
-                        </button>
+                        var y = 60 + (i * 55);
+                        <line x1="48" y1="@y" x2="730" y2="@y" stroke="#e2e8f0" stroke-width="1" />
+                    }
+
+                    @for (var i = 0; i < 6; i++)
+                    {
+                        var x = 60 + (i * 125);
+                        <line x1="@x" y1="40" x2="@x" y2="280" stroke="#e2e8f0" stroke-width="1" />
+                    }
+
+                    <path d="@ActivityAreaPath" fill="url(#activityFill)" />
+                    <path d="@ActivityLinePath" fill="none" stroke="#7c3aed" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+
+                    @foreach (var point in ActivityPoints)
+                    {
+                        <circle cx="@point.X" cy="@point.Y" r="5" fill="#7c3aed" stroke="#ddd6fe" stroke-width="3" />
+                    }
+
+                </svg>
+
+                <div class="mt-4 flex items-center justify-between text-xs text-slate-500">
+                    @foreach (var label in ActivityLabels)
+                    {
+                        <span class="w-1/6 text-center">@label</span>
                     }
                 </div>
             </div>
+        </div>
 
-            <div class="p-6">
-                @if (dashboardWidgets.Any())
-                {
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        @foreach (var widget in dashboardWidgets)
+        <div class="rounded-[28px] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60">
+            <h3 class="text-2xl font-bold text-slate-900">Task Distribution</h3>
+            <p class="mt-1 text-sm text-slate-500">@TotalTasksCount total tasks</p>
+
+            <div class="mt-8 flex justify-center">
+                <div class="relative">
+                    <svg viewBox="0 0 220 220" class="h-56 w-56">
+                        <circle cx="110" cy="110" r="74" fill="none" stroke="#e5e7eb" stroke-width="24" />
+                        @foreach (var slice in DonutSlices)
                         {
-                            <div draggable="@isWidgetEditMode"
-                                 @ondragstart="() => BeginWidgetDrag(widget.WidgetId)"
-                                 @ondrop="() => DropWidget(widget.WidgetId)"
-                                 @ondragover:preventDefault="true"
-                                 class="rounded-2xl border border-slate-100 bg-slate-50/70 p-5 shadow-sm transition-all @(GetWidgetCardClasses(widget))">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="min-w-0">
-                                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">@DisplayWidgetCategory(widget.Category)</p>
-                                        <h4 class="mt-1 truncate text-base font-bold text-slate-900">@widget.WidgetName</h4>
-                                        <p class="mt-1 line-clamp-2 text-sm text-slate-500">@(widget.Description ?? "No description provided.")</p>
-                                    </div>
-                                    <div class="flex flex-col items-end gap-2">
-                                        <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-500">@widget.ComponentKey</span>
-                                        @if (widget.CanConfigure)
-                                        {
-                                            <span class="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700">Configurable</span>
-                                        }
-                                    </div>
-                                </div>
-
-                                <div class="mt-4 flex flex-wrap gap-2">
-                                    <span class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold text-slate-500">Size @widget.Width x @widget.Height</span>
-                                    <span class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold text-slate-500">Order @widget.SortOrder</span>
-                                    @if (widget.IsPinned)
-                                    {
-                                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-semibold text-emerald-700">Pinned</span>
-                                    }
-                                    @if (widget.IsHidden)
-                                    {
-                                        <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold text-slate-500">Hidden</span>
-                                    }
-                                </div>
-
-                                <div class="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-                                    @if (widget.ComponentKey == "GreetingBanner")
-                                    {
-                                        <div class="flex items-center justify-between gap-4">
-                                            <div>
-                                                <p class="text-sm font-semibold text-slate-900">Good @GetGreetingPeriod(), @currentUserName</p>
-                                                <p class="mt-1 text-xs text-slate-500">@DateTime.Now.ToString("dddd, MMMM d, yyyy h:mm tt")</p>
-                                            </div>
-                                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 font-bold text-violet-700">
-                                                @(currentUserName.Length > 0 ? currentUserName[0].ToString().ToUpper() : "U")
-                                            </div>
-                                        </div>
-                                    }
-                                    else if (widget.ComponentKey == "KpiCards")
-                                    {
-                                        <div class="grid grid-cols-3 gap-3">
-                                            <div class="rounded-xl bg-violet-50 p-3">
-                                                <p class="text-[10px] font-semibold uppercase text-violet-600">Users</p>
-                                                <p class="mt-1 text-2xl font-bold text-violet-900">@summary.TotalUsers</p>
-                                            </div>
-                                            <div class="rounded-xl bg-emerald-50 p-3">
-                                                <p class="text-[10px] font-semibold uppercase text-emerald-600">Projects</p>
-                                                <p class="mt-1 text-2xl font-bold text-emerald-900">@summary.ActiveProjectsCount</p>
-                                            </div>
-                                            <div class="rounded-xl bg-blue-50 p-3">
-                                                <p class="text-[10px] font-semibold uppercase text-blue-600">Tasks</p>
-                                                <p class="mt-1 text-2xl font-bold text-blue-900">@summary.PendingTasksCount</p>
-                                            </div>
-                                        </div>
-                                    }
-                                    else if (widget.ComponentKey == "ProjectProgressChart")
-                                    {
-                                        <div class="space-y-3">
-                                            @foreach (var pp in projectProgress.Take(3))
-                                            {
-                                                <div>
-                                                    <div class="flex items-center justify-between text-sm">
-                                                        <span class="truncate pr-4 font-semibold text-slate-800">@pp.ProjectName</span>
-                                                        <span class="text-slate-500">@pp.CompletedTasksCount / @pp.TotalTasksCount</span>
-                                                    </div>
-                                                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                                                        <div class="h-full rounded-full bg-violet-600" style="width: @pp.CompletionPercentage%"></div>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else if (widget.ComponentKey == "AuditFeed")
-                                    {
-                                        @if (auditLogs.Any())
-                                        {
-                                            <div class="space-y-2">
-                                                @foreach (var log in auditLogs.Take(5))
-                                                {
-                                                    <div class="flex items-start justify-between gap-3 rounded-xl bg-slate-50 p-3">
-                                                        <div class="min-w-0">
-                                                            <p class="truncate text-sm font-semibold text-slate-800">@log.Action @log.Module</p>
-                                                            <p class="line-clamp-1 text-xs text-slate-500">@log.Description</p>
-                                                        </div>
-                                                        <span class="shrink-0 text-[10px] text-slate-400">@log.CreatedAt.ToString("MMM d, HH:mm")</span>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <p class="text-sm text-slate-500">No audit logs available yet.</p>
-                                        }
-                                    }
-                                    else if (widget.ComponentKey == "TimelineChart")
-                                    {
-                                        <div class="space-y-2">
-                                            @foreach (var project in projectsList.OrderBy(p => p.StartDate).Take(3))
-                                            {
-                                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                                    <div class="flex items-center justify-between gap-2">
-                                                        <p class="truncate text-sm font-semibold text-slate-800">@project.Name</p>
-                                                        <span class="text-[10px] text-slate-500">@DisplayFormats.Date(project.StartDate) - @DisplayFormats.Date(project.EndDate)</span>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else if (widget.ComponentKey == "TaskTray")
-                                    {
-                                        <div class="space-y-2">
-                                            @foreach (var task in taskList.Where(t => t.StatusId != AppTaskStatus.Done).OrderBy(t => t.DueDate).Take(4))
-                                            {
-                                                <div class="rounded-xl bg-slate-50 p-3">
-                                                    <p class="truncate text-sm font-semibold text-slate-800">@task.Title</p>
-                                                    <p class="mt-1 text-xs text-slate-500">Due @task.DueDate.ToString("MMM d")</p>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else if (widget.ComponentKey == "WorkloadChart")
-                                    {
-                                        <div class="space-y-3">
-                                            @foreach (var team in GetTeamWorkload())
-                                            {
-                                                <div>
-                                                    <div class="flex items-center justify-between text-sm">
-                                                        <span class="font-semibold text-slate-800">@team.Name</span>
-                                                        <span class="text-slate-500">@team.TaskCount tasks</span>
-                                                    </div>
-                                                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                                                        <div class="h-full rounded-full bg-emerald-500" style="width: @team.BarWidth%"></div>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <p class="text-sm text-slate-500">Widget preview for <span class="font-semibold text-slate-900">@widget.ComponentKey</span> is not configured yet.</p>
-                                    }
-                                </div>
-                            </div>
+                            <circle cx="110" cy="110" r="74"
+                                    fill="none"
+                                    stroke="@slice.Color"
+                                    stroke-width="24"
+                                    stroke-linecap="round"
+                                    stroke-dasharray="@slice.DashArray"
+                                    stroke-dashoffset="@slice.DashOffset"
+                                    transform="rotate(-90 110 110)" />
                         }
+                    </svg>
+                    <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                        <div class="text-3xl font-bold text-slate-900">@TotalTasksCount</div>
+                        <div class="text-xs text-slate-500">tasks</div>
                     </div>
-                }
-                else
+                </div>
+            </div>
+
+            <div class="mt-3 space-y-3">
+                @foreach (var item in DistributionLegend)
                 {
-                    <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
-                        <p class="text-sm font-semibold text-slate-700">No widgets available for your role</p>
-                        <p class="mt-1 text-sm text-slate-500">Ask an administrator to enable widgets for this role.</p>
+                    <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <span class="h-3 w-3 rounded-full" style="background-color: @item.Color"></span>
+                            <span class="text-sm text-slate-600">@item.Label</span>
+                        </div>
+                        <span class="text-sm font-semibold text-slate-900">@item.Count</span>
                     </div>
                 }
             </div>
         </div>
     </div>
-}
+
+    <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div class="rounded-[28px] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60 xl:col-span-2">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900">Recent Projects</h3>
+                    <p class="mt-1 text-sm text-slate-500">What the team is working on right now.</p>
+                </div>
+            </div>
+
+            <div class="mt-5 space-y-3">
+                @foreach (var project in projectsList.OrderByDescending(p => p.CreatedAt).Take(4))
+                {
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-slate-900">@project.Name</p>
+                                <p class="mt-1 text-xs text-slate-500">@DisplayFormats.Date(project.StartDate) to @DisplayFormats.Date(project.EndDate)</p>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-600">@TaskCountForProject(project.Id) tasks</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="rounded-[28px] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60">
+            <h3 class="text-xl font-bold text-slate-900">Team Snapshot</h3>
+            <p class="mt-1 text-sm text-slate-500">People with the most assigned work.</p>
+
+            <div class="mt-5 space-y-4">
+                @foreach (var person in TeamSnapshot)
+                {
+                    <div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-semibold text-slate-900">@person.Name</span>
+                            <span class="text-slate-500">@person.Count tasks</span>
+                        </div>
+                        <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                            <div class="h-full rounded-full bg-emerald-500" style="width: @person.BarWidth%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <a href="/users" class="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+                View team
+            </a>
+        </div>
+    </div>
+</div>
 
 @code {
-    private bool isLoading = true;
     private DashboardSummaryDto summary = new();
+    private List<TaskStatusOverviewDto> taskStatuses = new();
     private List<ProjectProgressDto> projectProgress = new();
-    private List<DashboardWidgetDto> dashboardWidgets = new();
-    private List<AuditLogDto> auditLogs = new();
     private List<TaskDto> taskList = new();
     private List<UserDto> usersList = new();
     private List<ProjectDto> projectsList = new();
     private string currentUserName = "User";
-    private string currentUserRole = "Member";
     private bool canCreateTask = false;
-    private bool isWidgetEditMode = false;
-    private bool isSavingWidgetLayout = false;
-    private long? draggedWidgetId;
-    private string? widgetLayoutMessage;
+
+    private List<string> ActivityLabels => ActivityMonths.Select(m => m.Label).ToList();
+
+    private IReadOnlyList<ActivityMonth> ActivityMonths =>
+        GetActivityMonths();
+
+    private string ActivityRangeLabel =>
+        $"{ActivityMonths.First().Label} - {ActivityMonths.Last().Label}";
+
+    private string ActivityLinePath => BuildActivityPath(ActivityMonths, false);
+    private string ActivityAreaPath => BuildActivityPath(ActivityMonths, true);
+    private IReadOnlyList<ActivityPoint> ActivityPoints => BuildActivityPoints();
+    private IReadOnlyList<DistributionSlice> DonutSlices => BuildDonutSlices();
+    private IReadOnlyList<DistributionItem> DistributionLegend => BuildDistributionLegend();
+    private int TotalTasksCount => taskList.Count;
+    private int ActiveTasksCount => taskList.Count(t => t.StatusId != AppTaskStatus.Done);
+    private int CompletedTasksCount => taskList.Count(t => t.StatusId == AppTaskStatus.Done);
+    private int CompletionRate => TotalTasksCount > 0 ? (int)Math.Round((double)CompletedTasksCount / TotalTasksCount * 100) : 0;
+    private IEnumerable<(string Name, int Count, int BarWidth)> TeamSnapshot => BuildTeamSnapshot();
 
     protected override async Task OnInitializedAsync()
     {
@@ -294,12 +276,16 @@ else
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
             currentUserName = user.Identity?.Name ?? "User";
-            currentUserRole = user.FindFirst(ClaimTypes.Role)?.Value ?? "Member";
-
             var summaryResult = await client.GetFromJsonAsync<Result<DashboardSummaryDto>>("Dashboard/summary", Serialization.CaseInsensitive);
             if (summaryResult?.IsSuccess == true && summaryResult.Value != null)
             {
                 summary = summaryResult.Value;
+            }
+
+            var tasksOverviewResult = await client.GetFromJsonAsync<Result<List<TaskStatusOverviewDto>>>("Dashboard/tasks-overview", Serialization.CaseInsensitive);
+            if (tasksOverviewResult?.IsSuccess == true && tasksOverviewResult.Value != null)
+            {
+                taskStatuses = tasksOverviewResult.Value;
             }
 
             var progressResult = await client.GetFromJsonAsync<Result<List<ProjectProgressDto>>>("Dashboard/project-progress", Serialization.CaseInsensitive);
@@ -308,28 +294,13 @@ else
                 projectProgress = progressResult.Value;
             }
 
-            var widgetsResult = await client.GetFromJsonAsync<Result<List<DashboardWidgetDto>>>("Dashboard/widgets", Serialization.CaseInsensitive);
-            if (widgetsResult?.IsSuccess == true && widgetsResult.Value != null)
-            {
-                dashboardWidgets = widgetsResult.Value;
-            }
-
-            if (user.IsInRole("Admin"))
-            {
-                auditLogs = await client.GetFromJsonAsync<List<AuditLogDto>>("AuditLog", Serialization.CaseInsensitive) ?? new();
-            }
-
             taskList = await client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive) ?? new();
             usersList = await client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive) ?? new();
             projectsList = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Dashboard widgets load error: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
+            Console.WriteLine($"Dashboard load error: {ex.Message}");
         }
     }
 
@@ -338,141 +309,166 @@ else
         await JS.InvokeVoidAsync("initIcons");
     }
 
-    private string DisplayWidgetCategory(string? category) =>
-        string.IsNullOrWhiteSpace(category) ? "General" : category;
+    private static string GetMonthLabel(DateTime date) => date.ToString("MMM");
 
-    private string GetGreetingPeriod()
+    private IReadOnlyList<ActivityMonth> GetActivityMonths()
     {
-        var hour = DateTime.Now.Hour;
-        if (hour < 12) return "morning";
-        if (hour < 17) return "afternoon";
-        return "evening";
+        var months = new List<ActivityMonth>();
+        var now = DateTime.Today;
+        var start = new DateTime(now.Year, now.Month, 1).AddMonths(-5);
+
+        for (var i = 0; i < 6; i++)
+        {
+            var monthStart = start.AddMonths(i);
+            var nextMonth = monthStart.AddMonths(1);
+            var created = taskList.Count(task => task.CreatedAt >= monthStart && task.CreatedAt < nextMonth);
+            var completed = taskList.Count(task => task.CompletedAt.HasValue && task.CompletedAt.Value >= monthStart && task.CompletedAt.Value < nextMonth);
+            months.Add(new ActivityMonth(GetMonthLabel(monthStart), created, completed));
+        }
+
+        return months;
     }
 
-    private IEnumerable<(string Name, int TaskCount, int BarWidth)> GetTeamWorkload()
+    private string BuildActivityPath(IReadOnlyList<ActivityMonth> months, bool filled)
+    {
+        if (months.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        const double left = 48;
+        const double right = 730;
+        const double top = 48;
+        const double bottom = 280;
+        const double maxValue = 20;
+
+        double X(int i) => left + (i * ((right - left) / (months.Count - 1)));
+        double Y(double value) => bottom - Math.Min(value, maxValue) / maxValue * (bottom - top);
+
+        var values = months.Select(m => (double)m.Created).ToList();
+        var points = new List<string>();
+
+        for (var i = 0; i < months.Count; i++)
+        {
+            points.Add($"{X(i):0},{Y(values[i]):0}");
+        }
+
+        var linePath = $"M {points[0]}";
+        if (points.Count > 1)
+        {
+            for (var i = 1; i < points.Count; i++)
+            {
+                linePath += $" L {points[i]}";
+            }
+        }
+
+        if (!filled)
+        {
+            return linePath;
+        }
+
+        return $"{linePath} L {X(months.Count - 1):0},{bottom:0} L {X(0):0},{bottom:0} Z";
+    }
+
+    private IReadOnlyList<ActivityPoint> BuildActivityPoints()
+    {
+        var points = new List<ActivityPoint>();
+        var months = ActivityMonths;
+        if (months.Count == 0)
+        {
+            return points;
+        }
+
+        const double left = 48;
+        const double right = 730;
+        const double top = 48;
+        const double bottom = 280;
+        var maxValue = Math.Max(months.Max(m => m.Created), 1);
+        double X(int i) => left + (i * ((right - left) / (months.Count - 1)));
+        double Y(double value) => bottom - Math.Min(value, maxValue) / (double)maxValue * (bottom - top);
+
+        for (var i = 0; i < months.Count; i++)
+        {
+            points.Add(new ActivityPoint(X(i), Y(months[i].Created)));
+        }
+
+        return points;
+    }
+
+    private IReadOnlyList<DistributionSlice> BuildDonutSlices()
+    {
+        var colors = new[]
+        {
+            "#10b981",
+            "#8b5cf6",
+            "#06b6d4",
+            "#ef4444"
+        };
+
+        var counts = new[]
+        {
+            CompletedTasksCount,
+            taskStatuses.FirstOrDefault(s => s.StatusId == AppTaskStatus.InProgress)?.TaskCount ?? 0,
+            taskStatuses.FirstOrDefault(s => s.StatusId == AppTaskStatus.Todo)?.TaskCount ?? 0,
+            Math.Max(taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done), 0)
+        };
+
+        var total = counts.Sum();
+        if (total <= 0)
+        {
+            total = 1;
+        }
+
+        var circumference = 2 * Math.PI * 74;
+        var slices = new List<DistributionSlice>();
+        var offset = 0.0;
+        for (var i = 0; i < counts.Length; i++)
+        {
+            var value = counts[i];
+            var fraction = value / (double)total;
+            var dash = $"{circumference * fraction:0.##} {circumference:0.##}";
+            var dashOffset = circumference - (circumference * offset);
+            slices.Add(new DistributionSlice(colors[i], dash, dashOffset));
+            offset += fraction;
+        }
+        return slices;
+    }
+
+    private IReadOnlyList<DistributionItem> BuildDistributionLegend()
+    {
+        return new List<DistributionItem>
+        {
+            new("Completed", CompletedTasksCount, "#10b981"),
+            new("In Progress", taskStatuses.FirstOrDefault(s => s.StatusId == AppTaskStatus.InProgress)?.TaskCount ?? 0, "#8b5cf6"),
+            new("To Do", taskStatuses.FirstOrDefault(s => s.StatusId == AppTaskStatus.Todo)?.TaskCount ?? 0, "#06b6d4"),
+            new("Overdue", taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done), "#ef4444")
+        };
+    }
+
+    private IEnumerable<(string Name, int Count, int BarWidth)> BuildTeamSnapshot()
     {
         var relevantUsers = usersList
             .Where(u => !u.Username.Equals(currentUserName, StringComparison.OrdinalIgnoreCase))
-            .Take(6)
+            .Take(5)
             .ToList();
 
         var maxTasks = Math.Max(taskList.Count, 1);
-        return relevantUsers.Select(user =>
-        {
-            var taskCount = taskList.Count(t => t.AssignedTo == user.Id);
-            var width = Math.Max(10, (int)Math.Round((double)taskCount / maxTasks * 100));
-            return (Name: $"{user.FirstName} {user.LastName}", TaskCount: taskCount, BarWidth: width);
-        });
-    }
-
-    private string GetWidgetCardClasses(DashboardWidgetDto widget)
-    {
-        var classes = new List<string>
-        {
-            "border-slate-100",
-            widget.IsHidden ? "opacity-75 bg-slate-100/70" : "bg-slate-50/70"
-        };
-
-        classes.Add(isWidgetEditMode ? "cursor-grab hover:shadow-md" : "cursor-default");
-
-        if (draggedWidgetId == widget.WidgetId)
-        {
-            classes.Add("ring-2 ring-violet-300");
-        }
-
-        return string.Join(" ", classes);
-    }
-
-    private void ToggleWidgetEditMode()
-    {
-        isWidgetEditMode = !isWidgetEditMode;
-        widgetLayoutMessage = null;
-        draggedWidgetId = null;
-    }
-
-    private void BeginWidgetDrag(long widgetId)
-    {
-        if (!isWidgetEditMode)
-        {
-            return;
-        }
-
-        draggedWidgetId = widgetId;
-    }
-
-    private void DropWidget(long targetWidgetId)
-    {
-        if (!isWidgetEditMode || draggedWidgetId == null || draggedWidgetId == targetWidgetId)
-        {
-            draggedWidgetId = null;
-            return;
-        }
-
-        var fromIndex = dashboardWidgets.FindIndex(widget => widget.WidgetId == draggedWidgetId.Value);
-        var toIndex = dashboardWidgets.FindIndex(widget => widget.WidgetId == targetWidgetId);
-        if (fromIndex < 0 || toIndex < 0)
-        {
-            draggedWidgetId = null;
-            return;
-        }
-
-        var moved = dashboardWidgets[fromIndex];
-        dashboardWidgets.RemoveAt(fromIndex);
-        if (fromIndex < toIndex)
-        {
-            toIndex--;
-        }
-        dashboardWidgets.Insert(toIndex, moved);
-        draggedWidgetId = null;
-    }
-
-    private async Task SaveWidgetLayoutAsync()
-    {
-        if (isSavingWidgetLayout)
-        {
-            return;
-        }
-
-        isSavingWidgetLayout = true;
-        widgetLayoutMessage = null;
-
-        try
-        {
-            var client = ApiClient.CreateClient();
-            var request = new DashboardWidgetLayoutSaveRequestDto
+        return relevantUsers
+            .Select(user =>
             {
-                Widgets = dashboardWidgets.Select((widget, index) => new DashboardWidgetLayoutItemDto
-                {
-                    WidgetId = widget.WidgetId,
-                    GridX = 0,
-                    GridY = index,
-                    Width = widget.Width > 0 ? widget.Width : widget.DefaultWidth,
-                    Height = widget.Height > 0 ? widget.Height : widget.DefaultHeight,
-                    SortOrder = index,
-                    IsHidden = widget.IsHidden,
-                    IsPinned = widget.IsPinned,
-                    ConfigJson = widget.ConfigJson
-                }).ToList()
-            };
-
-            var response = await client.PutAsJsonAsync("Dashboard/widgets/layout", request);
-            if (response.IsSuccessStatusCode)
-            {
-                widgetLayoutMessage = "Widget layout saved.";
-                isWidgetEditMode = false;
-            }
-            else
-            {
-                widgetLayoutMessage = $"Failed to save layout. {(int)response.StatusCode} {response.ReasonPhrase}";
-            }
-        }
-        catch (Exception ex)
-        {
-            widgetLayoutMessage = $"Failed to save layout: {ex.Message}";
-        }
-        finally
-        {
-            isSavingWidgetLayout = false;
-        }
+                var count = taskList.Count(task => task.AssignedTo == user.Id);
+                var barWidth = Math.Max(10, (int)Math.Round((double)count / maxTasks * 100));
+                return (Name: $"{user.FirstName} {user.LastName}", Count: count, BarWidth: barWidth);
+            })
+            .OrderByDescending(item => item.Count)
+            .ToList();
     }
+
+    private int TaskCountForProject(long projectId) =>
+        taskList.Count(task => task.ProjectId == projectId);
+
+    private readonly record struct ActivityMonth(string Label, int Created, int Completed);
+    private readonly record struct ActivityPoint(double X, double Y);
+    private readonly record struct DistributionSlice(string Color, string DashArray, double DashOffset);
+    private readonly record struct DistributionItem(string Label, int Count, string Color);
 }
