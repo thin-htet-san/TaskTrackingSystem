@@ -519,15 +519,20 @@
                 });
             }
         }
-        // Run once loaded
-        window.addEventListener('DOMContentLoaded', () => {
+        function refreshClientEnhancements() {
+            if (window.themePreference && typeof window.themePreference.init === 'function') {
+                window.themePreference.init();
+            }
             initIcons();
             initFlatpickr();
+        }
+        // Run once loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshClientEnhancements();
         });
         // Blazor enhanced page updates trigger
         Blazor.addEventListener('enhancedload', () => {
-            initIcons();
-            initFlatpickr();
+            refreshClientEnhancements();
         });
     </script>
 </body>
