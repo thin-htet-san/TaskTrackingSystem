@@ -1,0 +1,34 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IJSRuntime JS
+
+<button type="button"
+        @onclick="ToggleTheme"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400"
+        title="@ButtonTitle"
+        aria-label="@ButtonTitle"
+        aria-pressed="@isDarkMode.ToString().ToLowerInvariant()">
+    <i data-lucide="@(isDarkMode ? "sun" : "moon")" class="h-4 w-4"></i>
+</button>
+
+@code {
+    private bool isDarkMode;
+
+    private string ButtonTitle => isDarkMode ? "Switch to light mode" : "Switch to dark mode";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isDarkMode = await JS.InvokeAsync<bool>("themePreference.init");
+            StateHasChanged();
+        }
+
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = await JS.InvokeAsync<bool>("themePreference.toggle");
+        await JS.InvokeVoidAsync("initIcons");
+    }
+}

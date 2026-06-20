@@ -71,9 +71,7 @@
                     </Authorized>
                 </AuthorizeView>
                 <NotificationBell />
-                <button type="button" @onclick="ToggleTheme" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50" title="Toggle dark mode">
-                    <i data-lucide="@(isDarkMode ? "sun" : "moon")" class="h-4 w-4"></i>
-                </button>
+                <ThemeToggle />
             </div>
         </header>
 
@@ -110,7 +108,6 @@
 
     private bool isAuthorizedPage = true;
     private string dashboardHref = "/dashboard";
-    private bool isDarkMode = false;
 
     private bool IsDashboardPage => 
         string.IsNullOrEmpty(Navigation.ToBaseRelativePath(Navigation.Uri)) || 
@@ -190,17 +187,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await JS.InvokeVoidAsync("initIcons");
-        if (firstRender)
-        {
-            isDarkMode = await JS.InvokeAsync<bool>("themePreference.init");
-            StateHasChanged();
-        }
-    }
-
-    private async Task ToggleTheme()
-    {
-        isDarkMode = await JS.InvokeAsync<bool>("themePreference.toggle");
         await JS.InvokeVoidAsync("initIcons");
     }
 
