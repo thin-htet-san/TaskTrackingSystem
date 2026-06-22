@@ -1,5 +1,6 @@
 @page "/reports/tasks"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared
 @using TaskTrackingSystem.Shared.Models.Report
 @using TaskTrackingSystem.Shared.Enums
 @using TaskTrackingSystem.Shared.Models.Project
@@ -301,12 +302,12 @@
                 </table>
 
                 <!-- Pagination -->
-                <Pagination CurrentPage="currentPage"
-                            TotalPages="TotalPages"
-                            PageSize="pageSize"
-                            TotalCount="FilteredList.Count()"
-                            OnPageChanged="HandlePageChanged"
-                            OnPageSizeChanged="HandlePageSizeChanged" />
+                        <Pagination CurrentPage="currentPage"
+                                     TotalPages="TotalPages"
+                                     PageSize="pageSize"
+                                     TotalCount="taskReportPage?.TotalCount ?? 0"
+                                     OnPageChanged="HandlePageChanged"
+                                     OnPageSizeChanged="HandlePageSizeChanged" />
             </div>
         }
     }
@@ -316,6 +317,7 @@
     private bool isLoading = true;
     private bool isChartView = false;
     private List<TaskReportDto> taskReports = new();
+    private PagedResult<TaskReportDto>? taskReportPage;
     private List<ProjectDto> projects = new();
 
     // Filters
@@ -364,19 +366,24 @@
         await LoadTaskReport();
     }
 
-    private void HandlePageChanged(int page) { currentPage = page; }
-    private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
+    private async Task HandlePageChanged(int page)
+    {
+        currentPage = page;
+        await LoadTaskReport();
+    }
 
-    private IEnumerable<TaskReportDto> FilteredList =>
-        string.IsNullOrWhiteSpace(searchQuery)
-            ? taskReports
-            : taskReports.Where(t => t.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || t.ProjectName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(t => t.Title);
+    private async Task HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+        await LoadTaskReport();
+    }
 
-    private int TotalPages => (int)Math.Ceiling((double)FilteredList.Count() / pageSize);
+    private IEnumerable<TaskReportDto> FilteredList => taskReports;
 
-    private IEnumerable<TaskReportDto> PagedList =>
-        FilteredList.Skip((currentPage - 1) * pageSize).Take(pageSize);
+    private int TotalPages => taskReportPage?.TotalPages ?? 0;
+
+    private IEnumerable<TaskReportDto> PagedList => taskReportPage?.Items ?? Enumerable.Empty<TaskReportDto>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -468,20 +475,21 @@
         var client = ApiClient.CreateClient();
         try
         {
-            var query = "Report/tasks?";
-            if (filterStartDate.HasValue) query += $"startDate={filterStartDate:yyyy-MM-dd}&";
-            if (filterEndDate.HasValue) query += $"endDate={filterEndDate:yyyy-MM-dd}&";
-            if (!string.IsNullOrEmpty(filterStatus) && filterStatus != "overdue") query += $"status={filterStatus}&";
-            if (filterProjectId > 0) query += $"projectId={filterProjectId}&";
+            var query = BuildTaskReportQuery();
+            var fullTask = client.GetFromJsonAsync<Result<List<TaskReportDto>>>(query);
+            var pagedTask = client.GetFromJsonAsync<PagedResult<TaskReportDto>>(BuildTaskReportQuery(includePaging: true));
+            await System.Threading.Tasks.Task.WhenAll(fullTask, pagedTask);
 
-            var result = await client.GetFromJsonAsync<Result<List<TaskReportDto>>>(query.TrimEnd('&', '?'));
-            if (result?.IsSuccess == true && result.Value != null)
+            if (fullTask.Result?.IsSuccess == true && fullTask.Result.Value != null)
             {
-                taskReports = result.Value;
-                if (filterStatus == "overdue")
-                {
-                    taskReports = taskReports.Where(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done).ToList();
-                }
+                taskReports = fullTask.Result.Value;
+            }
+
+            if (pagedTask.Result != null)
+            {
+                taskReportPage = pagedTask.Result;
+                currentPage = taskReportPage.Page;
+                pageSize = taskReportPage.PageSize;
             }
         }
         catch (Exception ex)
@@ -493,6 +501,21 @@
             isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private string BuildTaskReportQuery(bool includePaging = false)
+    {
+        var parts = new List<string>();
+        if (filterStartDate.HasValue) parts.Add($"startDate={filterStartDate:yyyy-MM-dd}");
+        if (filterEndDate.HasValue) parts.Add($"endDate={filterEndDate:yyyy-MM-dd}");
+        if (!string.IsNullOrEmpty(filterStatus)) parts.Add($"status={Uri.EscapeDataString(filterStatus)}");
+        if (filterProjectId > 0) parts.Add($"projectId={filterProjectId}");
+        if (includePaging)
+        {
+            parts.Add($"page={currentPage}");
+            parts.Add($"limit={pageSize}");
+        }
+        return "Report/tasks" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
     }
 
     private async Task DownloadExcel()
