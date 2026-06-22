@@ -1,7 +1,9 @@
 @page "/reports/employees"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared
 @using TaskTrackingSystem.Shared.Models.User
 @using TaskTrackingSystem.Shared.Models.Task
+@using TaskTrackingSystem.Shared.Models.Report
 @using System.Text
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
@@ -101,14 +103,14 @@
             <!-- Chart View: SVG Horizontal Bar Chart showing Efficiency -->
             <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="font-semibold text-slate-900 mb-4 font-sans text-md">Employee Productivity Chart</h3>
-                @if (!PagedList.Any())
+                        @if (!FilteredList.Any())
                 {
                     <p class="text-slate-400 text-center py-8">No data available.</p>
                 }
                 else
                 {
                     <div class="space-y-4 max-w-2xl">
-                        @foreach (var emp in PagedList)
+                        @foreach (var emp in FilteredList)
                         {
                             <div>
                                 <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
@@ -194,12 +196,12 @@
                 </table>
 
                 <!-- Pagination -->
-                <Pagination CurrentPage="currentPage"
-                            TotalPages="TotalPages"
-                            PageSize="pageSize"
-                            TotalCount="FilteredList.Count()"
-                            OnPageChanged="HandlePageChanged"
-                            OnPageSizeChanged="HandlePageSizeChanged" />
+                            <Pagination CurrentPage="currentPage"
+                                        TotalPages="TotalPages"
+                                        PageSize="pageSize"
+                                        TotalCount="TotalCount"
+                                        OnPageChanged="HandlePageChanged"
+                                        OnPageSizeChanged="HandlePageSizeChanged" />
             </div>
         }
     }
@@ -211,6 +213,7 @@
     private List<UserDto> users = new();
     private List<TaskDto> tasks = new();
     private List<EmployeeMetric> displayList = new();
+    private PagedResult<EmployeeProductivityReportDto>? reportPage;
 
     // Filters
     private string filterPeriod = "all";
@@ -224,15 +227,16 @@
     private int currentPage = 1;
     private int pageSize = 10;
 
-    private void ApplyAllFilters()
+    private async Task ApplyAllFilters()
     {
         ApplyPeriodPreset();
         searchQuery = searchInput;
         currentPage = 1;
         CalculateMetrics();
+        await LoadEmployeeReportPage();
     }
 
-    private void ResetAllFilters()
+    private async Task ResetAllFilters()
     {
         searchInput = "";
         searchQuery = "";
@@ -242,10 +246,21 @@
         filterStatus = "0";
         currentPage = 1;
         CalculateMetrics();
+        await LoadEmployeeReportPage();
     }
 
-    private void HandlePageChanged(int page) { currentPage = page; }
-    private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
+    private async Task HandlePageChanged(int page)
+    {
+        currentPage = page;
+        await LoadEmployeeReportPage();
+    }
+
+    private async Task HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+        await LoadEmployeeReportPage();
+    }
 
     private IEnumerable<EmployeeMetric> FilteredList =>
         string.IsNullOrWhiteSpace(searchQuery)
@@ -253,10 +268,20 @@
             : displayList.Where(e => e.FullName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
                 || e.Username.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
 
-    private int TotalPages => (int)Math.Ceiling((double)FilteredList.Count() / pageSize);
+    private int TotalPages => reportPage?.TotalPages ?? 0;
+
+    private int TotalCount => reportPage?.TotalCount ?? 0;
 
     private IEnumerable<EmployeeMetric> PagedList =>
-        FilteredList.Skip((currentPage - 1) * pageSize).Take(pageSize);
+        reportPage?.Items.Select(x => new EmployeeMetric
+        {
+            FullName = x.FullName,
+            Username = x.Username,
+            AssignedCount = x.AssignedCount,
+            CompletedCount = x.CompletedCount,
+            Efficiency = x.Efficiency,
+            OnTimeDeliveryRate = x.OnTimeDeliveryRate
+        }) ?? Enumerable.Empty<EmployeeMetric>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -270,6 +295,7 @@
             users = usersTask.Result ?? new();
             tasks = tasksTask.Result ?? new();
             CalculateMetrics();
+            await LoadEmployeeReportPage();
         }
         catch (Exception ex)
         {
@@ -365,6 +391,34 @@
         }
 
         displayList = metrics.OrderBy(m => m.FullName).ToList();
+    }
+
+    private async Task LoadEmployeeReportPage()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(searchQuery)) parts.Add($"search={Uri.EscapeDataString(searchQuery)}");
+            if (filterStartDate.HasValue) parts.Add($"startDate={filterStartDate:yyyy-MM-dd}");
+            if (filterEndDate.HasValue) parts.Add($"endDate={filterEndDate:yyyy-MM-dd}");
+            if (!string.IsNullOrWhiteSpace(filterStatus)) parts.Add($"status={Uri.EscapeDataString(filterStatus)}");
+            parts.Add($"page={currentPage}");
+            parts.Add($"limit={pageSize}");
+
+            var url = "Report/employee-productivity" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+            var result = await client.GetFromJsonAsync<PagedResult<EmployeeProductivityReportDto>>(url, Serialization.CaseInsensitive);
+            if (result != null)
+            {
+                reportPage = result;
+                currentPage = result.Page;
+                pageSize = result.PageSize;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Employee report paging error: {ex.Message}");
+        }
     }
 
     private async Task DownloadExcel()

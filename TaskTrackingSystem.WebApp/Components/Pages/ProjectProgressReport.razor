@@ -1,7 +1,9 @@
 @page "/reports/projects"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared
 @using TaskTrackingSystem.Shared.Models.Project
 @using TaskTrackingSystem.Shared.Models.Task
+@using TaskTrackingSystem.Shared.Models.Report
 @using System.Text
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
@@ -142,14 +144,14 @@
             <!-- Chart View: SVG Project Progress Bars -->
             <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="font-semibold text-slate-900 mb-4 font-sans text-md">Project Completion Chart</h3>
-                @if (!PagedList.Any())
+                @if (!FilteredList.Any())
                 {
                     <p class="text-slate-400 text-center py-8">No data available.</p>
                 }
                 else
                 {
                     <div class="space-y-4 max-w-2xl">
-                        @foreach (var proj in PagedList)
+                        @foreach (var proj in FilteredList)
                         {
                             <div>
                                 <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
@@ -220,7 +222,7 @@
                 <Pagination CurrentPage="currentPage"
                             TotalPages="TotalPages"
                             PageSize="pageSize"
-                            TotalCount="FilteredList.Count()"
+                            TotalCount="TotalCount"
                             OnPageChanged="HandlePageChanged"
                             OnPageSizeChanged="HandlePageSizeChanged" />
             </div>
@@ -234,6 +236,7 @@
     private List<ProjectDto> projects = new();
     private List<TaskDto> tasks = new();
     private List<ProjectMetric> displayList = new();
+    private PagedResult<ProjectProgressReportDto>? reportPage;
 
     // Filters
     private string filterPeriod = "all";
@@ -252,15 +255,16 @@
     private int aheadOfScheduleCount = 0;
     private int atRiskCount = 0;
 
-    private void ApplyAllFilters()
+    private async Task ApplyAllFilters()
     {
         ApplyPeriodPreset();
         searchQuery = searchInput;
         currentPage = 1;
         CalculateMetrics();
+        await LoadProjectReportPage();
     }
 
-    private void ResetAllFilters()
+    private async Task ResetAllFilters()
     {
         searchInput = "";
         searchQuery = "";
@@ -270,20 +274,43 @@
         filterStatus = "0";
         currentPage = 1;
         CalculateMetrics();
+        await LoadProjectReportPage();
     }
 
-    private void HandlePageChanged(int page) { currentPage = page; }
-    private void HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; }
+    private async Task HandlePageChanged(int page)
+    {
+        currentPage = page;
+        await LoadProjectReportPage();
+    }
+
+    private async Task HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+        await LoadProjectReportPage();
+    }
 
     private IEnumerable<ProjectMetric> FilteredList =>
         string.IsNullOrWhiteSpace(searchQuery)
             ? displayList
             : displayList.Where(p => p.ProjectName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
 
-    private int TotalPages => (int)Math.Ceiling((double)FilteredList.Count() / pageSize);
+    private int TotalPages => reportPage?.TotalPages ?? 0;
+
+    private int TotalCount => reportPage?.TotalCount ?? 0;
 
     private IEnumerable<ProjectMetric> PagedList =>
-        FilteredList.Skip((currentPage - 1) * pageSize).Take(pageSize);
+        reportPage?.Items.Select(x => new ProjectMetric
+        {
+            ProjectName = x.ProjectName,
+            StartDate = x.StartDate,
+            EndDate = x.EndDate,
+            TotalTasks = x.TotalTasks,
+            CompletedTasks = x.CompletedTasks,
+            Progress = x.Progress,
+            IsAhead = x.IsAhead,
+            IsAtRisk = x.IsAtRisk
+        }) ?? Enumerable.Empty<ProjectMetric>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -297,6 +324,7 @@
             projects = projectsTask.Result ?? new();
             tasks = tasksTask.Result ?? new();
             CalculateMetrics();
+            await LoadProjectReportPage();
         }
         catch (Exception ex)
         {
@@ -412,6 +440,34 @@
         totalActiveProjects = displayList.Count;
         aheadOfScheduleCount = displayList.Count(m => m.IsAhead);
         atRiskCount = displayList.Count(m => m.IsAtRisk);
+    }
+
+    private async Task LoadProjectReportPage()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(searchQuery)) parts.Add($"search={Uri.EscapeDataString(searchQuery)}");
+            if (filterStartDate.HasValue) parts.Add($"startDate={filterStartDate:yyyy-MM-dd}");
+            if (filterEndDate.HasValue) parts.Add($"endDate={filterEndDate:yyyy-MM-dd}");
+            if (!string.IsNullOrWhiteSpace(filterStatus)) parts.Add($"status={Uri.EscapeDataString(filterStatus)}");
+            parts.Add($"page={currentPage}");
+            parts.Add($"limit={pageSize}");
+
+            var url = "Report/project-progress" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+            var result = await client.GetFromJsonAsync<PagedResult<ProjectProgressReportDto>>(url, Serialization.CaseInsensitive);
+            if (result != null)
+            {
+                reportPage = result;
+                currentPage = result.Page;
+                pageSize = result.PageSize;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Project report paging error: {ex.Message}");
+        }
     }
 
     private async Task DownloadExcel()
