@@ -9,6 +9,7 @@ using TaskTrackingSystem.Shared.Models.User;
 using TaskTrackingSystem.Shared.Models.Task;
 using TaskTrackingSystem.Shared.Models.Project;
 using TaskTrackingSystem.Shared.Enums;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Project
 {
@@ -39,6 +40,35 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                     CreatedAt = p.CreatedAt ?? DateTime.UtcNow,
                     BudgetedHours = p.BudgetedHours
                 }).ToListAsync();
+        }
+
+        public async Task<PagedResult<ProjectDto>> GetPagedProjectsAsync(string roleName, long currentUserId, string? search, int page, int pageSize)
+        {
+            var query = BuildAccessibleProjectQuery(roleName, currentUserId);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTerm = search.Trim().ToLower();
+                query = query.Where(p =>
+                    (p.Name != null && p.Name.ToLower().Contains(searchTerm)) ||
+                    (p.Description != null && p.Description.ToLower().Contains(searchTerm)));
+            }
+
+            return await query
+                .OrderBy(p => p.EndDate)
+                .ThenByDescending(p => p.CreatedAt ?? DateTime.UtcNow)
+                .Select(p => new ProjectDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    CreatedById = p.CreatedById,
+                    CreatedAt = p.CreatedAt ?? DateTime.UtcNow,
+                    BudgetedHours = p.BudgetedHours
+                })
+                .ToPagedResultAsync(page, pageSize);
         }
 
         public async Task<ProjectDto?> GetProjectByIdAsync(long id, string roleName, long currentUserId)

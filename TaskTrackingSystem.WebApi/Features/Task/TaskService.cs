@@ -8,6 +8,7 @@ using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared.Models.Task;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Enums;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Task
 {
@@ -48,6 +49,74 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                         .Select(th => th.CreatedAt)
                         .FirstOrDefault()
                 }).ToListAsync();
+        }
+
+        public async Task<PagedResult<TaskDto>> GetPagedTasksAsync(
+            string roleName,
+            long currentUserId,
+            string? search,
+            long? projectId,
+            AppTaskStatus? statusId,
+            TaskPriority? priorityId,
+            bool assignedOnly,
+            int page,
+            int pageSize)
+        {
+            var query = BuildAccessibleTaskQuery(roleName, currentUserId);
+
+            if (assignedOnly)
+            {
+                query = query.Where(t => t.AssignedTo == currentUserId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTerm = search.Trim().ToLower();
+                query = query.Where(t =>
+                    (t.Title != null && t.Title.ToLower().Contains(searchTerm)) ||
+                    (t.Description != null && t.Description.ToLower().Contains(searchTerm)));
+            }
+
+            if (projectId.HasValue && projectId.Value > 0)
+            {
+                query = query.Where(t => t.ProjectId == projectId.Value);
+            }
+
+            if (statusId.HasValue)
+            {
+                query = query.Where(t => t.StatusId == statusId.Value);
+            }
+
+            if (priorityId.HasValue)
+            {
+                query = query.Where(t => t.PriorityId == priorityId.Value);
+            }
+
+            return await query
+                .OrderBy(t => t.DueDate)
+                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
+                .Select(t => new TaskDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    ProjectId = t.ProjectId,
+                    StatusId = t.StatusId,
+                    PriorityId = t.PriorityId,
+                    AssignedTo = t.AssignedTo,
+                    AssignedBy = t.AssignedBy,
+                    EstimatedHours = t.EstimatedHours,
+                    ActualHours = t.ActualHours,
+                    DueDate = t.DueDate,
+                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    IsArchived = t.IsArchived,
+                    CompletedAt = t.TaskHistories
+                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
+                        .OrderBy(th => th.CreatedAt)
+                        .Select(th => th.CreatedAt)
+                        .FirstOrDefault()
+                })
+                .ToPagedResultAsync(page, pageSize);
         }
 
         public async Task<IEnumerable<TaskDto>> GetArchivedTasksAsync(string roleName, long currentUserId)

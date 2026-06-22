@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
+using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.AuditLog;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Audit
 {
@@ -22,7 +25,11 @@ namespace TaskTrackingSystem.WebApi.Features.Audit
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AuditLogDto>>> GetAuditLogs([FromQuery] string? search)
+        [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetAuditLogs(
+            [FromQuery] string? search,
+            [FromQuery] PaginationQuery? paging = null)
         {
             var query = _db.AuditLogs
                 .Include(a => a.User)
@@ -41,7 +48,31 @@ namespace TaskTrackingSystem.WebApi.Features.Audit
                 );
             }
 
-            var logs = await query
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var fullLogs = await query
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Select(a => new AuditLogDto
+                    {
+                        Id = a.Id,
+                        UserId = a.UserId,
+                        Username = a.User != null ? a.User.Username : "System",
+                        UserFullName = a.User != null ? $"{a.User.FirstName} {a.User.LastName}" : "System",
+                        Action = a.Action,
+                        Module = a.Module,
+                        Description = a.Description,
+                        IpAddress = a.IpAddress,
+                        CreatedAt = a.CreatedAt ?? System.DateTime.UtcNow
+                    })
+                    .ToListAsync();
+
+                return Ok(fullLogs);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
+
+            var pagedLogs = await query
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(a => new AuditLogDto
                 {
@@ -55,9 +86,9 @@ namespace TaskTrackingSystem.WebApi.Features.Audit
                     IpAddress = a.IpAddress,
                     CreatedAt = a.CreatedAt ?? System.DateTime.UtcNow
                 })
-                .ToListAsync();
+                .ToPagedResultAsync(page, limit);
 
-            return Ok(logs);
+            return Ok(pagedLogs);
         }
     }
 }

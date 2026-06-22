@@ -24,10 +24,36 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaskDto>>> GetTasks()
+        [ProducesResponseType(typeof(PagedResult<TaskDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetTasks(
+            [FromQuery] string? search,
+            [FromQuery] long? projectId,
+            [FromQuery] AppTaskStatus? statusId,
+            [FromQuery] TaskPriority? priorityId,
+            [FromQuery] bool assignedOnly = false,
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var tasks = await _taskService.GetAllTasksAsync(User.GetRoleName(), User.GetUserId());
-            return Ok(tasks);
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var tasks = await _taskService.GetAllTasksAsync(User.GetRoleName(), User.GetUserId());
+                return Ok(tasks);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
+            var paged = await _taskService.GetPagedTasksAsync(
+                User.GetRoleName(),
+                User.GetUserId(),
+                search,
+                projectId,
+                statusId,
+                priorityId,
+                assignedOnly,
+                page,
+                limit);
+
+            return Ok(paged);
         }
 
         [HttpGet("archived")]

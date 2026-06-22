@@ -23,10 +23,24 @@ namespace TaskTrackingSystem.WebApi.Features.User
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
+        [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetUsers(
+            [FromQuery] string? search,
+            [FromQuery] long? roleId,
+            [FromQuery] string? status,
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var users = await _userService.GetAllUsersAsync();
-            return Ok(users);
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var users = await _userService.GetAllUsersAsync();
+                return Ok(users);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
+            var paged = await _userService.GetPagedUsersAsync(search, roleId, status, page, limit);
+            return Ok(paged);
         }
 
         [HttpGet("{id}")]

@@ -1,11 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Shared;
-using TaskTrackingSystem.Shared.Models.Report;
 using TaskTrackingSystem.Shared.Enums;
+using TaskTrackingSystem.Shared.Models.Report;
 using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Report
@@ -22,27 +24,59 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             _reportService = reportService;
         }
 
-        // â”€â”€â”€ Legacy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
         [HttpGet("tasks")]
-        public async Task<ActionResult<Result<IEnumerable<TaskReportDto>>>> GetTasksReport(
+        [ProducesResponseType(typeof(PagedResult<TaskReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedResult<TaskReportDto>>> GetTasksReport(
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
             [FromQuery] string? status,
-            [FromQuery] int? projectId)
+            [FromQuery] int? projectId,
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var result = await _reportService.GetTasksReportAsync(startDate, endDate, status, projectId, User.GetRoleName(), User.GetUserId());
-            return StatusCode(result.StatusCode, result);
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var full = await _reportService.GetTasksReportAsync(startDate, endDate, status, projectId, User.GetRoleName(), User.GetUserId());
+                return StatusCode(full.StatusCode, full);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
+            var result = await _reportService.GetPagedTasksReportAsync(
+                startDate,
+                endDate,
+                status,
+                projectId,
+                User.GetRoleName(),
+                User.GetUserId(),
+                page,
+                limit);
+            return Ok(result);
         }
 
         [HttpGet("user-productivity")]
-        public async Task<ActionResult<Result<IEnumerable<UserProductivityDto>>>> GetUserProductivityReport()
+        [ProducesResponseType(typeof(PagedResult<UserProductivityDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedResult<UserProductivityDto>>> GetUserProductivityReport(
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var result = await _reportService.GetUserProductivityReportAsync(User.GetRoleName(), User.GetUserId());
-            return StatusCode(result.StatusCode, result);
-        }
+            var users = await _reportService.GetUserProductivityReportAsync(User.GetRoleName(), User.GetUserId());
+            if (!users.IsSuccess || users.Value == null)
+            {
+                return StatusCode(users.StatusCode, new PagedResult<UserProductivityDto>());
+            }
 
-        // â”€â”€â”€ Report 1: Task Status Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                return StatusCode(users.StatusCode, users);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging?.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
+            var query = users.Value.AsQueryable();
+            var paged = await query.ToPagedResultAsync(page, limit);
+            return Ok(paged);
+        }
 
         [HttpGet("task-status-summary")]
         public async Task<ActionResult<Result<IEnumerable<TaskStatusSummaryDto>>>> GetTaskStatusSummary(
@@ -68,14 +102,23 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                         $"TaskStatusSummary_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
-        // â”€â”€â”€ Report 2: Team Productivity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
         [HttpGet("team-productivity")]
-        public async Task<ActionResult<Result<IEnumerable<TeamProductivityReportDto>>>> GetTeamProductivity(
-            [FromQuery] string? search)
+        [ProducesResponseType(typeof(PagedResult<TeamProductivityReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedResult<TeamProductivityReportDto>>> GetTeamProductivity(
+            [FromQuery] string? search,
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var result = await _reportService.GetTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId());
-            return StatusCode(result.StatusCode, result);
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var full = await _reportService.GetTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId());
+                return StatusCode(full.StatusCode, full);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging?.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
+            var result = await _reportService.GetPagedTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId(), page, limit);
+            return Ok(result);
         }
 
         [HttpGet("team-productivity/excel")]
@@ -89,15 +132,34 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                         $"TeamProductivity_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
-        // â”€â”€â”€ Report 3: Overdue & Critical Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
         [HttpGet("overdue-critical")]
-        public async Task<ActionResult<Result<IEnumerable<OverdueCriticalTaskDto>>>> GetOverdueCritical(
+        [ProducesResponseType(typeof(PagedResult<OverdueCriticalTaskDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedResult<OverdueCriticalTaskDto>>> GetOverdueCritical(
             [FromQuery] string? search,
-            [FromQuery] long? projectId)
+            [FromQuery] long? projectId,
+            [FromQuery] int? priorityId,
+            [FromQuery] string? delayType,
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var result = await _reportService.GetOverdueCriticalTasksAsync(search, projectId, User.GetRoleName(), User.GetUserId());
-            return StatusCode(result.StatusCode, result);
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var full = await _reportService.GetOverdueCriticalTasksAsync(search, projectId, User.GetRoleName(), User.GetUserId(), priorityId, delayType);
+                return StatusCode(full.StatusCode, full);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging?.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
+            var result = await _reportService.GetPagedOverdueCriticalTasksAsync(
+                search,
+                projectId,
+                User.GetRoleName(),
+                User.GetUserId(),
+                page,
+                limit,
+                priorityId,
+                delayType);
+            return Ok(result);
         }
 
         [HttpGet("overdue-critical/excel")]
@@ -113,8 +175,6 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                         $"OverdueCriticalTasks_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
-        // â”€â”€â”€ Report 4: Time Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
         [HttpGet("time-tracking")]
         public async Task<ActionResult<Result<TimeTrackingReportDto>>> GetTimeTracking(
             [FromQuery] string? search,
@@ -123,6 +183,62 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         {
             var result = await _reportService.GetTimeTrackingReportAsync(search, projectId, statusId, User.GetRoleName(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("employee-productivity")]
+        [ProducesResponseType(typeof(PagedResult<EmployeeProductivityReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedResult<EmployeeProductivityReportDto>>> GetEmployeeProductivity(
+            [FromQuery] string? search,
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate,
+            [FromQuery] string? status,
+            [FromQuery] PaginationQuery? paging = null)
+        {
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var reportData = await _reportService.GetEmployeeProductivityReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
+                return StatusCode(reportData.StatusCode, reportData);
+            }
+
+            var reportDataPaged = await _reportService.GetEmployeeProductivityReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
+            if (!reportDataPaged.IsSuccess || reportDataPaged.Value == null)
+            {
+                return StatusCode(reportDataPaged.StatusCode, new PagedResult<EmployeeProductivityReportDto>());
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging?.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
+            var paged = await reportDataPaged.Value.OrderByDescending(u => u.Efficiency).AsQueryable().ToPagedResultAsync(page, limit);
+            return Ok(paged);
+        }
+
+        [HttpGet("project-progress")]
+        [ProducesResponseType(typeof(PagedResult<ProjectProgressReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedResult<ProjectProgressReportDto>>> GetProjectProgress(
+            [FromQuery] string? search,
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate,
+            [FromQuery] string? status,
+            [FromQuery] PaginationQuery? paging = null)
+        {
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var reportData = await _reportService.GetProjectProgressReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
+                return StatusCode(reportData.StatusCode, reportData);
+            }
+
+            var reportDataPaged = await _reportService.GetProjectProgressReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
+            if (!reportDataPaged.IsSuccess || reportDataPaged.Value == null)
+            {
+                return StatusCode(reportDataPaged.StatusCode, new PagedResult<ProjectProgressReportDto>());
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging?.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
+            var paged = await reportDataPaged.Value.OrderBy(p => p.ProjectName).AsQueryable().ToPagedResultAsync(page, limit);
+            return Ok(paged);
         }
     }
 }

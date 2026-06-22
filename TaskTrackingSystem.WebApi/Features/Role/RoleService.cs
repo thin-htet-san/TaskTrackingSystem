@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Role;
+using TaskTrackingSystem.WebApi.Infrastructure;
 using RoleEntity = TaskTrackingSystem.Database.AppDbContextModels.Role;
 
 namespace TaskTrackingSystem.WebApi.Features.Role
@@ -33,6 +34,30 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                     CreatedAt = r.CreatedAt ?? DateTime.UtcNow
                 })
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<RoleDto>> GetPagedRolesAsync(string? search, int page, int pageSize)
+        {
+            var query = _db.Roles.Where(r => r.IsDeleted != true);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTerm = search.Trim().ToLower();
+                query = query.Where(r =>
+                    (r.Name != null && r.Name.ToLower().Contains(searchTerm)) ||
+                    (r.Description != null && r.Description.ToLower().Contains(searchTerm)));
+            }
+
+            return await query
+                .OrderBy(r => r.Name)
+                .Select(r => new RoleDto
+                {
+                    Id = r.Id,
+                    Name = r.Name,
+                    Description = r.Description,
+                    CreatedAt = r.CreatedAt ?? DateTime.UtcNow
+                })
+                .ToPagedResultAsync(page, pageSize);
         }
 
         public async Task<RoleDto?> GetRoleByIdAsync(long id)
