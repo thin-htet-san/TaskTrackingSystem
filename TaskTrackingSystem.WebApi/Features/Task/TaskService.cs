@@ -50,6 +50,34 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 }).ToListAsync();
         }
 
+        public async Task<IEnumerable<TaskDto>> GetArchivedTasksAsync(string roleName, long currentUserId)
+        {
+            return await BuildAccessibleTaskQuery(roleName, currentUserId, includeArchived: true)
+                .Where(t => t.IsArchived)
+                .OrderByDescending(t => t.UpdatedAt ?? t.CreatedAt ?? DateTime.UtcNow)
+                .Select(t => new TaskDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    ProjectId = t.ProjectId,
+                    StatusId = t.StatusId,
+                    PriorityId = t.PriorityId,
+                    AssignedTo = t.AssignedTo,
+                    AssignedBy = t.AssignedBy,
+                    EstimatedHours = t.EstimatedHours,
+                    ActualHours = t.ActualHours,
+                    DueDate = t.DueDate,
+                    CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
+                    IsArchived = t.IsArchived,
+                    CompletedAt = t.TaskHistories
+                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
+                        .OrderBy(th => th.CreatedAt)
+                        .Select(th => th.CreatedAt)
+                        .FirstOrDefault()
+                }).ToListAsync();
+        }
+
         public async Task<TaskDto?> GetTaskByIdAsync(long id, string roleName, long currentUserId)
         {
             var task = await BuildAccessibleTaskQuery(roleName, currentUserId)
@@ -338,9 +366,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result<int>.Success(tasksToArchive.Count);
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId, bool includeArchived = false)
         {
-            var query = _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
+            var query = _db.Tasks.Where(t => t.IsDeleted != true && (includeArchived || !t.IsArchived));
 
             if (IsAdmin(roleName))
             {

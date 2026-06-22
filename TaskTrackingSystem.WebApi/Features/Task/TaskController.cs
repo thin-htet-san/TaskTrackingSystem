@@ -30,6 +30,13 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Ok(tasks);
         }
 
+        [HttpGet("archived")]
+        public async Task<ActionResult<IEnumerable<TaskDto>>> GetArchivedTasks()
+        {
+            var tasks = await _taskService.GetArchivedTasksAsync(User.GetRoleName(), User.GetUserId());
+            return Ok(tasks);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<TaskDto>> GetTask(long id)
         {
