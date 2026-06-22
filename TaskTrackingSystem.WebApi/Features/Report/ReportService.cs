@@ -9,6 +9,7 @@ using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Report;
 using TaskTrackingSystem.Shared.Enums;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Report
 {
@@ -79,10 +80,28 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
             return users.Where(u => u.Id == currentUserId || accessibleUserIds.Contains(u.Id));
         }
-        // â”€â”€â”€ Legacy endpoints (kept for backward compatibility) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-        public async Task<Result<IEnumerable<TaskReportDto>>> GetTasksReportAsync(
-            DateTime? startDate, DateTime? endDate, string? status, int? projectId, string roleName, long currentUserId)
+        private static PagedResult<TDestination> MapPagedResult<TSource, TDestination>(
+            PagedResult<TSource> source,
+            Func<TSource, TDestination> map)
+        {
+            return new PagedResult<TDestination>
+            {
+                Items = source.Items.Select(map).ToList(),
+                TotalCount = source.TotalCount,
+                Page = source.Page,
+                PageSize = source.PageSize,
+                TotalPages = source.TotalPages
+            };
+        }
+
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildTaskReportQuery(
+            string roleName,
+            long currentUserId,
+            DateTime? startDate,
+            DateTime? endDate,
+            string? status,
+            int? projectId)
         {
             var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
@@ -90,9 +109,15 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 .Include(t => t.AssignedByNavigation)
                 .Where(t => t.IsDeleted != true);
 
-            if (startDate.HasValue) query = query.Where(t => t.CreatedAt >= startDate.Value);
-            if (endDate.HasValue) query = query.Where(t => t.CreatedAt <= endDate.Value);
-            if (projectId.HasValue) query = query.Where(t => t.ProjectId == projectId.Value);
+            if (startDate.HasValue)
+                query = query.Where(t => t.CreatedAt >= startDate.Value.Date);
+
+            if (endDate.HasValue)
+                query = query.Where(t => t.CreatedAt < endDate.Value.Date.AddDays(1));
+
+            if (projectId.HasValue)
+                query = query.Where(t => t.ProjectId == projectId.Value);
+
             if (!string.IsNullOrWhiteSpace(status))
             {
                 var sl = status.Trim().ToLower();
@@ -100,25 +125,39 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 {
                     query = query.Where(t => t.StatusId != AppTaskStatus.Done);
                 }
+                else if (sl == "overdue")
+                {
+                    query = query.Where(t => t.DueDate < DateTime.Today && t.StatusId != AppTaskStatus.Done);
+                }
                 else
                 {
-                    AppTaskStatus? sid = sl switch { "to do" => AppTaskStatus.Todo, "in progress" => AppTaskStatus.InProgress, "done" => AppTaskStatus.Done, _ => null };
-                    if (sid.HasValue) query = query.Where(t => t.StatusId == sid.Value);
-                    else if (Enum.TryParse<AppTaskStatus>(status, true, out var parsedStatus)) query = query.Where(t => t.StatusId == parsedStatus);
+                    AppTaskStatus? sid = sl switch
+                    {
+                        "to do" => AppTaskStatus.Todo,
+                        "in progress" => AppTaskStatus.InProgress,
+                        "done" => AppTaskStatus.Done,
+                        _ => null
+                    };
+
+                    if (sid.HasValue)
+                        query = query.Where(t => t.StatusId == sid.Value);
+                    else if (Enum.TryParse<AppTaskStatus>(status, true, out var parsedStatus))
+                        query = query.Where(t => t.StatusId == parsedStatus);
                 }
             }
 
-            var tasks = await query
-                .OrderBy(t => t.DueDate)
-                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
-                .ToListAsync();
-            var list = tasks.Select(t => new TaskReportDto
+            return query;
+        }
+
+        private static TaskReportDto MapTaskReport(TaskTrackingSystem.Database.AppDbContextModels.Task t)
+        {
+            return new TaskReportDto
             {
                 TaskId = t.Id,
                 Title = t.Title,
                 Description = t.Description,
                 ProjectId = t.ProjectId,
-                ProjectName = t.Project.Name,
+                ProjectName = t.Project?.Name ?? string.Empty,
                 StatusId = t.StatusId,
                 StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
                 PriorityId = t.PriorityId,
@@ -129,8 +168,38 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 EstimatedHours = t.EstimatedHours,
                 DueDate = t.DueDate,
                 CreatedAt = t.CreatedAt ?? DateTime.UtcNow
-            }).ToList();
+            };
+        }
+
+        // â”€â”€â”€ Legacy endpoints (kept for backward compatibility) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+        public async Task<Result<IEnumerable<TaskReportDto>>> GetTasksReportAsync(
+            DateTime? startDate, DateTime? endDate, string? status, int? projectId, string roleName, long currentUserId)
+        {
+            var tasks = await BuildTaskReportQuery(roleName, currentUserId, startDate, endDate, status, projectId)
+                .OrderBy(t => t.DueDate)
+                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
+                .ToListAsync();
+            var list = tasks.Select(MapTaskReport).ToList();
             return Result<IEnumerable<TaskReportDto>>.Success(list);
+        }
+
+        public async Task<PagedResult<TaskReportDto>> GetPagedTasksReportAsync(
+            DateTime? startDate,
+            DateTime? endDate,
+            string? status,
+            int? projectId,
+            string roleName,
+            long currentUserId,
+            int page,
+            int pageSize)
+        {
+            var paged = await BuildTaskReportQuery(roleName, currentUserId, startDate, endDate, status, projectId)
+                .OrderBy(t => t.DueDate)
+                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
+                .ToPagedResultAsync(page, pageSize);
+
+            return MapPagedResult(paged, MapTaskReport);
         }
 
         public async Task<Result<IEnumerable<UserProductivityDto>>> GetUserProductivityReportAsync(string roleName, long currentUserId)
@@ -244,6 +313,42 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return ms.ToArray();
         }
 
+        public async Task<PagedResult<TeamProductivityReportDto>> GetPagedTeamProductivityAsync(
+            string? search,
+            string roleName,
+            long currentUserId,
+            int page,
+            int pageSize)
+        {
+            var full = await GetTeamProductivityAsync(search, roleName, currentUserId);
+            if (!full.IsSuccess || full.Value == null)
+            {
+                return new PagedResult<TeamProductivityReportDto>();
+            }
+
+            var ordered = full.Value.OrderByDescending(u => u.CompletionRate).ToList();
+            var normalizedPageSize = PaginationExtensions.NormalizePageSize(pageSize);
+            var totalCount = ordered.Count;
+            var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
+            var normalizedPage = Math.Max(page, 1);
+            if (totalPages > 0 && normalizedPage > totalPages)
+                normalizedPage = totalPages;
+
+            var items = ordered
+                .Skip((normalizedPage - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .ToList();
+
+            return new PagedResult<TeamProductivityReportDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = normalizedPage,
+                PageSize = normalizedPageSize,
+                TotalPages = totalPages
+            };
+        }
+
         // â”€â”€â”€ Report 2: Team Productivity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public async Task<Result<IEnumerable<TeamProductivityReportDto>>> GetTeamProductivityAsync(string? search, string roleName, long currentUserId)
@@ -315,9 +420,16 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
         // â”€â”€â”€ Report 3: Overdue & Critical Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-        public async Task<Result<IEnumerable<OverdueCriticalTaskDto>>> GetOverdueCriticalTasksAsync(string? search, long? projectId, string roleName, long currentUserId)
+        public async Task<Result<IEnumerable<OverdueCriticalTaskDto>>> GetOverdueCriticalTasksAsync(
+            string? search,
+            long? projectId,
+            string roleName,
+            long currentUserId,
+            int? priorityId = null,
+            string? delayType = null)
         {
             var now = DateTime.UtcNow;
+            var today = DateTime.Today;
             var query = BuildAccessibleTaskQuery(roleName, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
@@ -326,6 +438,19 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
             if (projectId.HasValue && projectId > 0)
                 query = query.Where(t => t.ProjectId == projectId.Value);
+
+            if (priorityId.HasValue && priorityId > 0)
+                query = query.Where(t => (int)t.PriorityId == priorityId.Value);
+
+            switch (delayType?.Trim().ToLower())
+            {
+                case "overdue":
+                    query = query.Where(t => t.DueDate.Date < today);
+                    break;
+                case "soon":
+                    query = query.Where(t => t.DueDate.Date >= today && t.DueDate.Date <= today.AddDays(3));
+                    break;
+            }
 
             var tasks = await query.OrderBy(t => t.DueDate).ToListAsync();
 
@@ -353,6 +478,73 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             }).ToList();
 
             return Result<IEnumerable<OverdueCriticalTaskDto>>.Success(list);
+        }
+
+        public async Task<PagedResult<OverdueCriticalTaskDto>> GetPagedOverdueCriticalTasksAsync(
+            string? search,
+            long? projectId,
+            string roleName,
+            long currentUserId,
+            int page,
+            int pageSize,
+            int? priorityId = null,
+            string? delayType = null)
+        {
+            var now = DateTime.UtcNow;
+            var today = DateTime.Today;
+            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
+                .Include(t => t.Project)
+                .Include(t => t.AssignedToNavigation)
+                .Where(t => t.IsDeleted != true && t.StatusId != AppTaskStatus.Done &&
+                            (t.DueDate < now || t.PriorityId == TaskPriority.High));
+
+            if (projectId.HasValue && projectId > 0)
+                query = query.Where(t => t.ProjectId == projectId.Value);
+
+            if (priorityId.HasValue && priorityId > 0)
+                query = query.Where(t => (int)t.PriorityId == priorityId.Value);
+
+            switch (delayType?.Trim().ToLower())
+            {
+                case "overdue":
+                    query = query.Where(t => t.DueDate.Date < today);
+                    break;
+                case "soon":
+                    query = query.Where(t => t.DueDate.Date >= today && t.DueDate.Date <= today.AddDays(3));
+                    break;
+                default:
+                    query = query.Where(t => t.DueDate.Date <= today.AddDays(3));
+                    break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(t =>
+                    t.Title.ToLower().Contains(s) ||
+                    (t.Project != null && t.Project.Name.ToLower().Contains(s)));
+            }
+
+            var paged = await query
+                .OrderBy(t => t.DueDate)
+                .ThenBy(t => t.Title)
+                .ToPagedResultAsync(page, pageSize);
+
+            var mapped = MapPagedResult(paged, t => new OverdueCriticalTaskDto
+            {
+                TaskId = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                ProjectName = t.Project?.Name ?? "-",
+                StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
+                PriorityName = PriorityMap.TryGetValue(t.PriorityId, out var p) ? p : $"Priority {t.PriorityId}",
+                AssignedTo = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}" : null,
+                DueDate = t.DueDate,
+                DaysOverdue = t.DueDate < now ? (int)(now - t.DueDate).TotalDays : 0,
+                CreatedAt = t.CreatedAt ?? DateTime.UtcNow
+            });
+
+            return mapped;
         }
 
         public byte[] ExportOverdueCriticalToExcel(IEnumerable<OverdueCriticalTaskDto> data)
@@ -519,6 +711,227 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             }
 
             return Result<TimeTrackingReportDto>.Success(result);
+        }
+
+        public async Task<Result<IEnumerable<EmployeeProductivityReportDto>>> GetEmployeeProductivityReportAsync(
+            string? search,
+            DateTime? startDate,
+            DateTime? endDate,
+            string? status,
+            string roleName,
+            long currentUserId)
+        {
+            var users = await BuildAccessibleUserQuery(roleName, currentUserId).ToListAsync();
+            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
+                .Include(t => t.TaskHistories)
+                .ToListAsync();
+
+            if (startDate.HasValue)
+                tasks = tasks.Where(t => t.CreatedAt >= startDate.Value.Date).ToList();
+
+            if (endDate.HasValue)
+                tasks = tasks.Where(t => t.CreatedAt < endDate.Value.Date.AddDays(1)).ToList();
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                var sl = status.Trim().ToLower();
+                if (sl == "overdue")
+                {
+                    tasks = tasks.Where(t => t.StatusId != AppTaskStatus.Done && t.DueDate < DateTime.Today).ToList();
+                }
+                else if (sl != "0")
+                {
+                    if (Enum.TryParse<AppTaskStatus>(status, true, out var parsedStatus))
+                        tasks = tasks.Where(t => t.StatusId == parsedStatus).ToList();
+                }
+            }
+
+            var list = new List<EmployeeProductivityReportDto>();
+            foreach (var user in users)
+            {
+                var userTasks = tasks.Where(t => t.AssignedTo == user.Id).ToList();
+                int total = userTasks.Count;
+                var completedTasks = userTasks.Where(t => t.StatusId == AppTaskStatus.Done).ToList();
+                int done = completedTasks.Count;
+
+                int onTimeCount = completedTasks.Count(t =>
+                    t.TaskHistories.Any(th => th.NewStatusId == AppTaskStatus.Done && th.CreatedAt <= t.DueDate));
+
+                double onTimeDeliveryRate = done > 0 ? Math.Round(((double)onTimeCount / done) * 100, 2) : 0;
+
+                list.Add(new EmployeeProductivityReportDto
+                {
+                    UserId = user.Id,
+                    Username = user.Username,
+                    FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    AssignedCount = total,
+                    CompletedCount = done,
+                    Efficiency = total > 0 ? Math.Round(((double)done / total) * 100, 2) : 0,
+                    OnTimeDeliveryRate = onTimeDeliveryRate
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                list = list.Where(u => u.FullName.ToLower().Contains(s) || u.Username.ToLower().Contains(s)).ToList();
+            }
+
+            return Result<IEnumerable<EmployeeProductivityReportDto>>.Success(list.OrderByDescending(u => u.Efficiency));
+        }
+
+        public async Task<PagedResult<EmployeeProductivityReportDto>> GetPagedEmployeeProductivityReportAsync(
+            string? search,
+            DateTime? startDate,
+            DateTime? endDate,
+            string? status,
+            string roleName,
+            long currentUserId,
+            int page,
+            int pageSize)
+        {
+            var full = await GetEmployeeProductivityReportAsync(search, startDate, endDate, status, roleName, currentUserId);
+            if (!full.IsSuccess || full.Value == null)
+            {
+                return new PagedResult<EmployeeProductivityReportDto>();
+            }
+
+            var ordered = full.Value.OrderByDescending(u => u.Efficiency).ToList();
+            var normalizedPageSize = PaginationExtensions.NormalizePageSize(pageSize);
+            var totalCount = ordered.Count;
+            var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
+            var normalizedPage = Math.Max(page, 1);
+            if (totalPages > 0 && normalizedPage > totalPages)
+                normalizedPage = totalPages;
+
+            var items = ordered
+                .Skip((normalizedPage - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .ToList();
+
+            return new PagedResult<EmployeeProductivityReportDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = normalizedPage,
+                PageSize = normalizedPageSize,
+                TotalPages = totalPages
+            };
+        }
+
+        public async Task<Result<IEnumerable<ProjectProgressReportDto>>> GetProjectProgressReportAsync(
+            string? search,
+            DateTime? startDate,
+            DateTime? endDate,
+            string? status,
+            string roleName,
+            long currentUserId)
+        {
+            var projects = await BuildAccessibleProjectQuery(roleName, currentUserId).ToListAsync();
+            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId).ToListAsync();
+            var today = DateTime.Today;
+
+            if (startDate.HasValue)
+                projects = projects.Where(p => p.StartDate >= startDate.Value.Date).ToList();
+
+            if (endDate.HasValue)
+                projects = projects.Where(p => p.StartDate < endDate.Value.Date.AddDays(1)).ToList();
+
+            var list = new List<ProjectProgressReportDto>();
+            foreach (var project in projects)
+            {
+                var projectTasks = tasks.Where(t => t.ProjectId == project.Id).ToList();
+
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    if (status.Equals("overdue", StringComparison.OrdinalIgnoreCase))
+                    {
+                        projectTasks = projectTasks.Where(t => t.DueDate.Date < today && t.StatusId != AppTaskStatus.Done).ToList();
+                    }
+                    else if (status != "0" && Enum.TryParse<AppTaskStatus>(status, true, out var parsedStatus))
+                    {
+                        projectTasks = projectTasks.Where(t => t.StatusId == parsedStatus).ToList();
+                    }
+                }
+
+                int totalTasks = projectTasks.Count;
+                int completedTasks = projectTasks.Count(t => t.StatusId == AppTaskStatus.Done);
+                double progress = totalTasks > 0 ? ((double)completedTasks / totalTasks) * 100 : 0;
+
+                double elapsedPct;
+                if (today < project.StartDate) elapsedPct = 0;
+                else if (today > project.EndDate) elapsedPct = 100;
+                else
+                {
+                    var totalDays = (project.EndDate - project.StartDate).TotalDays;
+                    var elapsedDays = (today - project.StartDate).TotalDays;
+                    elapsedPct = totalDays > 0 ? (elapsedDays / totalDays) * 100 : 100;
+                }
+
+                bool isAhead = progress > elapsedPct && progress > 0 && progress < 100;
+                bool isAtRisk = (projectTasks.Any(t => t.StatusId != AppTaskStatus.Done && t.DueDate.Date < today)) ||
+                                (project.EndDate.Date < today && progress < 100);
+
+                list.Add(new ProjectProgressReportDto
+                {
+                    ProjectId = project.Id,
+                    ProjectName = project.Name,
+                    StartDate = project.StartDate,
+                    EndDate = project.EndDate,
+                    TotalTasks = totalTasks,
+                    CompletedTasks = completedTasks,
+                    Progress = progress,
+                    IsAhead = isAhead,
+                    IsAtRisk = isAtRisk
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                list = list.Where(p => p.ProjectName.ToLower().Contains(s)).ToList();
+            }
+
+            return Result<IEnumerable<ProjectProgressReportDto>>.Success(list.OrderBy(p => p.ProjectName));
+        }
+
+        public async Task<PagedResult<ProjectProgressReportDto>> GetPagedProjectProgressReportAsync(
+            string? search,
+            DateTime? startDate,
+            DateTime? endDate,
+            string? status,
+            string roleName,
+            long currentUserId,
+            int page,
+            int pageSize)
+        {
+            var full = await GetProjectProgressReportAsync(search, startDate, endDate, status, roleName, currentUserId);
+            if (!full.IsSuccess || full.Value == null)
+            {
+                return new PagedResult<ProjectProgressReportDto>();
+            }
+
+            var ordered = full.Value.OrderBy(p => p.ProjectName).ToList();
+            var normalizedPageSize = PaginationExtensions.NormalizePageSize(pageSize);
+            var totalCount = ordered.Count;
+            var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
+            var normalizedPage = Math.Max(page, 1);
+            if (totalPages > 0 && normalizedPage > totalPages)
+                normalizedPage = totalPages;
+
+            var items = ordered
+                .Skip((normalizedPage - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .ToList();
+
+            return new PagedResult<ProjectProgressReportDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = normalizedPage,
+                PageSize = normalizedPageSize,
+                TotalPages = totalPages
+            };
         }
     }
 }

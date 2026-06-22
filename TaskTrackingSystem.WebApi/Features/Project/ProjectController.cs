@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.User;
 using TaskTrackingSystem.Shared.Models.Task;
@@ -23,10 +24,22 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
+        [ProducesResponseType(typeof(PagedResult<ProjectDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetProjects(
+            [FromQuery] string? search,
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var projects = await _projectService.GetAllProjectsAsync(User.GetRoleName(), User.GetUserId());
-            return Ok(projects);
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var projects = await _projectService.GetAllProjectsAsync(User.GetRoleName(), User.GetUserId());
+                return Ok(projects);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
+            var paged = await _projectService.GetPagedProjectsAsync(User.GetRoleName(), User.GetUserId(), search, page, limit);
+            return Ok(paged);
         }
 
         [HttpGet("{id}")]

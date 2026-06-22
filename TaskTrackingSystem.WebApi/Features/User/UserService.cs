@@ -8,6 +8,7 @@ using TaskTrackingSystem.Database;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.User;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.User
 {
@@ -40,6 +41,53 @@ namespace TaskTrackingSystem.WebApi.Features.User
                     IsActive = u.IsActive,
                     CreatedAt = u.CreatedAt ?? DateTime.UtcNow
                 }).ToListAsync();
+        }
+
+        public async Task<PagedResult<UserDto>> GetPagedUsersAsync(string? search, long? roleId, string? status, int page, int pageSize)
+        {
+            var query = _db.Users.Where(u => !u.IsDeleted);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTerm = search.Trim().ToLower();
+                query = query.Where(u =>
+                    (u.FirstName != null && u.FirstName.ToLower().Contains(searchTerm)) ||
+                    (u.LastName != null && u.LastName.ToLower().Contains(searchTerm)) ||
+                    (u.Username != null && u.Username.ToLower().Contains(searchTerm)) ||
+                    (u.Email != null && u.Email.ToLower().Contains(searchTerm)));
+            }
+
+            if (roleId.HasValue && roleId.Value > 0)
+            {
+                query = query.Where(u => u.RoleId == roleId.Value);
+            }
+
+            if (string.Equals(status, "active", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(u => u.IsActive);
+            }
+            else if (string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(u => !u.IsActive);
+            }
+
+            return await query
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .ThenBy(u => u.Username)
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Email = u.Email,
+                    Phone = u.Phone,
+                    RoleId = u.RoleId,
+                    IsActive = u.IsActive,
+                    CreatedAt = u.CreatedAt ?? DateTime.UtcNow
+                })
+                .ToPagedResultAsync(page, pageSize);
         }
 
         public async Task<UserDto?> GetUserByIdAsync(long id)

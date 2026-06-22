@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Role;
 using TaskTrackingSystem.WebApi.Infrastructure;
@@ -21,10 +22,22 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RoleDto>>> GetRoles()
+        [ProducesResponseType(typeof(PagedResult<RoleDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetRoles(
+            [FromQuery] string? search,
+            [FromQuery] PaginationQuery? paging = null)
         {
-            var roles = await _roleService.GetAllRolesAsync();
-            return Ok(roles);
+            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            {
+                var roles = await _roleService.GetAllRolesAsync();
+                return Ok(roles);
+            }
+
+            var page = PaginationExtensions.NormalizePage(paging.Page);
+            var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
+            var paged = await _roleService.GetPagedRolesAsync(search, page, limit);
+            return Ok(paged);
         }
 
         [HttpGet("{id}")]
