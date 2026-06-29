@@ -40,6 +40,7 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.UserDevice.UserDev
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.NotificationRealtimeService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.NotificationService>();
+builder.Services.AddHostedService<TaskTrackingSystem.WebApi.Features.Notification.NotificationCleanupHostedService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Infrastructure.PermissionAuthorizationService>();
 builder.Services.AddScoped<IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>, PasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -76,4 +76,17 @@ public class NotificationService
 
         return Result.Success();
     }
+
+    public async Task<int> DeleteReadNotificationsAsync(long userId, DateTime? olderThanUtc = null)
+    {
+        var query = _db.Notifications.Where(n => n.RecipientId == userId && n.IsRead);
+
+        if (olderThanUtc.HasValue)
+        {
+            var cutoff = olderThanUtc.Value;
+            query = query.Where(n => !n.CreatedAt.HasValue || n.CreatedAt < cutoff);
+        }
+
+        return await query.ExecuteDeleteAsync();
+    }
 }

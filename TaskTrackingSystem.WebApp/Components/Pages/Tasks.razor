@@ -211,7 +211,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Project <span class="text-red-500">*</span></label>
-                        <select @bind="formProjectId" class="w-full rounded-lg border @(isProjectError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:border-transparent transition-all">
+                        <select value="@formProjectId" @onchange="OnFormProjectChanged" class="w-full rounded-lg border @(isProjectError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:border-transparent transition-all">
                             <option value="0">Select project...</option>
                             @foreach (var p in projects)
                             {
@@ -249,13 +249,81 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Assignee</label>
-                        <select @bind="formAssignedTo" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
-                            <option value="">Unassigned</option>
-                            @foreach (var u in allUsers)
+                        <div class="relative">
+                            <button type="button"
+                                    @onclick="ToggleAssigneeDropdown"
+                                    class="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 text-left text-sm text-slate-900 shadow-sm transition-colors hover:border-violet-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900">
+                                <span class="truncate @(formAssignedTo.HasValue ? "font-medium text-slate-900" : "text-slate-400")">@SelectedAssigneeLabel</span>
+                                <i data-lucide="chevron-down" class="ml-3 h-4 w-4 shrink-0 text-slate-400"></i>
+                            </button>
+
+                            @if (isAssigneeDropdownOpen)
                             {
-                                <option value="@u.Id">@u.FirstName @u.LastName (@@@u.Username)</option>
+                                <div class="absolute bottom-full left-0 z-30 mb-2 w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
+                                    <div class="flex items-center justify-end">
+                                        <button type="button"
+                                                @onclick="CloseAssigneeDropdown"
+                                                class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                                                aria-label="Close assignee dropdown">
+                                            <i data-lucide="x" class="h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                    <div class="relative">
+                                        <input @bind="assigneeSearchInput"
+                                               @onfocus="EnsureAssigneeDropdownOpen"
+                                               type="text"
+                                               placeholder="Search project members..."
+                                               class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent" />
+                                        <i data-lucide="search" class="absolute left-3 top-2.5 h-4 w-4 text-slate-400"></i>
+                                    </div>
+
+                                    @if (isLoadingProjectMembers)
+                                    {
+                                        <div class="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
+                                            Loading project members...
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="mt-3 max-h-56 overflow-y-auto space-y-2 pr-1">
+                                            <button type="button"
+                                                    @onclick="() => SetFormAssignee(null)"
+                                                    class="flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors @(formAssignedTo.HasValue ? "border-slate-200 bg-white hover:bg-slate-50" : "border-violet-600 bg-violet-50/40")">
+                                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 text-xs font-bold shrink-0">
+                                                    <i data-lucide="user-minus" class="h-4 w-4"></i>
+                                                </span>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-sm font-semibold text-slate-900">Unassigned</p>
+                                                </div>
+                                            </button>
+
+                                            @foreach (var user in FilteredProjectMembers)
+                                            {
+                                                var isSelected = formAssignedTo == user.Id;
+                                                <button type="button"
+                                                        @onclick="() => SetFormAssignee(user.Id)"
+                                                        class="flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors @(isSelected ? "border-violet-600 bg-violet-50/40" : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50")">
+                                                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold shrink-0">
+                                                        @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                                    </span>
+                                                    <div class="min-w-0 flex-1">
+                                                        <p class="truncate text-sm font-semibold text-slate-900">@user.FirstName @user.LastName</p>
+                                                        <p class="truncate text-xs text-slate-500">@@@user.Username</p>
+                                                    </div>
+                                                </button>
+                                            }
+
+                                            @if (!FilteredProjectMembers.Any())
+                                            {
+                                                <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
+                                                    No members match the current search.
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
                             }
-                        </select>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Estimated Hours</label>
@@ -315,6 +383,7 @@
     private bool showModal = false;
     private bool isEditing = false;
     private bool isSaving = false;
+    private bool isAssigneeDropdownOpen = false;
     private string? errorMessage;
 
     // Per-field validation
@@ -336,6 +405,7 @@
     private List<TaskDto> taskList = new();
     private List<ProjectDto> projects = new();
     private List<UserDto> allUsers = new();
+    private List<UserDto> projectMembers = new();
 
     private string? successMessage;
 
@@ -363,8 +433,10 @@
     private TaskPriority formPriorityId = TaskPriority.Medium;
     private DateTime formDueDate = DateTime.Today.AddDays(7);
     private long? formAssignedTo;
+    private string assigneeSearchInput = "";
     private decimal? formEstimatedHours;
     private decimal? formActualHours;
+    private bool isLoadingProjectMembers;
 
     protected override async Task OnInitializedAsync()
     {
@@ -530,7 +602,149 @@
         canUpdateTask = canEditTask;
     }
 
-    private void OpenCreateModal()
+    private IEnumerable<UserDto> FilteredProjectMembers
+    {
+        get
+        {
+            var result = projectMembers.Where(u => u.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(assigneeSearchInput))
+            {
+                var search = assigneeSearchInput.Trim();
+                result = result.Where(u =>
+                    $"{u.FirstName} {u.LastName}".Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrWhiteSpace(u.Username) && u.Username.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(u.Email) && u.Email.Contains(search, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return result
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .ToList();
+        }
+    }
+
+    private string SelectedAssigneeLabel
+    {
+        get
+        {
+            if (!formAssignedTo.HasValue)
+            {
+                return "Unassigned";
+            }
+
+            var selectedUser = projectMembers.FirstOrDefault(u => u.Id == formAssignedTo.Value);
+            return selectedUser == null
+                ? "Selected member"
+                : $"{selectedUser.FirstName} {selectedUser.LastName}".Trim();
+        }
+    }
+
+    private async Task OnFormProjectChanged(ChangeEventArgs e)
+    {
+        if (long.TryParse(e.Value?.ToString(), out var projectId))
+        {
+            formProjectId = projectId;
+        }
+        else
+        {
+            formProjectId = 0;
+        }
+
+        formAssignedTo = null;
+        assigneeSearchInput = "";
+        await LoadProjectMembersAsync(formProjectId);
+    }
+
+    private void SetFormAssignee(long? userId)
+    {
+        formAssignedTo = userId;
+        errorMessage = null;
+        isAssigneeDropdownOpen = false;
+    }
+
+    private void OpenAssigneeDropdown()
+    {
+        if (formProjectId <= 0)
+        {
+            return;
+        }
+
+        isAssigneeDropdownOpen = true;
+    }
+
+    private void ToggleAssigneeDropdown()
+    {
+        if (isAssigneeDropdownOpen)
+        {
+            CloseAssigneeDropdown();
+            return;
+        }
+
+        OpenAssigneeDropdown();
+    }
+
+    private void EnsureAssigneeDropdownOpen()
+    {
+        if (formProjectId <= 0)
+        {
+            return;
+        }
+
+        isAssigneeDropdownOpen = true;
+    }
+
+    private void CloseAssigneeDropdown()
+    {
+        isAssigneeDropdownOpen = false;
+    }
+
+    private async Task LoadProjectMembersAsync(long projectId)
+    {
+        projectMembers.Clear();
+        isLoadingProjectMembers = true;
+
+        try
+        {
+            if (projectId <= 0)
+            {
+                return;
+            }
+
+            var client = ApiClient.CreateClient();
+            var membersResult = await client.GetFromJsonAsync<Result<IEnumerable<UserDto>>>($"Project/{projectId}/members", Serialization.CaseInsensitive);
+            if (membersResult?.IsSuccess == true && membersResult.Value != null)
+            {
+                projectMembers = membersResult.Value
+                    .Where(user => user.IsActive)
+                    .OrderBy(user => user.FirstName)
+                    .ThenBy(user => user.LastName)
+                    .ToList();
+
+                if (formAssignedTo.HasValue && !projectMembers.Any(user => user.Id == formAssignedTo.Value))
+                {
+                    formAssignedTo = null;
+                }
+            }
+            else
+            {
+                formAssignedTo = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load project members for task form: {ex.Message}");
+            formAssignedTo = null;
+        }
+        finally
+        {
+            isLoadingProjectMembers = false;
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("initIcons");
+        }
+    }
+
+    private async Task OpenCreateModal()
     {
         isEditing = false;
         editingId = 0;
@@ -541,15 +755,18 @@
         formPriorityId = TaskPriority.Medium;
         formDueDate = DateTime.Today.AddDays(7);
         formAssignedTo = null;
+        assigneeSearchInput = "";
         formEstimatedHours = null;
         formActualHours = null;
         errorMessage = null;
         isTitleError = false; titleErrorMessage = "";
         isProjectError = false; projectErrorMessage = "";
         showModal = true;
+
+        await LoadProjectMembersAsync(formProjectId);
     }
 
-    private void OpenEditModal(TaskDto task)
+    private async Task OpenEditModal(TaskDto task)
     {
         isEditing = true;
         editingId = task.Id;
@@ -560,12 +777,15 @@
         formPriorityId = task.PriorityId;
         formDueDate = task.DueDate;
         formAssignedTo = task.AssignedTo;
+        assigneeSearchInput = "";
         formEstimatedHours = task.EstimatedHours;
         formActualHours = task.ActualHours;
         errorMessage = null;
         isTitleError = false; titleErrorMessage = "";
         isProjectError = false; projectErrorMessage = "";
         showModal = true;
+
+        await LoadProjectMembersAsync(formProjectId);
     }
 
     private void CloseModal()
@@ -574,6 +794,10 @@
         errorMessage = null;
         isTitleError = false; titleErrorMessage = "";
         isProjectError = false; projectErrorMessage = "";
+        assigneeSearchInput = "";
+        isAssigneeDropdownOpen = false;
+        projectMembers.Clear();
+        isLoadingProjectMembers = false;
     }
 
     private void RequestSaveConfirmation()
