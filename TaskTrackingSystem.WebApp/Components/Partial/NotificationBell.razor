@@ -27,6 +27,12 @@
                     <p class="text-xs text-slate-500">@UnreadCount unread</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    @if (Notifications.Any(item => item.IsRead))
+                    {
+                        <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-700" @onclick="RequestCleanupConfirmation">
+                            Clear read
+                        </button>
+                    }
                     <button type="button" class="text-xs font-semibold text-violet-600 hover:text-violet-700" @onclick="RefreshAsync">
                         Refresh
                     </button>
@@ -85,11 +91,20 @@
     }
 </div>
 
+<ConfirmDialog IsVisible="showCleanupConfirmDialog"
+               Title="Clear read notifications?"
+               Message="This will permanently remove all read notifications from your list."
+               ConfirmText="Clear"
+               Icon="trash-2"
+               OnConfirm="ConfirmCleanupAsync"
+               OnCancel="CloseCleanupConfirmDialog" />
+
 @code {
     private HubConnection? _hubConnection;
     private bool _hubHandlersRegistered;
     private bool IsOpen;
     private bool IsLoading;
+    private bool showCleanupConfirmDialog;
     private int UnreadCount;
     private List<NotificationDto> Notifications = new();
 
@@ -243,6 +258,45 @@
         {
             IsLoading = false;
             await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void RequestCleanupConfirmation()
+    {
+        showCleanupConfirmDialog = true;
+    }
+
+    private void CloseCleanupConfirmDialog()
+    {
+        showCleanupConfirmDialog = false;
+    }
+
+    private async Task ConfirmCleanupAsync()
+    {
+        showCleanupConfirmDialog = false;
+        await ClearReadNotificationsAsync();
+    }
+
+    private async Task ClearReadNotificationsAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            var client = ApiClient.CreateClient(authState.User);
+            var response = await client.DeleteAsync("Notification/read");
+            if (response.IsSuccessStatusCode)
+            {
+                await RefreshAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG NotificationBell] Clear read notifications failed: {ex.Message}");
         }
     }
 

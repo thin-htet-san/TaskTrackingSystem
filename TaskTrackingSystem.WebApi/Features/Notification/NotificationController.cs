@@ -55,4 +55,17 @@ public class NotificationController : ControllerBase
         var result = await _notificationService.MarkReadAsync(userId, id);
         return StatusCode(result.StatusCode, result);
     }
+
+    [HttpDelete("read")]
+    public async Task<ActionResult<Result<int>>> DeleteRead([FromQuery] DateTime? before = null)
+    {
+        var userId = User.GetUserId();
+        if (userId <= 0)
+        {
+            return Unauthorized(Result.Failure("User is not authenticated.", 401));
+        }
+
+        var deletedCount = await _notificationService.DeleteReadNotificationsAsync(userId, before);
+        return Ok(Result<int>.Success(deletedCount));
+    }
 }

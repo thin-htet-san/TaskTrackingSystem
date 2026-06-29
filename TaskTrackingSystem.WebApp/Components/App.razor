@@ -345,15 +345,22 @@
             });
         };
 
-        window.renderGanttChart = function (containerId, data) {
+        window.renderGanttChart = function (containerId, data, options) {
+            options = options || {};
             const container = document.getElementById(containerId);
             if (!container) return;
+            const minWidth = options.minWidth || 1200;
+            const chartHeight = Math.max(options.height || 420, 120 + (data.length * 44));
             Highcharts.ganttChart(containerId, {
                 chart: {
                     backgroundColor: 'transparent',
-                    height: 250,
+                    height: chartHeight,
                     style: {
                         fontFamily: 'Inter, sans-serif'
+                    },
+                    scrollablePlotArea: {
+                        minWidth: minWidth,
+                        scrollPositionX: 0
                     }
                 },
                 title: {
@@ -366,7 +373,7 @@
                     enabled: false
                 },
                 scrollbar: {
-                    enabled: false
+                    enabled: true
                 },
                 rangeSelector: {
                     enabled: false
@@ -394,11 +401,15 @@
                     }
                 },
                 xAxis: [{
+                    type: 'datetime',
+                    min: options.xAxisMin,
+                    max: options.xAxisMax,
                     gridLineWidth: 1,
                     gridLineColor: '#f1f5f9',
                     lineColor: '#e2e8f0',
                     tickColor: '#e2e8f0',
                     labels: {
+                        format: '{value:%b %Y}',
                         style: {
                             color: '#64748b',
                             fontSize: '11px'

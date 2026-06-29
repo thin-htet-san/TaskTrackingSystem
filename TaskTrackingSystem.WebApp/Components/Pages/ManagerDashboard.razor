@@ -143,7 +143,7 @@
                     <h3 class="text-2xl font-bold text-slate-950">Team Progress</h3>
                     <p class="mt-1 text-sm text-slate-500">Members with active workload</p>
 
-                    <div class="mt-6 space-y-4">
+                    <div class="mt-6 max-h-[460px] space-y-4 overflow-y-auto pr-1">
                         @if (TeamProgress.Any())
                         {
                             @foreach (var member in TeamProgress)
@@ -218,7 +218,7 @@
                     <h3 class="text-2xl font-bold text-slate-950">Upcoming Deadlines</h3>
                     <p class="mt-1 text-sm text-slate-500">Projects ending soon</p>
 
-                    <div class="mt-6 space-y-3">
+                    <div class="mt-6 max-h-[460px] space-y-3 overflow-y-auto pr-1">
                         @if (UpcomingDeadlines.Any())
                         {
                             @foreach (var item in UpcomingDeadlines)
@@ -254,7 +254,7 @@
                     </a>
                 </div>
 
-                <div class="divide-y divide-slate-100">
+                <div class="max-h-[760px] divide-y divide-slate-100 overflow-y-auto">
                     @if (ProjectCards.Any())
                     {
                         @foreach (var project in ProjectCards)
@@ -454,7 +454,6 @@
         return projects
             .OrderByDescending(project => progressByProject.TryGetValue(project.Id, out var progress) ? progress.CompletionPercentage : 0)
             .ThenBy(project => project.EndDate)
-            .Take(4)
             .Select((project, index) =>
             {
                 progressByProject.TryGetValue(project.Id, out var progress);
@@ -526,7 +525,6 @@
             .Cast<TeamProgressViewModel>()
             .OrderByDescending(item => item.Total)
             .ThenBy(item => item.FullName)
-            .Take(5)
             .ToList();
     }
 
@@ -561,7 +559,6 @@
         return projects
             .Where(project => project.EndDate.Date >= DateTime.Today)
             .OrderBy(project => project.EndDate)
-            .Take(5)
             .Select(project =>
             {
                 var daysLeft = (project.EndDate.Date - DateTime.Today).Days;
