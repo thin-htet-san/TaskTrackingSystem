@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Report;
+using TaskTrackingSystem.Shared.Models.Issue;
 using TaskTrackingSystem.Shared.Enums;
 using TaskTrackingSystem.WebApi.Infrastructure;
 
@@ -24,61 +25,54 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             _db = db;
         }
 
-        private static bool IsAdmin(string roleName)
+        public async Task<Result<List<IssueDto>>> GetIssuesReportAsync()
         {
-            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+            var list = await _db.Issues
+                .Where(i => i.IsDeleted != true && i.Task.IsDeleted != true && i.Task.Project.IsDeleted != true)
+                .Include(i => i.Task)
+                .ThenInclude(t => t.Project)
+                .Include(i => i.AssignedToNavigation)
+                .OrderBy(i => i.Title)
+                .Select(i => new IssueDto
+                {
+                    Id = i.Id,
+                    TaskId = i.TaskId,
+                    TaskTitle = i.Task.Title,
+                    ProjectId = i.Task.ProjectId,
+                    ProjectName = i.Task.Project.Name,
+                    Title = i.Title,
+                    Description = i.Description,
+                    AssignedTo = i.AssignedTo,
+                    AssignedToName = i.AssignedToNavigation != null
+                        ? i.AssignedToNavigation.FirstName + " " + i.AssignedToNavigation.LastName
+                        : null,
+                    EstimatedHours = i.EstimatedHours,
+                    ActualHours = i.ActualHours,
+                    StartDate = i.StartDate,
+                    DueDate = i.DueDate,
+                    StatusId = i.StatusId,
+                    PriorityId = i.PriorityId,
+                    CreatedAt = i.CreatedAt ?? DateTime.UtcNow,
+                    UpdatedAt = i.UpdatedAt
+                })
+                .ToListAsync();
+
+            return Result<List<IssueDto>>.Success(list);
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(bool isAdmin, bool isManager, long currentUserId)
         {
-            var query = _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
-
-            if (IsAdmin(roleName))
-            {
-                return query;
-            }
-
-            if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase))
-            {
-                return query.Where(t =>
-                    t.AssignedTo == currentUserId ||
-                    t.CreatedBy == currentUserId ||
-                    t.Project.ProjectMembers.Any(pm => pm.UserId == currentUserId));
-            }
-
-            return query.Where(t =>
-                t.AssignedTo == currentUserId ||
-                t.CreatedBy == currentUserId);
+            return _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(string roleName, long currentUserId)
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(bool isAdmin, long currentUserId)
         {
-            var query = _db.Projects.Where(p => p.IsDeleted != true);
-
-            if (IsAdmin(roleName))
-            {
-                return query;
-            }
-
-            return query.Where(p =>
-                p.CreatedById == currentUserId ||
-                p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
+            return _db.Projects.Where(p => p.IsDeleted != true);
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.User> BuildAccessibleUserQuery(string roleName, long currentUserId)
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.User> BuildAccessibleUserQuery(bool isAdmin, long currentUserId)
         {
-            var users = _db.Users.Where(u => !u.IsDeleted);
-
-            if (IsAdmin(roleName))
-            {
-                return users;
-            }
-
-            var accessibleUserIds = BuildAccessibleProjectQuery(roleName, currentUserId)
-                .SelectMany(p => p.ProjectMembers.Select(pm => pm.UserId))
-                .Distinct();
-
-            return users.Where(u => u.Id == currentUserId || accessibleUserIds.Contains(u.Id));
+            return _db.Users.Where(u => !u.IsDeleted);
         }
 
         private static PagedResult<TDestination> MapPagedResult<TSource, TDestination>(
@@ -95,15 +89,33 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             };
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildTaskReportQuery(
-            string roleName,
+        private async Task<List<long>> GetTeamUserIdsAsync(long currentUserId)
+        {
+            var myProjectIds = await _db.ProjectMembers
+                .Where(pm => pm.UserId == currentUserId)
+                .Select(pm => pm.ProjectId)
+                .Distinct()
+                .ToListAsync();
+
+            return await _db.ProjectMembers
+                .Where(pm => myProjectIds.Contains(pm.ProjectId) && pm.UserId != currentUserId)
+                .Select(pm => pm.UserId)
+                .Distinct()
+                .ToListAsync();
+        }
+
+        private async Task<IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task>> BuildTaskReportQueryAsync(
+            bool isAdmin,
+            bool isManager,
             long currentUserId,
             DateTime? startDate,
             DateTime? endDate,
             string? status,
-            int? projectId)
+            int? projectId,
+            bool? assignedToMe,
+            bool? assignedToMyTeam)
         {
-            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
+            var query = BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Include(t => t.AssignedByNavigation)
@@ -146,6 +158,15 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 }
             }
 
+            if (assignedToMe == true || assignedToMyTeam == true)
+            {
+                var teamIds = assignedToMyTeam == true ? await GetTeamUserIdsAsync(currentUserId) : new List<long>();
+                query = query.Where(t =>
+                    (assignedToMe == true && t.AssignedTo == currentUserId) ||
+                    (assignedToMyTeam == true && t.AssignedTo.HasValue && teamIds.Contains(t.AssignedTo.Value))
+                );
+            }
+
             return query;
         }
 
@@ -170,12 +191,16 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             };
         }
 
-        // â”€â”€â”€ Legacy endpoints (kept for backward compatibility) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Legacy endpoints (kept for backward compatibility) ———
 
         public async Task<Result<IEnumerable<TaskReportDto>>> GetTasksReportAsync(
-            DateTime? startDate, DateTime? endDate, string? status, int? projectId, string roleName, long currentUserId)
+            DateTime? startDate, DateTime? endDate, string? status, int? projectId, long roleId, long currentUserId,
+            bool? assignedToMe = null, bool? assignedToMyTeam = null)
         {
-            var tasks = await BuildTaskReportQuery(roleName, currentUserId, startDate, endDate, status, projectId)
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            var query = await BuildTaskReportQueryAsync(isAdmin, isManager, currentUserId, startDate, endDate, status, projectId, assignedToMe, assignedToMyTeam);
+            var tasks = await query
                 .OrderBy(t => t.DueDate)
                 .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
                 .ToListAsync();
@@ -188,12 +213,17 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             DateTime? endDate,
             string? status,
             int? projectId,
-            string roleName,
+            long roleId,
             long currentUserId,
             int page,
-            int pageSize)
+            int pageSize,
+            bool? assignedToMe = null,
+            bool? assignedToMyTeam = null)
         {
-            var paged = await BuildTaskReportQuery(roleName, currentUserId, startDate, endDate, status, projectId)
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            var query = await BuildTaskReportQueryAsync(isAdmin, isManager, currentUserId, startDate, endDate, status, projectId, assignedToMe, assignedToMyTeam);
+            var paged = await query
                 .OrderBy(t => t.DueDate)
                 .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
                 .ToPagedResultAsync(page, pageSize);
@@ -201,23 +231,21 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return MapPagedResult(paged, MapTaskReport);
         }
 
-        public async Task<Result<IEnumerable<UserProductivityDto>>> GetUserProductivityReportAsync(string roleName, long currentUserId)
+        public async Task<Result<IEnumerable<UserProductivityDto>>> GetUserProductivityReportAsync(long roleId, long currentUserId)
         {
-            var users = await BuildAccessibleUserQuery(roleName, currentUserId).ToListAsync();
-            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId).ToListAsync();
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            var users = await BuildAccessibleUserQuery(isAdmin, currentUserId).ToListAsync();
+            var tasks = await BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId).ToListAsync();
             var list = new List<UserProductivityDto>();
             foreach (var user in users)
             {
                 var userTasks = tasks.Where(t => t.AssignedTo == user.Id).ToList();
-                
                 int total = userTasks.Count;
                 var completedTasks = userTasks.Where(t => t.StatusId == AppTaskStatus.Done).ToList();
                 int done = completedTasks.Count;
-                
-                int onTimeCount = completedTasks.Count(t =>
-                    (t.UpdatedAt ?? t.CreatedAt) <= t.DueDate
-                );
-                
+
+                int onTimeCount = completedTasks.Count(t => (t.UpdatedAt ?? t.CreatedAt) <= t.DueDate);
                 double onTimeDeliveryRate = done > 0 ? Math.Round(((double)onTimeCount / done) * 100, 2) : 0;
 
                 list.Add(new UserProductivityDto
@@ -234,12 +262,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             return Result<IEnumerable<UserProductivityDto>>.Success(list);
         }
 
-        // â”€â”€â”€ Report 1: Task Status Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
         public async Task<Result<IEnumerable<TaskStatusSummaryDto>>> GetTaskStatusSummaryAsync(
-            string? search, AppTaskStatus? statusId, long? projectId, string roleName, long currentUserId)
+            string? search, AppTaskStatus? statusId, long? projectId, long roleId, long currentUserId)
         {
-            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            var query = BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Where(t => t.IsDeleted != true);
@@ -312,12 +340,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
         public async Task<PagedResult<TeamProductivityReportDto>> GetPagedTeamProductivityAsync(
             string? search,
-            string roleName,
+            long roleId,
             long currentUserId,
             int page,
             int pageSize)
         {
-            var full = await GetTeamProductivityAsync(search, roleName, currentUserId);
+            var full = await GetTeamProductivityAsync(search, roleId, currentUserId);
             if (!full.IsSuccess || full.Value == null)
             {
                 return new PagedResult<TeamProductivityReportDto>();
@@ -346,12 +374,14 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             };
         }
 
-        // â”€â”€â”€ Report 2: Team Productivity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Report 2: Team Productivity ———
 
-        public async Task<Result<IEnumerable<TeamProductivityReportDto>>> GetTeamProductivityAsync(string? search, string roleName, long currentUserId)
+        public async Task<Result<IEnumerable<TeamProductivityReportDto>>> GetTeamProductivityAsync(string? search, long roleId, long currentUserId)
         {
-            var users = await BuildAccessibleUserQuery(roleName, currentUserId).ToListAsync();
-            var allTasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            var users = await BuildAccessibleUserQuery(isAdmin, currentUserId).ToListAsync();
+            var allTasks = await BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId)
                 .Where(t => t.AssignedTo != null)
                 .ToListAsync();
             var now = DateTime.UtcNow;
@@ -420,14 +450,18 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         public async Task<Result<IEnumerable<OverdueCriticalTaskDto>>> GetOverdueCriticalTasksAsync(
             string? search,
             long? projectId,
-            string roleName,
+            long roleId,
             long currentUserId,
             int? priorityId = null,
-            string? delayType = null)
+            string? delayType = null,
+            bool? assignedToMe = null,
+            bool? assignedToMyTeam = null)
         {
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
             var now = DateTime.UtcNow;
             var today = DateTime.Today;
-            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
+            var query = BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Where(t => t.IsDeleted != true && t.StatusId != AppTaskStatus.Done &&
@@ -447,6 +481,15 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 case "soon":
                     query = query.Where(t => t.DueDate.Date >= today && t.DueDate.Date <= today.AddDays(3));
                     break;
+            }
+
+            if (assignedToMe == true || assignedToMyTeam == true)
+            {
+                var teamIds = assignedToMyTeam == true ? await GetTeamUserIdsAsync(currentUserId) : new List<long>();
+                query = query.Where(t =>
+                    (assignedToMe == true && t.AssignedTo == currentUserId) ||
+                    (assignedToMyTeam == true && t.AssignedTo.HasValue && teamIds.Contains(t.AssignedTo.Value))
+                );
             }
 
             var tasks = await query.OrderBy(t => t.DueDate).ToListAsync();
@@ -469,6 +512,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
                 PriorityName = PriorityMap.TryGetValue(t.PriorityId, out var p) ? p : $"Priority {t.PriorityId}",
                 AssignedTo = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}" : null,
+                AssignedToUserId = t.AssignedTo,
                 DueDate = t.DueDate,
                 DaysOverdue = t.DueDate < now ? (int)(now - t.DueDate).TotalDays : 0,
                 CreatedAt = t.CreatedAt ?? DateTime.UtcNow
@@ -480,16 +524,20 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         public async Task<PagedResult<OverdueCriticalTaskDto>> GetPagedOverdueCriticalTasksAsync(
             string? search,
             long? projectId,
-            string roleName,
+            long roleId,
             long currentUserId,
             int page,
             int pageSize,
             int? priorityId = null,
-            string? delayType = null)
+            string? delayType = null,
+            bool? assignedToMe = null,
+            bool? assignedToMyTeam = null)
         {
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
             var now = DateTime.UtcNow;
             var today = DateTime.Today;
-            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
+            var query = BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId)
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToNavigation)
                 .Where(t => t.IsDeleted != true && t.StatusId != AppTaskStatus.Done &&
@@ -514,6 +562,15 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     break;
             }
 
+            if (assignedToMe == true || assignedToMyTeam == true)
+            {
+                var teamIds = assignedToMyTeam == true ? await GetTeamUserIdsAsync(currentUserId) : new List<long>();
+                query = query.Where(t =>
+                    (assignedToMe == true && t.AssignedTo == currentUserId) ||
+                    (assignedToMyTeam == true && t.AssignedTo.HasValue && teamIds.Contains(t.AssignedTo.Value))
+                );
+            }
+
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
@@ -536,6 +593,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
                 PriorityName = PriorityMap.TryGetValue(t.PriorityId, out var p) ? p : $"Priority {t.PriorityId}",
                 AssignedTo = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}" : null,
+                AssignedToUserId = t.AssignedTo,
                 DueDate = t.DueDate,
                 DaysOverdue = t.DueDate < now ? (int)(now - t.DueDate).TotalDays : 0,
                 CreatedAt = t.CreatedAt ?? DateTime.UtcNow
@@ -582,11 +640,25 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             DateTime? startDate,
             DateTime? endDate,
             string? status,
-            string roleName,
-            long currentUserId)
+            long roleId,
+            long currentUserId,
+            bool? assignedToMe = null,
+            bool? assignedToMyTeam = null)
         {
-            var users = await BuildAccessibleUserQuery(roleName, currentUserId).ToListAsync();
-            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId).ToListAsync();
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            var users = await BuildAccessibleUserQuery(isAdmin, currentUserId).ToListAsync();
+            
+            if (assignedToMe == true || assignedToMyTeam == true)
+            {
+                var teamIds = assignedToMyTeam == true ? await GetTeamUserIdsAsync(currentUserId) : new List<long>();
+                users = users.Where(u =>
+                    (assignedToMe == true && u.Id == currentUserId) ||
+                    (assignedToMyTeam == true && teamIds.Contains(u.Id))
+                ).ToList();
+            }
+
+            var tasks = await BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId).ToListAsync();
 
             if (startDate.HasValue)
                 tasks = tasks.Where(t => t.CreatedAt >= startDate.Value.Date).ToList();
@@ -647,12 +719,14 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             DateTime? startDate,
             DateTime? endDate,
             string? status,
-            string roleName,
+            long roleId,
             long currentUserId,
             int page,
-            int pageSize)
+            int pageSize,
+            bool? assignedToMe = null,
+            bool? assignedToMyTeam = null)
         {
-            var full = await GetEmployeeProductivityReportAsync(search, startDate, endDate, status, roleName, currentUserId);
+            var full = await GetEmployeeProductivityReportAsync(search, startDate, endDate, status, roleId, currentUserId, assignedToMe, assignedToMyTeam);
             if (!full.IsSuccess || full.Value == null)
             {
                 return new PagedResult<EmployeeProductivityReportDto>();
@@ -686,11 +760,27 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             DateTime? startDate,
             DateTime? endDate,
             string? status,
-            string roleName,
-            long currentUserId)
+            long roleId,
+            long currentUserId,
+            bool? assignedToMe = null,
+            bool? assignedToMyTeam = null)
         {
-            var projects = await BuildAccessibleProjectQuery(roleName, currentUserId).ToListAsync();
-            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId).ToListAsync();
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            var projects = await BuildAccessibleProjectQuery(isAdmin, currentUserId).ToListAsync();
+
+            if (assignedToMe == true || assignedToMyTeam == true)
+            {
+                var myProjectIds = await _db.ProjectMembers
+                    .Where(pm => pm.UserId == currentUserId)
+                    .Select(pm => pm.ProjectId)
+                    .Distinct()
+                    .ToListAsync();
+
+                projects = projects.Where(p => myProjectIds.Contains(p.Id) || p.CreatedById == currentUserId).ToList();
+            }
+
+            var tasks = await BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId).ToListAsync();
             var today = DateTime.Today;
 
             if (startDate.HasValue)
@@ -762,12 +852,14 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             DateTime? startDate,
             DateTime? endDate,
             string? status,
-            string roleName,
+            long roleId,
             long currentUserId,
             int page,
-            int pageSize)
+            int pageSize,
+            bool? assignedToMe = null,
+            bool? assignedToMyTeam = null)
         {
-            var full = await GetProjectProgressReportAsync(search, startDate, endDate, status, roleName, currentUserId);
+            var full = await GetProjectProgressReportAsync(search, startDate, endDate, status, roleId, currentUserId, assignedToMe, assignedToMyTeam);
             if (!full.IsSuccess || full.Value == null)
             {
                 return new PagedResult<ProjectProgressReportDto>();

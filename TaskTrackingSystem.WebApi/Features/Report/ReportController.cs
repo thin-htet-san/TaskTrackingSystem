@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Enums;
 using TaskTrackingSystem.Shared.Models.Report;
+using TaskTrackingSystem.Shared.Models.Issue;
 using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Report
@@ -24,6 +25,14 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             _reportService = reportService;
         }
 
+        [HttpGet("issues")]
+        [ProducesResponseType(typeof(List<IssueDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<Result<List<IssueDto>>>> GetIssuesReport()
+        {
+            var result = await _reportService.GetIssuesReportAsync();
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("tasks")]
         [ProducesResponseType(typeof(PagedResult<TaskReportDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -32,25 +41,21 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] DateTime? endDate,
             [FromQuery] string? status,
             [FromQuery] int? projectId,
+            [FromQuery] bool? assignedToMe,
+            [FromQuery] bool? assignedToMyTeam,
             [FromQuery] PaginationQuery? paging = null)
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var full = await _reportService.GetTasksReportAsync(startDate, endDate, status, projectId, User.GetRoleName(), User.GetUserId());
+                var full = await _reportService.GetTasksReportAsync(
+                    startDate, endDate, status, projectId, User.GetRoleId(), User.GetUserId(), assignedToMe, assignedToMyTeam);
                 return StatusCode(full.StatusCode, full);
             }
 
             var page = PaginationExtensions.NormalizePage(paging.Page);
             var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
             var result = await _reportService.GetPagedTasksReportAsync(
-                startDate,
-                endDate,
-                status,
-                projectId,
-                User.GetRoleName(),
-                User.GetUserId(),
-                page,
-                limit);
+                startDate, endDate, status, projectId, User.GetRoleId(), User.GetUserId(), page, limit, assignedToMe, assignedToMyTeam);
             return Ok(result);
         }
 
@@ -60,7 +65,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         public async Task<ActionResult<PagedResult<UserProductivityDto>>> GetUserProductivityReport(
             [FromQuery] PaginationQuery? paging = null)
         {
-            var users = await _reportService.GetUserProductivityReportAsync(User.GetRoleName(), User.GetUserId());
+            var users = await _reportService.GetUserProductivityReportAsync(User.GetRoleId(), User.GetUserId());
             if (!users.IsSuccess || users.Value == null)
             {
                 return StatusCode(users.StatusCode, new PagedResult<UserProductivityDto>());
@@ -84,7 +89,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] AppTaskStatus? statusId,
             [FromQuery] long? projectId)
         {
-            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleName(), User.GetUserId());
+            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -94,7 +99,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] AppTaskStatus? statusId,
             [FromQuery] long? projectId)
         {
-            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleName(), User.GetUserId());
+            var result = await _reportService.GetTaskStatusSummaryAsync(search, statusId, projectId, User.GetRoleId(), User.GetUserId());
             if (!result.IsSuccess || result.Value == null)
                 return BadRequest(new { message = result.ErrorMessage });
             var bytes = _reportService.ExportTaskStatusSummaryToExcel(result.Value);
@@ -111,20 +116,20 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var full = await _reportService.GetTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId());
+                var full = await _reportService.GetTeamProductivityAsync(search, User.GetRoleId(), User.GetUserId());
                 return StatusCode(full.StatusCode, full);
             }
 
             var page = PaginationExtensions.NormalizePage(paging?.Page);
             var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
-            var result = await _reportService.GetPagedTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId(), page, limit);
+            var result = await _reportService.GetPagedTeamProductivityAsync(search, User.GetRoleId(), User.GetUserId(), page, limit);
             return Ok(result);
         }
 
         [HttpGet("team-productivity/excel")]
         public async Task<IActionResult> DownloadTeamProductivityExcel([FromQuery] string? search)
         {
-            var result = await _reportService.GetTeamProductivityAsync(search, User.GetRoleName(), User.GetUserId());
+            var result = await _reportService.GetTeamProductivityAsync(search, User.GetRoleId(), User.GetUserId());
             if (!result.IsSuccess || result.Value == null)
                 return BadRequest(new { message = result.ErrorMessage });
             var bytes = _reportService.ExportTeamProductivityToExcel(result.Value);
@@ -140,34 +145,33 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] long? projectId,
             [FromQuery] int? priorityId,
             [FromQuery] string? delayType,
+            [FromQuery] bool? assignedToMe,
+            [FromQuery] bool? assignedToMyTeam,
             [FromQuery] PaginationQuery? paging = null)
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var full = await _reportService.GetOverdueCriticalTasksAsync(search, projectId, User.GetRoleName(), User.GetUserId(), priorityId, delayType);
+                var full = await _reportService.GetOverdueCriticalTasksAsync(
+                    search, projectId, User.GetRoleId(), User.GetUserId(), priorityId, delayType, assignedToMe, assignedToMyTeam);
                 return StatusCode(full.StatusCode, full);
             }
 
             var page = PaginationExtensions.NormalizePage(paging?.Page);
             var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
             var result = await _reportService.GetPagedOverdueCriticalTasksAsync(
-                search,
-                projectId,
-                User.GetRoleName(),
-                User.GetUserId(),
-                page,
-                limit,
-                priorityId,
-                delayType);
+                search, projectId, User.GetRoleId(), User.GetUserId(), page, limit, priorityId, delayType, assignedToMe, assignedToMyTeam);
             return Ok(result);
         }
 
         [HttpGet("overdue-critical/excel")]
         public async Task<IActionResult> DownloadOverdueCriticalExcel(
             [FromQuery] string? search,
-            [FromQuery] long? projectId)
+            [FromQuery] long? projectId,
+            [FromQuery] bool? assignedToMe,
+            [FromQuery] bool? assignedToMyTeam)
         {
-            var result = await _reportService.GetOverdueCriticalTasksAsync(search, projectId, User.GetRoleName(), User.GetUserId());
+            var result = await _reportService.GetOverdueCriticalTasksAsync(
+                search, projectId, User.GetRoleId(), User.GetUserId(), assignedToMe: assignedToMe, assignedToMyTeam: assignedToMyTeam);
             if (!result.IsSuccess || result.Value == null)
                 return BadRequest(new { message = result.ErrorMessage });
             var bytes = _reportService.ExportOverdueCriticalToExcel(result.Value);
@@ -183,24 +187,21 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
             [FromQuery] string? status,
+            [FromQuery] bool? assignedToMe,
+            [FromQuery] bool? assignedToMyTeam,
             [FromQuery] PaginationQuery? paging = null)
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var reportData = await _reportService.GetEmployeeProductivityReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
+                var reportData = await _reportService.GetEmployeeProductivityReportAsync(
+                    search, startDate, endDate, status, User.GetRoleId(), User.GetUserId(), assignedToMe, assignedToMyTeam);
                 return StatusCode(reportData.StatusCode, reportData);
             }
 
-            var reportDataPaged = await _reportService.GetEmployeeProductivityReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
-            if (!reportDataPaged.IsSuccess || reportDataPaged.Value == null)
-            {
-                return StatusCode(reportDataPaged.StatusCode, new PagedResult<EmployeeProductivityReportDto>());
-            }
-
-            var page = PaginationExtensions.NormalizePage(paging?.Page);
-            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
-            var paged = await reportDataPaged.Value.OrderByDescending(u => u.Efficiency).AsQueryable().ToPagedResultAsync(page, limit);
-            return Ok(paged);
+            var reportDataPaged = await _reportService.GetPagedEmployeeProductivityReportAsync(
+                search, startDate, endDate, status, User.GetRoleId(), User.GetUserId(),
+                paging.Page ?? 1, paging.Limit ?? 10, assignedToMe, assignedToMyTeam);
+            return Ok(reportDataPaged);
         }
 
         [HttpGet("project-progress")]
@@ -211,24 +212,21 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
             [FromQuery] string? status,
+            [FromQuery] bool? assignedToMe,
+            [FromQuery] bool? assignedToMyTeam,
             [FromQuery] PaginationQuery? paging = null)
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var reportData = await _reportService.GetProjectProgressReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
+                var reportData = await _reportService.GetProjectProgressReportAsync(
+                    search, startDate, endDate, status, User.GetRoleId(), User.GetUserId(), assignedToMe, assignedToMyTeam);
                 return StatusCode(reportData.StatusCode, reportData);
             }
 
-            var reportDataPaged = await _reportService.GetProjectProgressReportAsync(search, startDate, endDate, status, User.GetRoleName(), User.GetUserId());
-            if (!reportDataPaged.IsSuccess || reportDataPaged.Value == null)
-            {
-                return StatusCode(reportDataPaged.StatusCode, new PagedResult<ProjectProgressReportDto>());
-            }
-
-            var page = PaginationExtensions.NormalizePage(paging?.Page);
-            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
-            var paged = await reportDataPaged.Value.OrderBy(p => p.ProjectName).AsQueryable().ToPagedResultAsync(page, limit);
-            return Ok(paged);
+            var reportDataPaged = await _reportService.GetPagedProjectProgressReportAsync(
+                search, startDate, endDate, status, User.GetRoleId(), User.GetUserId(),
+                paging.Page ?? 1, paging.Limit ?? 10, assignedToMe, assignedToMyTeam);
+            return Ok(reportDataPaged);
         }
     }
 }

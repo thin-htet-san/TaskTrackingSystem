@@ -7,6 +7,7 @@ using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Enums;
 using TaskTrackingSystem.Shared.Models.Dashboard;
+using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Dashboard
 {
@@ -19,12 +20,15 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             _db = db;
         }
 
-        public async Task<Result<DashboardSummaryDto>> GetSummaryAsync(string roleName, long currentUserId)
+        public async Task<Result<DashboardSummaryDto>> GetSummaryAsync(long roleId, long currentUserId)
         {
-            var projects = BuildAccessibleProjectQuery(roleName, currentUserId);
-            var tasks = BuildAccessibleTaskQuery(roleName, currentUserId);
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
 
-            var totalUsers = IsAdmin(roleName)
+            var projects = BuildAccessibleProjectQuery(isAdmin, currentUserId);
+            var tasks = BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId);
+
+            var totalUsers = isAdmin
                 ? await _db.Users.CountAsync(u => !u.IsDeleted)
                 : await _db.Users
                     .Where(u => !u.IsDeleted &&
@@ -46,9 +50,12 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             return Result<DashboardSummaryDto>.Success(summary);
         }
 
-        public async Task<Result<IEnumerable<TaskStatusOverviewDto>>> GetTasksOverviewAsync(string roleName, long currentUserId)
+        public async Task<Result<IEnumerable<TaskStatusOverviewDto>>> GetTasksOverviewAsync(long roleId, long currentUserId)
         {
-            var groupedTasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+
+            var groupedTasks = await BuildAccessibleTaskQuery(isAdmin, isManager, currentUserId)
                 .GroupBy(t => t.StatusId)
                 .Select(g => new
                 {
@@ -87,9 +94,10 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             return Result<IEnumerable<TaskStatusOverviewDto>>.Success(overview.OrderBy(o => o.StatusId));
         }
 
-        public async Task<Result<IEnumerable<ProjectProgressDto>>> GetProjectProgressAsync(string roleName, long currentUserId)
+        public async Task<Result<IEnumerable<ProjectProgressDto>>> GetProjectProgressAsync(long roleId, long currentUserId)
         {
-            var activeProjects = await BuildAccessibleProjectQuery(roleName, currentUserId).ToListAsync();
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            var activeProjects = await BuildAccessibleProjectQuery(isAdmin, currentUserId).ToListAsync();
             var progressList = new List<ProjectProgressDto>();
 
             foreach (var project in activeProjects)
@@ -115,16 +123,16 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             return Result<IEnumerable<ProjectProgressDto>>.Success(progressList);
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId)
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(bool isAdmin, bool isManager, long currentUserId)
         {
             var query = _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
 
-            if (IsAdmin(roleName))
+            if (isAdmin)
             {
                 return query;
             }
 
-            if (IsManager(roleName))
+            if (isManager)
             {
                 return query.Where(t =>
                     t.AssignedTo == currentUserId ||
@@ -137,11 +145,11 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
                 t.CreatedBy == currentUserId);
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(string roleName, long currentUserId)
+        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(bool isAdmin, long currentUserId)
         {
             var query = _db.Projects.Where(p => p.IsDeleted != true);
 
-            if (IsAdmin(roleName))
+            if (isAdmin)
             {
                 return query;
             }
@@ -149,16 +157,6 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             return query.Where(p =>
                 p.CreatedById == currentUserId ||
                 p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
-        }
-
-        private static bool IsAdmin(string roleName)
-        {
-            return string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsManager(string roleName)
-        {
-            return string.Equals(roleName, "Manager", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

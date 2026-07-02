@@ -23,21 +23,21 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
         [HttpGet("summary")]
         public async Task<ActionResult<Result<DashboardSummaryDto>>> GetSummary()
         {
-            var result = await _dashboardService.GetSummaryAsync(User.GetRoleName(), User.GetUserId());
+            var result = await _dashboardService.GetSummaryAsync(User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("tasks-overview")]
         public async Task<ActionResult<Result<IEnumerable<TaskStatusOverviewDto>>>> GetTasksOverview()
         {
-            var result = await _dashboardService.GetTasksOverviewAsync(User.GetRoleName(), User.GetUserId());
+            var result = await _dashboardService.GetTasksOverviewAsync(User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("project-progress")]
         public async Task<ActionResult<Result<IEnumerable<ProjectProgressDto>>>> GetProjectProgress()
         {
-            var result = await _dashboardService.GetProjectProgressAsync(User.GetRoleName(), User.GetUserId());
+            var result = await _dashboardService.GetProjectProgressAsync(User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
     }

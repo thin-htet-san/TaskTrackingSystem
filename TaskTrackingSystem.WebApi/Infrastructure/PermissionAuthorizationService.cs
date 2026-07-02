@@ -20,11 +20,6 @@ public class PermissionAuthorizationService
             return false;
         }
 
-        if (user.IsInRole("Admin"))
-        {
-            return true;
-        }
-
         var roleId = await ResolveRoleIdAsync(user);
         if (roleId <= 0)
         {

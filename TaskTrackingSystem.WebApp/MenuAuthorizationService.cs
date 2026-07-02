@@ -67,7 +67,7 @@ public class MenuAuthorizationService
         var cleanRelative = relativePath.Split('?')[0].Trim('/');
         if (cleanRelative.Equals("audit-logs", StringComparison.OrdinalIgnoreCase))
         {
-            return user.IsInRole("Admin");
+            return _sessionState.CachedAccessCodes != null && _sessionState.CachedAccessCodes.Contains("Roles_List");
         }
 
         var roleKey = GetRoleCacheKey(user);

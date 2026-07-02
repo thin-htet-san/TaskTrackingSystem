@@ -11,6 +11,7 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public string StatusName { get; set; } = string.Empty;
         public string PriorityName { get; set; } = string.Empty;
         public string? AssignedTo { get; set; }
+        public long? AssignedToUserId { get; set; }
         public DateTime DueDate { get; set; }
         public int DaysOverdue { get; set; }
         public DateTime CreatedAt { get; set; }

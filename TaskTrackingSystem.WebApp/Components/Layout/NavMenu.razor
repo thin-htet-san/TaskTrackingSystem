@@ -81,7 +81,8 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                isAdmin = user.IsInRole("Admin");
+                var codes = await MenuAuthorization.GetCurrentAccessCodesAsync(user);
+                isAdmin = codes.Contains("Roles_List");
                 var rawMenus = await MenuAuthorization.GetUserMenusAsync(user);
                 menus = ProcessMenus(rawMenus);
                 BuildUrlHierarchy(menus);
@@ -127,6 +128,8 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
+                var codes = await MenuAuthorization.GetCurrentAccessCodesAsync(user);
+                isAdmin = codes.Contains("Roles_List");
                 var freshMenus = await MenuAuthorization.GetUserMenusAsync(user);
                 var processedMenus = ProcessMenus(freshMenus);
 

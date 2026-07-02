@@ -45,22 +45,4 @@ public class UserDeviceService
         return Result.Success();
     }
 
-    public async Task<Result> RemoveTokenAsync(long userId, string fcmToken)
-    {
-        var token = fcmToken.Trim();
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return Result.Failure("FCM token is required.", 400);
-        }
-
-        var device = await _db.UserDevices.FirstOrDefaultAsync(x => x.UserId == userId && x.FcmToken == token);
-        if (device == null)
-        {
-            return Result.Success(204);
-        }
-
-        _db.UserDevices.Remove(device);
-        await _db.SaveChangesAsync();
-        return Result.Success(204);
-    }
 }

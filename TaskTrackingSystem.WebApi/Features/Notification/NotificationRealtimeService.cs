@@ -12,12 +12,7 @@ public class NotificationRealtimeService
         _hubContext = hubContext;
     }
 
-    public global::System.Threading.Tasks.Task SendCreatedAsync(long recipientId, NotificationDto notification, int unreadCount)
-    {
-        return SendCreatedInternalAsync(recipientId, notification, unreadCount);
-    }
-
-    private async global::System.Threading.Tasks.Task SendCreatedInternalAsync(long recipientId, NotificationDto notification, int unreadCount)
+    public async global::System.Threading.Tasks.Task SendCreatedAsync(long recipientId, NotificationDto notification, int unreadCount)
     {
         var group = _hubContext.Clients.Group(NotificationHub.GetUserGroupName(recipientId));
         await group.SendAsync("NotificationCreated", notification);

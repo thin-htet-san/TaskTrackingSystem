@@ -14,14 +14,16 @@ namespace TaskTrackingSystem.WebApi.Features.Audit
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class AuditLogController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly PermissionAuthorizationService _permissionAuthorizationService;
 
-        public AuditLogController(AppDbContext db)
+        public AuditLogController(AppDbContext db, PermissionAuthorizationService permissionAuthorizationService)
         {
             _db = db;
+            _permissionAuthorizationService = permissionAuthorizationService;
         }
 
         [HttpGet]
@@ -31,6 +33,11 @@ namespace TaskTrackingSystem.WebApi.Features.Audit
             [FromQuery] string? search,
             [FromQuery] PaginationQuery? paging = null)
         {
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "List"))
+            {
+                return Forbid();
+            }
+
             var query = _db.AuditLogs
                 .Include(a => a.User)
                 .AsQueryable();
