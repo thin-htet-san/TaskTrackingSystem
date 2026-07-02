@@ -27,6 +27,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Permission> Permissions { get; set; }
 
+    public virtual DbSet<Issue> Issues { get; set; }
+
     public virtual DbSet<Project> Projects { get; set; }
 
     public virtual DbSet<ProjectMember> ProjectMembers { get; set; }
@@ -38,10 +40,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<RolePermission> RolePermissions { get; set; }
 
     public virtual DbSet<Task> Tasks { get; set; }
-
-    public virtual DbSet<TaskHistory> TaskHistories { get; set; }
-
-    public virtual DbSet<TimeLog> TimeLogs { get; set; }
 
     public virtual DbSet<UserDevice> UserDevices { get; set; }
 
@@ -169,6 +167,35 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK_Permissions_Menu");
         });
 
+        modelBuilder.Entity<Issue>(entity =>
+        {
+            entity.HasIndex(e => e.AssignedTo, "IX_Issues_AssignedTo");
+            entity.HasIndex(e => e.StatusId, "IX_Issues_StatusId");
+            entity.HasIndex(e => e.PriorityId, "IX_Issues_PriorityId");
+            entity.HasIndex(e => e.TaskId, "IX_Issues_TaskId");
+
+            entity.Property(e => e.ActualHours).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.DueDate).HasColumnType("datetime");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
+            entity.Property(e => e.StartDate).HasColumnType("datetime");
+            entity.Property(e => e.StatusId).HasDefaultValue(AppTaskStatus.Todo);
+            entity.Property(e => e.Title).HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.AssignedToNavigation).WithMany()
+                .HasForeignKey(d => d.AssignedTo)
+                .HasConstraintName("FK_Issues_Users_AssignedTo");
+
+            entity.HasOne(d => d.Task).WithMany()
+                .HasForeignKey(d => d.TaskId)
+                .HasConstraintName("FK_Issues_Tasks");
+        });
+
         modelBuilder.Entity<Project>(entity =>
         {
             entity.HasIndex(e => e.CreatedById, "IX_Projects_CreatedById");
@@ -278,8 +305,6 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.DueDate).HasColumnType("datetime");
-            entity.Property(e => e.ActualHours).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.EstimatedHours).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.IsArchived).HasDefaultValue(false);
             entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
             entity.Property(e => e.StatusId).HasDefaultValue(AppTaskStatus.Todo);
@@ -293,54 +318,6 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Project).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.ProjectId)
                 .HasConstraintName("FK_Tasks_Projects");
-        });
-
-        modelBuilder.Entity<TaskHistory>(entity =>
-        {
-            entity.HasIndex(e => e.TaskId, "IX_TaskHistories_TaskId");
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Remarks).HasMaxLength(500);
-
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TaskHistoryCreatedByNavigations)
-                .HasForeignKey(d => d.CreatedBy)
-                .OnDelete(DeleteBehavior.ClientSetNull);
-
-            entity.HasOne(d => d.ModifiedBy).WithMany(p => p.TaskHistoryModifiedBies)
-                .HasForeignKey(d => d.ModifiedById)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_TaskHistories_Users_ModifiedBy");
-
-            entity.HasOne(d => d.Task).WithMany(p => p.TaskHistories)
-                .HasForeignKey(d => d.TaskId)
-                .HasConstraintName("FK_TaskHistories_Tasks");
-        });
-
-        modelBuilder.Entity<TimeLog>(entity =>
-        {
-            entity.HasIndex(e => e.LogDate, "IX_TimeLogs_LogDate");
-
-            entity.HasIndex(e => e.TaskId, "IX_TimeLogs_TaskId");
-
-            entity.HasIndex(e => e.UserId, "IX_TimeLogs_UserId");
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.HoursLogged).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.Notes).HasMaxLength(500);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasOne(d => d.Task).WithMany(p => p.TimeLogs)
-                .HasForeignKey(d => d.TaskId)
-                .HasConstraintName("FK_TimeLogs_Tasks");
-
-            entity.HasOne(d => d.User).WithMany(p => p.TimeLogs)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_TimeLogs_Users");
         });
 
         modelBuilder.Entity<User>(entity =>

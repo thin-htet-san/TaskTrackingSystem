@@ -47,10 +47,4 @@ public partial class User
 
     public virtual ICollection<Task> TaskAssignedToNavigations { get; set; } = new List<Task>();
 
-    public virtual ICollection<TaskHistory> TaskHistoryCreatedByNavigations { get; set; } = new List<TaskHistory>();
-
-    public virtual ICollection<TaskHistory> TaskHistoryModifiedBies { get; set; } = new List<TaskHistory>();
-
-    public virtual ICollection<TimeLog> TimeLogs { get; set; } = new List<TimeLog>();
-
 }

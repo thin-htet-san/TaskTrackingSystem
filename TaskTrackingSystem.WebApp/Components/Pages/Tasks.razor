@@ -325,14 +325,6 @@
                             }
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Estimated Hours</label>
-                        <input @bind="formEstimatedHours" type="number" placeholder="Estimated Hours" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Actual Hours</label>
-                        <input @bind="formActualHours" type="number" step="0.5" min="0" max="999.99" placeholder="Actual Hours" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
-                    </div>
                 </div>
 
                 @if (!string.IsNullOrEmpty(errorMessage))
@@ -434,8 +426,6 @@
     private DateTime formDueDate = DateTime.Today.AddDays(7);
     private long? formAssignedTo;
     private string assigneeSearchInput = "";
-    private decimal? formEstimatedHours;
-    private decimal? formActualHours;
     private bool isLoadingProjectMembers;
 
     protected override async Task OnInitializedAsync()
@@ -756,8 +746,6 @@
         formDueDate = DateTime.Today.AddDays(7);
         formAssignedTo = null;
         assigneeSearchInput = "";
-        formEstimatedHours = null;
-        formActualHours = null;
         errorMessage = null;
         isTitleError = false; titleErrorMessage = "";
         isProjectError = false; projectErrorMessage = "";
@@ -778,8 +766,6 @@
         formDueDate = task.DueDate;
         formAssignedTo = task.AssignedTo;
         assigneeSearchInput = "";
-        formEstimatedHours = task.EstimatedHours;
-        formActualHours = task.ActualHours;
         errorMessage = null;
         isTitleError = false; titleErrorMessage = "";
         isProjectError = false; projectErrorMessage = "";
@@ -897,9 +883,7 @@
                     StatusId = formStatusId,
                     PriorityId = formPriorityId,
                     DueDate = formDueDate,
-                    AssignedTo = formAssignedTo,
-                    EstimatedHours = formEstimatedHours,
-                    ActualHours = formActualHours
+                    AssignedTo = formAssignedTo
                 };
                 var response = await client.PutAsJsonAsync($"Task/{editingId}", dto);
                 var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
@@ -919,9 +903,7 @@
                     StatusId = formStatusId,
                     PriorityId = formPriorityId,
                     DueDate = formDueDate,
-                    AssignedTo = formAssignedTo,
-                    EstimatedHours = formEstimatedHours,
-                    ActualHours = formActualHours
+                    AssignedTo = formAssignedTo
                 };
                 var response = await client.PostAsJsonAsync("Task", dto);
                 var res = await response.Content.ReadFromJsonAsync<Result<TaskDto>>(Serialization.CaseInsensitive);

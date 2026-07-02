@@ -30,12 +30,6 @@ namespace TaskTrackingSystem.Shared.Models.Task
         [Range(0, long.MaxValue)]
         public long? AssignedBy { get; set; }
 
-        [Range(typeof(decimal), "0", "100000")]
-        public decimal? EstimatedHours { get; set; }
-
-        [Range(typeof(decimal), "0", "999.99")]
-        public decimal? ActualHours { get; set; }
-
         [Required]
         public DateTime DueDate { get; set; }
 

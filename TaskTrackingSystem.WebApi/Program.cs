@@ -33,6 +33,7 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Auth.AuthService>(
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Role.RoleService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Project.ProjectService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Task.TaskService>();
+builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Issue.IssueService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Dashboard.DashboardService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Report.ReportService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Menu.MenuService>();
@@ -132,32 +133,6 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-    var backlogMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "TASKS_BACKLOG");
-    if (backlogMenu == null)
-    {
-        db.Menus.Add(new Menu
-        {
-            MenuCode = "TASKS_BACKLOG",
-            MenuName = "Task Backlog",
-            MenuUrl = "/tasks/backlog",
-            Icon = "layers",
-            Visible = true,
-            OrderNo = 25,
-            IsDeleted = false,
-            CreatedAt = DateTime.UtcNow
-        });
-    }
-    else
-    {
-        backlogMenu.MenuName = "Task Backlog";
-        backlogMenu.MenuUrl = "/tasks/backlog";
-        backlogMenu.Icon = "layers";
-        backlogMenu.Visible = true;
-        backlogMenu.OrderNo = 25;
-        backlogMenu.IsDeleted = false;
-        backlogMenu.UpdatedAt = DateTime.UtcNow;
-    }
 
     var dashboardMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "DASHBOARD");
     if (dashboardMenu == null)

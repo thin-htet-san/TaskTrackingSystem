@@ -4,25 +4,29 @@ using TaskTrackingSystem.Shared.Enums;
 
 namespace TaskTrackingSystem.Database.AppDbContextModels;
 
-public partial class Task
+public partial class Issue
 {
     public long Id { get; set; }
+
+    public long TaskId { get; set; }
 
     public string Title { get; set; } = null!;
 
     public string? Description { get; set; }
 
-    public long ProjectId { get; set; }
+    public long? AssignedTo { get; set; }
+
+    public decimal? EstimatedHours { get; set; }
+
+    public decimal? ActualHours { get; set; }
+
+    public DateTime StartDate { get; set; }
+
+    public DateTime DueDate { get; set; }
 
     public AppTaskStatus StatusId { get; set; }
 
     public TaskPriority PriorityId { get; set; }
-
-    public long? AssignedTo { get; set; }
-
-    public long? AssignedBy { get; set; }
-
-    public DateTime DueDate { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
@@ -34,14 +38,7 @@ public partial class Task
 
     public bool IsDeleted { get; set; }
 
-    public bool IsArchived { get; set; }
-
-    public virtual User? AssignedByNavigation { get; set; }
-
     public virtual User? AssignedToNavigation { get; set; }
 
-    public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
-
-    public virtual Project Project { get; set; } = null!;
-
+    public virtual Task Task { get; set; } = null!;
 }

@@ -5,10 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using TaskTrackingSystem.Shared;
-using TaskTrackingSystem.Shared.Models.User;
-using TaskTrackingSystem.Shared.Models.Task;
-using TaskTrackingSystem.Shared.Models.Project;
 using TaskTrackingSystem.Shared.Enums;
+using TaskTrackingSystem.Shared.Models.Project;
+using TaskTrackingSystem.Shared.Models.Task;
+using TaskTrackingSystem.Shared.Models.User;
 using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Project
@@ -22,6 +22,13 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             _db = db;
             _notificationService = notificationService;
+        }
+
+        private static DateTime? GetCompletedAt(TaskTrackingSystem.Database.AppDbContextModels.Task task)
+        {
+            return task.StatusId == AppTaskStatus.Done
+                ? task.UpdatedAt ?? task.CreatedAt
+                : null;
         }
 
         public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync(string roleName, long currentUserId)
@@ -76,7 +83,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             var project = await BuildAccessibleProjectQuery(roleName, currentUserId)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (project == null) return null;
+            if (project == null)
+            {
+                return null;
+            }
 
             return new ProjectDto
             {
@@ -137,7 +147,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             }
 
             var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted != true);
-            if (project == null) return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
+            if (project == null)
+            {
+                return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
+            }
 
             if (!await IsProjectAccessibleAsync(id, roleName, currentUserId))
             {
@@ -160,7 +173,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         public async Task<Result> SoftDeleteProjectAsync(long id, string roleName, long currentUserId)
         {
             var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted != true);
-            if (project == null) return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
+            if (project == null)
+            {
+                return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
+            }
 
             if (!await IsProjectAccessibleAsync(id, roleName, currentUserId))
             {
@@ -170,7 +186,6 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             project.IsDeleted = true;
             _db.Projects.Update(project);
 
-            // Soft-delete all tasks associated with this project
             var tasksToUpdate = await _db.Tasks
                 .Where(t => t.ProjectId == id && t.IsDeleted != true)
                 .ToListAsync();
@@ -180,6 +195,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 task.UpdatedAt = DateTime.UtcNow;
                 task.UpdatedBy = currentUserId;
             }
+
             if (tasksToUpdate.Any())
             {
                 _db.Tasks.UpdateRange(tasksToUpdate);
@@ -236,7 +252,6 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Result.Failure(ResultMessages.UserIdsCannotBeNull, 400);
             }
 
-            // Verify if user IDs are valid and not deleted
             if (dto.UserIds.Any())
             {
                 var validUserIds = await _db.Users
@@ -251,7 +266,6 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 }
             }
 
-            // Purge old assignments
             var existingMembers = await _db.ProjectMembers
                 .Where(pm => pm.ProjectId == projectId)
                 .ToListAsync();
@@ -262,7 +276,6 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 _db.ProjectMembers.RemoveRange(existingMembers);
             }
 
-            // Bulk insert new assignments
             foreach (var userId in dto.UserIds)
             {
                 _db.ProjectMembers.Add(new ProjectMember
@@ -312,7 +325,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             _db.ProjectMembers.Remove(member);
             await _db.SaveChangesAsync();
 
-            return Result.Success(204); // No Content success
+            return Result.Success(204);
         }
 
         public async Task<Result<IEnumerable<TaskDto>>> GetProjectTasksAsync(long projectId, string roleName, long currentUserId)
@@ -334,16 +347,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                     PriorityId = t.PriorityId,
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
-                    EstimatedHours = t.EstimatedHours,
-                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     IsArchived = t.IsArchived,
-                    CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
-                        .OrderBy(th => th.CreatedAt)
-                        .Select(th => th.CreatedAt)
-                        .FirstOrDefault()
+                    CompletedAt = GetCompletedAt(t)
                 })
                 .ToListAsync();
 

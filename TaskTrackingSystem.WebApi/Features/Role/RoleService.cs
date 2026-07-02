@@ -191,6 +191,20 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result<List<string>>.Failure(ResultMessages.RoleNotFound(roleId), 404);
             }
 
+            var validMenuCodes = await _db.Menus
+                .Where(m => !m.IsDeleted)
+                .Select(m => m.MenuCode)
+                .ToListAsync();
+
+            var validPermissionCodes = await _db.Permissions
+                .Where(p => !p.IsDeleted)
+                .Select(p => p.PermissionCode)
+                .ToListAsync();
+
+            var validCodes = validMenuCodes
+                .Concat(validPermissionCodes)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             var menuCodes = await _db.RoleMenus
                 .Where(rm => rm.RoleId == role.Id && !rm.IsDeleted)
                 .Select(rm => rm.Menu.MenuCode)
@@ -203,6 +217,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             var assignedCodes = menuCodes
                 .Concat(permissionCodes)
+                .Where(code => validCodes.Contains(code))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -251,6 +266,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             var menuIdLookup = menuLookup.ToDictionary(x => x.MenuId, x => x.ParentMenuId);
             var menuIdsToPersist = new HashSet<long>();
+            var now = DateTime.UtcNow;
 
             foreach (var menu in selectedMenus)
             {
@@ -267,13 +283,34 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 .Distinct()
                 .ToList();
 
-            var now = DateTime.UtcNow;
             var existingRoleMenus = await _db.RoleMenus
                 .Where(rm => rm.RoleId == role.Id)
+                .OrderBy(rm => rm.RoleMenuId)
                 .ToListAsync();
             var existingRolePermissions = await _db.RolePermissions
                 .Where(rp => rp.RoleId == role.Id)
+                .OrderBy(rp => rp.RolePermissionId)
                 .ToListAsync();
+
+            foreach (var duplicateMenuGroup in existingRoleMenus.GroupBy(rm => rm.MenuId).Where(g => g.Count() > 1))
+            {
+                foreach (var duplicate in duplicateMenuGroup.Skip(1))
+                {
+                    duplicate.IsDeleted = true;
+                    duplicate.UpdatedAt = now;
+                    duplicate.UpdatedById = currentUserId;
+                }
+            }
+
+            foreach (var duplicatePermissionGroup in existingRolePermissions.GroupBy(rp => rp.PermissionId).Where(g => g.Count() > 1))
+            {
+                foreach (var duplicate in duplicatePermissionGroup.Skip(1))
+                {
+                    duplicate.IsDeleted = true;
+                    duplicate.UpdatedAt = now;
+                    duplicate.UpdatedById = currentUserId;
+                }
+            }
 
             var oldMenuIds = existingRoleMenus
                 .Where(rm => !rm.IsDeleted)
@@ -284,8 +321,12 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 .Select(rp => rp.PermissionId)
                 .ToHashSet();
 
-            var existingRoleMenusByMenuId = existingRoleMenus.ToDictionary(rm => rm.MenuId);
-            var existingRolePermissionsByPermissionId = existingRolePermissions.ToDictionary(rp => rp.PermissionId);
+            var existingRoleMenusByMenuId = existingRoleMenus
+                .GroupBy(rm => rm.MenuId)
+                .ToDictionary(g => g.Key, g => g.First());
+            var existingRolePermissionsByPermissionId = existingRolePermissions
+                .GroupBy(rp => rp.PermissionId)
+                .ToDictionary(g => g.Key, g => g.First());
 
             foreach (var existingMenu in existingRoleMenus)
             {
