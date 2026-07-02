@@ -43,6 +43,25 @@ namespace TaskTrackingSystem.WebApi.Features.User
             return Ok(paged);
         }
 
+        /// <summary>Returns the user IDs of all colleagues who share any project with the current user.</summary>
+        [HttpGet("my-team-user-ids")]
+        public async Task<ActionResult<List<long>>> GetMyTeamUserIds()
+        {
+            var currentUserId = User.GetUserId();
+            var myProjectIds = await _userService.GetMyProjectIdsAsync(currentUserId);
+            var teamUserIds = await _userService.GetTeamUserIdsAsync(myProjectIds, currentUserId);
+            return Ok(teamUserIds);
+        }
+
+        /// <summary>Returns all project IDs the current user is a member of.</summary>
+        [HttpGet("my-project-ids")]
+        public async Task<ActionResult<List<long>>> GetMyProjectIds()
+        {
+            var currentUserId = User.GetUserId();
+            var projectIds = await _userService.GetMyProjectIdsAsync(currentUserId);
+            return Ok(projectIds);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUser(long id)
         {

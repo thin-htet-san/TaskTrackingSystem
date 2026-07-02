@@ -36,14 +36,14 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var tasks = await _taskService.GetAllTasksAsync(User.GetRoleName(), User.GetUserId());
+                var tasks = await _taskService.GetAllTasksAsync(User.GetRoleId(), User.GetUserId());
                 return Ok(tasks);
             }
 
             var page = PaginationExtensions.NormalizePage(paging.Page);
             var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
             var paged = await _taskService.GetPagedTasksAsync(
-                User.GetRoleName(),
+                User.GetRoleId(),
                 User.GetUserId(),
                 search,
                 projectId,
@@ -59,14 +59,14 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpGet("archived")]
         public async Task<ActionResult<IEnumerable<TaskDto>>> GetArchivedTasks()
         {
-            var tasks = await _taskService.GetArchivedTasksAsync(User.GetRoleName(), User.GetUserId());
+            var tasks = await _taskService.GetArchivedTasksAsync(User.GetRoleId(), User.GetUserId());
             return Ok(tasks);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<TaskDto>> GetTask(long id)
         {
-            var task = await _taskService.GetTaskByIdAsync(id, User.GetRoleName(), User.GetUserId());
+            var task = await _taskService.GetTaskByIdAsync(id, User.GetRoleId(), User.GetUserId());
             if (task == null)
             {
                 return NotFound(new { message = $"Task with ID {id} not found." });
@@ -83,7 +83,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             }
 
             var currentUserId = User.GetUserId();
-            var result = await _taskService.CreateTaskAsync(createTaskDto, User.GetRoleName(), currentUserId);
+            var result = await _taskService.CreateTaskAsync(createTaskDto, User.GetRoleId(), currentUserId);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -115,14 +115,14 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpGet("/api/User/{userId}/tasks")]
         public async Task<ActionResult<Result<IEnumerable<TaskDto>>>> GetUserTasks(long userId)
         {
-            var result = await _taskService.GetTasksByUserIdAsync(userId, User.GetRoleName(), User.GetUserId());
+            var result = await _taskService.GetTasksByUserIdAsync(userId, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateTaskStatus(long id, [FromQuery] AppTaskStatus statusId)
         {
-            var result = await _taskService.UpdateTaskStatusAsync(id, statusId, User.GetRoleName(), User.GetUserId());
+            var result = await _taskService.UpdateTaskStatusAsync(id, statusId, User.GetRoleId(), User.GetUserId());
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
@@ -138,7 +138,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Forbid();
             }
 
-            var result = await _taskService.ArchiveDoneTasksAsync(projectId, User.GetRoleName(), User.GetUserId());
+            var result = await _taskService.ArchiveDoneTasksAsync(projectId, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
     }

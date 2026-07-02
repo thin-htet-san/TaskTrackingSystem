@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-@attribute [Authorize(Roles = "Employee")]
+@attribute [Authorize]
 @inject ApiClientService ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS

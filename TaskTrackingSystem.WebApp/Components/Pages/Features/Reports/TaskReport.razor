@@ -129,10 +129,20 @@
             <button @onclick="ResetAllFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                 <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> Reset
             </button>
+
+            <div class="flex flex-wrap items-center gap-6 w-full border-t border-slate-100 pt-3 mt-1">
+                <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" @bind="filterAssignToMe" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <span>Assigned to me</span>
+                </label>
+                <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" @bind="filterAssignToMyTeam" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <span>Assigned to my team</span>
+                </label>
+            </div>
         </div>
     </div>
 
-    <!-- Content Area -->
     @if (isLoading)
     {
         <div class="flex items-center justify-center py-20">
@@ -302,12 +312,12 @@
                 </table>
 
                 <!-- Pagination -->
-                        <Pagination CurrentPage="currentPage"
-                                     TotalPages="TotalPages"
-                                     PageSize="pageSize"
-                                     TotalCount="taskReportPage?.TotalCount ?? 0"
-                                     OnPageChanged="HandlePageChanged"
-                                     OnPageSizeChanged="HandlePageSizeChanged" />
+                <Pagination CurrentPage="currentPage"
+                            TotalPages="TotalPages"
+                            PageSize="pageSize"
+                            TotalCount="taskReportPage?.TotalCount ?? 0"
+                            OnPageChanged="HandlePageChanged"
+                            OnPageSizeChanged="HandlePageSizeChanged" />
             </div>
         }
     }
@@ -329,6 +339,8 @@
     private string projectSearchInput = string.Empty;
     private string projectSearchQuery = string.Empty;
     private bool showProjectSuggestions;
+    private bool filterAssignToMe = false;
+    private bool filterAssignToMyTeam = false;
 
     // Search and Pagination
     private string searchInput = "";
@@ -362,6 +374,8 @@
         projectSearchInput = string.Empty;
         projectSearchQuery = string.Empty;
         showProjectSuggestions = false;
+        filterAssignToMe = false;
+        filterAssignToMyTeam = false;
         currentPage = 1;
         await LoadTaskReport();
     }
@@ -510,6 +524,8 @@
         if (filterEndDate.HasValue) parts.Add($"endDate={filterEndDate:yyyy-MM-dd}");
         if (!string.IsNullOrEmpty(filterStatus)) parts.Add($"status={Uri.EscapeDataString(filterStatus)}");
         if (filterProjectId > 0) parts.Add($"projectId={filterProjectId}");
+        if (filterAssignToMe) parts.Add("assignedToMe=true");
+        if (filterAssignToMyTeam) parts.Add("assignedToMyTeam=true");
         if (includePaging)
         {
             parts.Add($"page={currentPage}");

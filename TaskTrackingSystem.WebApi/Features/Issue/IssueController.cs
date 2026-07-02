@@ -37,14 +37,14 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var issues = await _issueService.GetAllIssuesAsync(User.GetRoleName(), User.GetUserId());
+                var issues = await _issueService.GetAllIssuesAsync(User.GetRoleId(), User.GetUserId());
                 return Ok(issues);
             }
 
             var page = PaginationExtensions.NormalizePage(paging.Page);
             var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
             var paged = await _issueService.GetPagedIssuesAsync(
-                User.GetRoleName(),
+                User.GetRoleId(),
                 User.GetUserId(),
                 search,
                 taskId,
@@ -61,7 +61,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
         [HttpGet("{id}")]
         public async Task<ActionResult<IssueDto>> GetIssue(long id)
         {
-            var issue = await _issueService.GetIssueByIdAsync(id, User.GetRoleName(), User.GetUserId());
+            var issue = await _issueService.GetIssueByIdAsync(id, User.GetRoleId(), User.GetUserId());
             if (issue == null)
             {
                 return NotFound(new { message = $"Issue with ID {id} not found." });
@@ -73,7 +73,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
         [HttpGet("task/{taskId}")]
         public async Task<ActionResult<IEnumerable<IssueDto>>> GetIssuesByTask(long taskId)
         {
-            var issues = await _issueService.GetIssuesByTaskIdAsync(taskId, User.GetRoleName(), User.GetUserId());
+            var issues = await _issueService.GetIssuesByTaskIdAsync(taskId, User.GetRoleId(), User.GetUserId());
             return Ok(issues);
         }
 
@@ -85,7 +85,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 return Forbid();
             }
 
-            var result = await _issueService.CreateIssueAsync(dto, User.GetRoleName(), User.GetUserId());
+            var result = await _issueService.CreateIssueAsync(dto, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -97,7 +97,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 return Forbid();
             }
 
-            var result = await _issueService.UpdateIssueAsync(id, dto, User.GetRoleName(), User.GetUserId());
+            var result = await _issueService.UpdateIssueAsync(id, dto, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -109,7 +109,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 return Forbid();
             }
 
-            var result = await _issueService.SoftDeleteIssueAsync(id, User.GetRoleName(), User.GetUserId());
+            var result = await _issueService.SoftDeleteIssueAsync(id, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
     }

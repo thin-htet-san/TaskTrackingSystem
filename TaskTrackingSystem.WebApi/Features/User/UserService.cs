@@ -221,5 +221,26 @@ namespace TaskTrackingSystem.WebApi.Features.User
 
             return Result.Success(200);
         }
+
+        public async Task<List<long>> GetMyProjectIdsAsync(long currentUserId)
+        {
+            return await _db.ProjectMembers
+                .Where(pm => pm.UserId == currentUserId)
+                .Select(pm => pm.ProjectId)
+                .Distinct()
+                .ToListAsync();
+        }
+
+        public async Task<List<long>> GetTeamUserIdsAsync(List<long> projectIds, long currentUserId)
+        {
+            if (projectIds == null || projectIds.Count == 0)
+                return new List<long>();
+
+            return await _db.ProjectMembers
+                .Where(pm => projectIds.Contains(pm.ProjectId) && pm.UserId != currentUserId)
+                .Select(pm => pm.UserId)
+                .Distinct()
+                .ToListAsync();
+        }
     }
 }

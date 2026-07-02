@@ -1,0 +1,494 @@
+@page "/reports/timesheet"
+@using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared
+@using TaskTrackingSystem.Shared.Models.Issue
+@using TaskTrackingSystem.Shared.Models.User
+@using TaskTrackingSystem.Shared.Models.Project
+@using System.Text
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
+
+<PageTitle>Time &amp; Effort Tracking Report</PageTitle>
+
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Time &amp; Effort Tracking</h2>
+            <p class="text-slate-500 mt-1">Review estimated hours, completion timelines, and resource effort distribution across issues.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+            </button>
+            <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats summary -->
+    @if (!isLoading)
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="rounded-xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">Total Estimated Effort</p>
+                        <p class="mt-1 text-3xl font-bold text-violet-700">@totalHours.ToString("N1") hrs</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
+                        <i data-lucide="clock" class="h-6 w-6 text-violet-600"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500">Completed Effort</p>
+                        <p class="mt-1 text-3xl font-bold text-emerald-700">@completedHours.ToString("N1") hrs</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
+                        <i data-lucide="check-circle-2" class="h-6 w-6 text-emerald-600"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="rounded-xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">Active Effort (In-Flight)</p>
+                        <p class="mt-1 text-3xl font-bold text-amber-700">@activeHours.ToString("N1") hrs</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
+                        <i data-lucide="timer" class="h-6 w-6 text-amber-600"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">Overdue Effort</p>
+                        <p class="mt-1 text-3xl font-bold text-rose-700">@overdueHours.ToString("N1") hrs</p>
+                    </div>
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100">
+                        <i data-lucide="alert-triangle" class="h-6 w-6 text-rose-600"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-end gap-4">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Issues / Assignee</label>
+                    <input @bind="searchInput" type="text" placeholder="Search issue title, description or assignee..."
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Project</label>
+                    <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">All Projects</option>
+                        @foreach (var proj in allProjects)
+                        {
+                            <option value="@proj.Id">@proj.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Issue Status</label>
+                    <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">All Statuses</option>
+                        <option value="Todo">To Do</option>
+                        <option value="InProgress">In Progress</option>
+                        <option value="Done">Completed</option>
+                    </select>
+                </div>
+                <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                    <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+                </button>
+                <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> Reset
+                </button>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-6 border-t border-slate-100 pt-3">
+                <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" @bind="filterAssignToMe" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <span>Assigned to me</span>
+                </label>
+                <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" @bind="filterAssignToMyTeam" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <span>Assigned to my team</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading timesheet data..." />
+    }
+    else
+    {
+        <!-- Table -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-700">
+                    Showing <span class="text-violet-600 font-bold">@FilteredIssues.Count()</span> timesheet issue entry(s)
+                </h3>
+            </div>
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50/60">
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task &amp; Project</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Hours</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @if (PagedIssues.Any())
+                    {
+                        @foreach (var entry in PagedIssues.Select((issue, index) => (issue, index)))
+                        {
+                            var issue = entry.issue;
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
+                                <td class="px-6 py-4">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">@issue.Title</p>
+                                        @if (!string.IsNullOrEmpty(issue.Description))
+                                        {
+                                            <p class="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">@issue.Description</p>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-slate-800 font-medium">@issue.TaskTitle</div>
+                                    <div class="text-xs text-slate-400 mt-0.5">@issue.ProjectName</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (!string.IsNullOrEmpty(issue.AssignedToName))
+                                    {
+                                        <div class="flex items-center gap-2">
+                                            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
+                                                @(issue.AssignedToName.Length > 0 ? issue.AssignedToName[0].ToString().ToUpper() : "")
+                                            </span>
+                                            <span class="text-sm text-slate-700">@issue.AssignedToName</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400">Unassigned</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-sm font-semibold text-slate-800">
+                                    @((issue.EstimatedHours ?? 0).ToString("N1")) hrs
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">
+                                    @DisplayFormats.Date(issue.DueDate)
+                                </td>
+                                <td class="px-6 py-4">
+                                    @{
+                                        var (statusLabel, statusClass) = issue.StatusId switch {
+                                            AppTaskStatus.InProgress => ("In Progress", "bg-blue-50 text-blue-700"),
+                                            AppTaskStatus.Done => ("Completed", "bg-emerald-50 text-emerald-700"),
+                                            _ => ("To Do", "bg-slate-100 text-slate-600")
+                                        };
+                                    }
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <EmptyState ColSpan="7" Icon="clock" Title="No effort entries" Subtitle="No timesheet effort entries matched your filters." />
+                    }
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="TotalPages"
+                        PageSize="pageSize"
+                        TotalCount="FilteredIssues.Count()"
+                        OnPageChanged="HandlePageChanged"
+                        OnPageSizeChanged="HandlePageSizeChanged" />
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private List<IssueDto> allIssues = new();
+    private List<ProjectDto> allProjects = new();
+
+    // Filters
+    private string searchInput = "";
+    private string appliedSearch = "";
+    private long filterProjectId = 0;
+    private long appliedProjectId = 0;
+    private string filterStatus = "0";
+    private string appliedStatus = "0";
+    private bool filterAssignToMe = false;
+    private bool filterAssignToMyTeam = false;
+
+    // Current User & Team
+    private long currentUserId = 0;
+    private List<long> myTeamUserIds = new();
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    // Metrics
+    private decimal totalHours = 0;
+    private decimal completedHours = 0;
+    private decimal activeHours = 0;
+    private decimal overdueHours = 0;
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredIssues.Count() / pageSize);
+
+    private IEnumerable<IssueDto> FilteredIssues
+    {
+        get
+        {
+            var result = allIssues.AsEnumerable();
+
+            if (appliedProjectId > 0)
+                result = result.Where(i => i.ProjectId == appliedProjectId);
+
+            if (appliedStatus != "0" && Enum.TryParse<AppTaskStatus>(appliedStatus, out var status))
+                result = result.Where(i => i.StatusId == status);
+
+            if (!string.IsNullOrWhiteSpace(appliedSearch))
+            {
+                var q = appliedSearch.Trim().ToLower();
+                result = result.Where(i =>
+                    i.Title.ToLower().Contains(q) ||
+                    (i.Description != null && i.Description.ToLower().Contains(q)) ||
+                    (i.AssignedToName != null && i.AssignedToName.ToLower().Contains(q)) ||
+                    i.TaskTitle.ToLower().Contains(q)
+                );
+            }
+
+            if (filterAssignToMe || filterAssignToMyTeam)
+            {
+                result = result.Where(i => 
+                    (filterAssignToMe && i.AssignedTo == currentUserId) || 
+                    (filterAssignToMyTeam && i.AssignedTo.HasValue && myTeamUserIds.Contains(i.AssignedTo.Value))
+                );
+            }
+
+            return result.OrderBy(i => i.Title);
+        }
+    }
+
+    private IEnumerable<IssueDto> PagedIssues => FilteredIssues.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var issuesTask = client.GetFromJsonAsync<Result<List<IssueDto>>>("Report/issues", Serialization.CaseInsensitive);
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+            
+            // Get current user ID
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var idStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (long.TryParse(idStr, out var parsedId))
+                {
+                    currentUserId = parsedId;
+                }
+            }
+
+            // Get team IDs
+            try
+            {
+                var teamTask = client.GetFromJsonAsync<List<long>>("User/my-team-user-ids", Serialization.CaseInsensitive);
+                await Task.WhenAll(issuesTask, projectsTask, teamTask);
+                myTeamUserIds = teamTask.Result ?? new();
+            }
+            catch
+            {
+                await Task.WhenAll(issuesTask, projectsTask);
+            }
+
+            var issuesResult = issuesTask.Result;
+            if (issuesResult?.IsSuccess == true && issuesResult.Value != null)
+            {
+                allIssues = issuesResult.Value;
+            }
+            allProjects = projectsTask.Result ?? new();
+
+            ComputeMetrics();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching timesheet data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private void ComputeMetrics()
+    {
+        var today = DateTime.Today;
+        var list = FilteredIssues.ToList();
+        totalHours = list.Sum(i => i.EstimatedHours ?? 0);
+        completedHours = list.Where(i => i.StatusId == AppTaskStatus.Done).Sum(i => i.EstimatedHours ?? 0);
+        activeHours = list.Where(i => i.StatusId != AppTaskStatus.Done).Sum(i => i.EstimatedHours ?? 0);
+        overdueHours = list.Where(i => i.StatusId != AppTaskStatus.Done && i.DueDate < today).Sum(i => i.EstimatedHours ?? 0);
+    }
+
+    private Task ApplyFilters()
+    {
+        appliedSearch = searchInput;
+        appliedProjectId = filterProjectId;
+        appliedStatus = filterStatus;
+        currentPage = 1;
+        ComputeMetrics();
+        return Task.CompletedTask;
+    }
+
+    private Task ResetFilters()
+    {
+        searchInput = "";
+        appliedSearch = "";
+        filterProjectId = 0;
+        appliedProjectId = 0;
+        filterStatus = "0";
+        appliedStatus = "0";
+        filterAssignToMe = false;
+        filterAssignToMyTeam = false;
+        currentPage = 1;
+        ComputeMetrics();
+        return Task.CompletedTask;
+    }
+
+    private Task HandlePageChanged(int page)
+    {
+        currentPage = page;
+        return Task.CompletedTask;
+    }
+
+    private Task HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+        return Task.CompletedTask;
+    }
+
+    private async Task DownloadExcel()
+    {
+        var rows = FilteredIssues.Select(issue =>
+        {
+            var statusLabel = issue.StatusId switch {
+                AppTaskStatus.InProgress => "In Progress",
+                AppTaskStatus.Done => "Completed",
+                _ => "To Do"
+            };
+
+            return new object?[]
+            {
+                issue.Title,
+                issue.TaskTitle,
+                issue.ProjectName,
+                issue.AssignedToName ?? "Unassigned",
+                issue.EstimatedHours ?? 0,
+                issue.DueDate,
+                statusLabel
+            };
+        });
+
+        var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
+            "Time Effort Tracking",
+            "Timesheet Effort Report",
+            new[] { "Issue", "Task", "Project", "Assignee", "Estimated Effort (Hours)", "Due Date", "Status" },
+            rows,
+            new[]
+            {
+                $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All" : appliedSearch)}",
+                $"Project: {(appliedProjectId > 0 ? allProjects.FirstOrDefault(p => p.Id == appliedProjectId)?.Name ?? "All" : "All")}",
+                $"Status: {(appliedStatus != "0" ? appliedStatus : "All")}",
+                $"Assigned To Me: {(filterAssignToMe ? "Yes" : "No")}",
+                $"Assigned To My Team: {(filterAssignToMyTeam ? "Yes" : "No")}",
+                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+            });
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"TimesheetEffortReport_{DateTime.Today:yyyyMMdd}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Convert.ToBase64String(workbookBytes));
+    }
+
+    private async Task DownloadPdf()
+    {
+        var summaryLines = new List<string>
+        {
+            $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All" : appliedSearch)}",
+            $"Project: {(appliedProjectId > 0 ? allProjects.FirstOrDefault(p => p.Id == appliedProjectId)?.Name ?? "All" : "All")}",
+            $"Status: {(appliedStatus != "0" ? appliedStatus : "All")}",
+            $"Assigned To Me: {(filterAssignToMe ? "Yes" : "No")}",
+            $"Assigned To My Team: {(filterAssignToMyTeam ? "Yes" : "No")}",
+            $"Total Effort: {totalHours.ToString("N1")} hrs",
+            $"Completed Effort: {completedHours.ToString("N1")} hrs",
+            $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+        };
+
+        var rows = FilteredIssues.Select(issue =>
+        {
+            var statusLabel = issue.StatusId switch {
+                AppTaskStatus.InProgress => "In Progress",
+                AppTaskStatus.Done => "Completed",
+                _ => "To Do"
+            };
+
+            return new[]
+            {
+                issue.Title,
+                issue.TaskTitle,
+                issue.ProjectName,
+                issue.AssignedToName ?? "Unassigned",
+                (issue.EstimatedHours ?? 0).ToString("N1") + " hrs",
+                DisplayFormats.Date(issue.DueDate),
+                statusLabel
+            };
+        });
+
+        var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
+            "Timesheet Effort Tracking Report",
+            summaryLines,
+            new[] { "Issue", "Task", "Project", "Assignee", "Est. Effort", "Due Date", "Status" },
+            rows);
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            $"TimesheetEffortReport_{DateTime.Today:yyyyMMdd}.pdf",
+            "application/pdf",
+            Convert.ToBase64String(pdfBytes));
+    }
+}

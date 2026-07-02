@@ -32,20 +32,20 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
-                var projects = await _projectService.GetAllProjectsAsync(User.GetRoleName(), User.GetUserId());
+                var projects = await _projectService.GetAllProjectsAsync(User.GetRoleId(), User.GetUserId());
                 return Ok(projects);
             }
 
             var page = PaginationExtensions.NormalizePage(paging.Page);
             var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
-            var paged = await _projectService.GetPagedProjectsAsync(User.GetRoleName(), User.GetUserId(), search, page, limit);
+            var paged = await _projectService.GetPagedProjectsAsync(User.GetRoleId(), User.GetUserId(), search, page, limit);
             return Ok(paged);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectDto>> GetProject(long id)
         {
-            var project = await _projectService.GetProjectByIdAsync(id, User.GetRoleName(), User.GetUserId());
+            var project = await _projectService.GetProjectByIdAsync(id, User.GetRoleId(), User.GetUserId());
             if (project == null)
             {
                 return NotFound(new { message = $"Project with ID {id} not found." });
@@ -75,7 +75,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             }
 
             var currentUserId = User.GetUserId();
-            var result = await _projectService.UpdateProjectAsync(id, updateProjectDto, User.GetRoleName(), currentUserId);
+            var result = await _projectService.UpdateProjectAsync(id, updateProjectDto, User.GetRoleId(), currentUserId);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -87,14 +87,14 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Forbid();
             }
 
-            var result = await _projectService.SoftDeleteProjectAsync(id, User.GetRoleName(), User.GetUserId());
+            var result = await _projectService.SoftDeleteProjectAsync(id, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("{id}/members")]
         public async Task<ActionResult<Result<IEnumerable<UserDto>>>> GetProjectMembers(long id)
         {
-            var result = await _projectService.GetProjectMembersAsync(id, User.GetRoleName(), User.GetUserId());
+            var result = await _projectService.GetProjectMembersAsync(id, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
@@ -106,7 +106,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Forbid();
             }
 
-            var result = await _projectService.AssignMembersToProjectAsync(id, dto, User.GetRoleName(), User.GetUserId());
+            var result = await _projectService.AssignMembersToProjectAsync(id, dto, User.GetRoleId(), User.GetUserId());
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
@@ -122,7 +122,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Forbid();
             }
 
-            var result = await _projectService.RemoveMemberFromProjectAsync(id, userId, User.GetRoleName(), User.GetUserId());
+            var result = await _projectService.RemoveMemberFromProjectAsync(id, userId, User.GetRoleId(), User.GetUserId());
             if (!result.IsSuccess)
             {
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
@@ -133,7 +133,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         [HttpGet("{id}/tasks")]
         public async Task<ActionResult<Result<IEnumerable<TaskDto>>>> GetProjectTasks(long id)
         {
-            var result = await _projectService.GetProjectTasksAsync(id, User.GetRoleName(), User.GetUserId());
+            var result = await _projectService.GetProjectTasksAsync(id, User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
     }

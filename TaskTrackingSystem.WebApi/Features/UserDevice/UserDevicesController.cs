@@ -31,16 +31,4 @@ public class UserDevicesController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPost("unregister")]
-    public async Task<ActionResult<Result>> Unregister([FromBody] RegisterDeviceTokenDto dto)
-    {
-        var userId = User.GetUserId();
-        if (userId <= 0)
-        {
-            return Unauthorized(Result.Failure("User is not authenticated.", 401));
-        }
-
-        var result = await _userDeviceService.RemoveTokenAsync(userId, dto.FcmToken);
-        return StatusCode(result.StatusCode, result);
-    }
 }

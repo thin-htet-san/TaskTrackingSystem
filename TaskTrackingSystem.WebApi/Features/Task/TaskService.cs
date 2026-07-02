@@ -30,9 +30,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 : null;
         }
 
-        public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(string roleName, long currentUserId)
+        public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(long roleId, long currentUserId)
         {
-            return await BuildAccessibleTaskQuery(roleName, currentUserId)
+            var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId);
+            return await query
                 .OrderBy(t => t.DueDate)
                 .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
                 .Select(t => new TaskDto
@@ -54,7 +55,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         }
 
         public async Task<PagedResult<TaskDto>> GetPagedTasksAsync(
-            string roleName,
+            long roleId,
             long currentUserId,
             string? search,
             long? projectId,
@@ -64,7 +65,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             int page,
             int pageSize)
         {
-            var query = BuildAccessibleTaskQuery(roleName, currentUserId);
+            var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId);
 
             if (assignedOnly)
             {
@@ -115,9 +116,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 .ToPagedResultAsync(page, pageSize);
         }
 
-        public async Task<IEnumerable<TaskDto>> GetArchivedTasksAsync(string roleName, long currentUserId)
+        public async Task<IEnumerable<TaskDto>> GetArchivedTasksAsync(long roleId, long currentUserId)
         {
-            return await BuildAccessibleTaskQuery(roleName, currentUserId, includeArchived: true)
+            var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId, includeArchived: true);
+            return await query
                 .Where(t => t.IsArchived)
                 .OrderByDescending(t => t.UpdatedAt ?? t.CreatedAt ?? DateTime.UtcNow)
                 .Select(t => new TaskDto
@@ -138,10 +140,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 .ToListAsync();
         }
 
-        public async Task<TaskDto?> GetTaskByIdAsync(long id, string roleName, long currentUserId)
+        public async Task<TaskDto?> GetTaskByIdAsync(long id, long roleId, long currentUserId)
         {
-            var task = await BuildAccessibleTaskQuery(roleName, currentUserId)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId);
+            var task = await query.FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
             {
@@ -165,7 +167,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             };
         }
 
-        public async Task<Result<TaskDto>> CreateTaskAsync(CreateTaskDto dto, string roleName, long currentUserId)
+        public async Task<Result<TaskDto>> CreateTaskAsync(CreateTaskDto dto, long roleId, long currentUserId)
         {
             if (string.IsNullOrWhiteSpace(dto.Title))
             {
@@ -183,7 +185,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Result<TaskDto>.Failure(ResultMessages.ProjectNotFound(dto.ProjectId), 404);
             }
 
-            if (!await CanAccessProjectAsync(dto.ProjectId, roleName, currentUserId))
+            if (!await CanAccessProjectAsync(dto.ProjectId, roleId, currentUserId))
             {
                 return Result<TaskDto>.Failure("You do not have access to this project.", 403);
             }
@@ -299,7 +301,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result.Success(200);
         }
 
-        public async Task<Result<IEnumerable<TaskDto>>> GetTasksByUserIdAsync(long userId, string roleName, long currentUserId)
+        public async Task<Result<IEnumerable<TaskDto>>> GetTasksByUserIdAsync(long userId, long roleId, long currentUserId)
         {
             var userExists = await _db.Users.AnyAsync(u => u.Id == userId && !u.IsDeleted);
             if (!userExists)
@@ -307,7 +309,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Result<IEnumerable<TaskDto>>.Failure(ResultMessages.UserNotFound(userId), 404);
             }
 
-            var tasks = await BuildAccessibleTaskQuery(roleName, currentUserId)
+            var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId);
+            var tasks = await query
                 .Where(t => t.AssignedTo == userId)
                 .Select(t => new TaskDto
                 {
@@ -329,7 +332,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result<IEnumerable<TaskDto>>.Success(tasks);
         }
 
-        public async Task<Result> UpdateTaskStatusAsync(long id, AppTaskStatus statusId, string roleName, long currentUserId)
+        public async Task<Result> UpdateTaskStatusAsync(long id, AppTaskStatus statusId, long roleId, long currentUserId)
         {
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true && !t.IsArchived);
             if (task == null)
@@ -354,7 +357,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result.Success(200);
         }
 
-        public async Task<Result<int>> ArchiveDoneTasksAsync(long? projectId, string roleName, long currentUserId)
+        public async Task<Result<int>> ArchiveDoneTasksAsync(long? projectId, long roleId, long currentUserId)
         {
             if (projectId.HasValue && projectId.Value > 0)
             {
@@ -364,21 +367,22 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     return Result<int>.Failure(ResultMessages.ProjectNotFound(projectId.Value), 404);
                 }
 
-                if (!await CanAccessProjectAsync(projectId.Value, roleName, currentUserId))
+                if (!await CanAccessProjectAsync(projectId.Value, roleId, currentUserId))
                 {
                     return Result<int>.Failure("You do not have access to this project.", 403);
                 }
             }
 
-            var query = BuildAccessibleTaskQuery(roleName, currentUserId)
-                .Where(t => t.StatusId == AppTaskStatus.Done);
+            var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId);
+            var tasksToArchive = await query
+                .Where(t => t.StatusId == AppTaskStatus.Done)
+                .ToListAsync();
 
             if (projectId.HasValue && projectId.Value > 0)
             {
-                query = query.Where(t => t.ProjectId == projectId.Value);
+                tasksToArchive = tasksToArchive.Where(t => t.ProjectId == projectId.Value).ToList();
             }
 
-            var tasksToArchive = await query.ToListAsync();
             foreach (var task in tasksToArchive)
             {
                 task.IsArchived = true;
@@ -395,16 +399,18 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return Result<int>.Success(tasksToArchive.Count);
         }
 
-        private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(string roleName, long currentUserId, bool includeArchived = false)
+        private async Task<IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task>> BuildAccessibleTaskQueryAsync(long roleId, long currentUserId, bool includeArchived = false)
         {
             var query = _db.Tasks.Where(t => t.IsDeleted != true && (includeArchived || !t.IsArchived));
 
-            if (IsAdmin(roleName))
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            if (isAdmin)
             {
                 return query;
             }
 
-            if (IsManager(roleName))
+            var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
+            if (isManager)
             {
                 return query.Where(t =>
                     t.AssignedTo == currentUserId ||
@@ -417,9 +423,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 t.CreatedBy == currentUserId);
         }
 
-        private async Task<bool> CanAccessProjectAsync(long projectId, string roleName, long currentUserId)
+        private async Task<bool> CanAccessProjectAsync(long projectId, long roleId, long currentUserId)
         {
-            if (IsAdmin(roleName))
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
+            if (isAdmin)
             {
                 return await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             }
@@ -433,16 +440,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         private async Task<bool> IsProjectMemberAsync(long projectId, long userId)
         {
             return await _db.ProjectMembers.AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == userId);
-        }
-
-        private static bool IsAdmin(string roleName)
-        {
-            return roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsManager(string roleName)
-        {
-            return roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

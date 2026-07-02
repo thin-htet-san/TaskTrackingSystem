@@ -115,6 +115,17 @@
             <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
                 <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> Reset
             </button>
+
+            <div class="flex flex-wrap items-center gap-6 w-full border-t border-slate-100 pt-3 mt-1">
+                <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" @bind="filterAssignToMe" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <span>Assigned to me</span>
+                </label>
+                <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" @bind="filterAssignToMyTeam" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <span>Assigned to my team</span>
+                </label>
+            </div>
         </div>
     </div>
 
@@ -128,7 +139,7 @@
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-slate-700">
-                    Showing <span class="text-rose-600 font-bold">@FilteredTasks.Count()</span> delayed / overdue task(s)
+                    Showing <span class="text-rose-600 font-bold">@(overdueReportPage?.TotalCount ?? 0)</span> delayed / overdue task(s)
                 </h3>
             </div>
             <table class="w-full">
@@ -145,14 +156,11 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @if (PagedTasks.Any())
+                    @if (overdueReportTasks.Any())
                     {
-                        @foreach (var entry in PagedTasks.Select((task, index) => (task, index)))
+                        @foreach (var entry in overdueReportTasks.Select((task, index) => (task, index)))
                         {
                             var task = entry.task;
-                            var daysOverdue = (DateTime.Today - task.DueDate).Days;
-                            var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
-                            var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
                             <tr class="hover:bg-slate-50/50 transition-colors">
                                 <td class="px-6 py-4 text-sm font-semibold text-slate-500 align-top">@((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4">
@@ -167,17 +175,17 @@
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center gap-1 text-sm text-slate-600">
                                         <i data-lucide="folder" class="h-3.5 w-3.5 text-violet-500"></i>
-                                        @(project?.Name ?? "â€”")
+                                        @task.ProjectName
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    @if (assignee != null)
+                                    @if (!string.IsNullOrEmpty(task.AssignedTo))
                                     {
                                         <div class="flex items-center gap-2">
                                             <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
-                                                @(assignee.FirstName.Length > 0 ? assignee.FirstName[0].ToString().ToUpper() : "")@(assignee.LastName.Length > 0 ? assignee.LastName[0].ToString().ToUpper() : "")
+                                                @(task.AssignedTo.Length > 0 ? task.AssignedTo[0].ToString().ToUpper() : "")
                                             </span>
-                                            <span class="text-sm text-slate-700">@assignee.FirstName @assignee.LastName</span>
+                                            <span class="text-sm text-slate-700">@task.AssignedTo</span>
                                         </div>
                                     }
                                     else
@@ -186,21 +194,21 @@
                                     }
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="text-sm font-medium @(daysOverdue > 0 ? "text-rose-600" : "text-amber-600")">
+                                    <span class="text-sm font-medium @(task.DaysOverdue > 0 ? "text-rose-600" : "text-amber-600")">
                                         @DisplayFormats.Date(task.DueDate)
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    @if (daysOverdue > 0)
+                                    @if (task.DaysOverdue > 0)
                                     {
                                         <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
                                             <i data-lucide="alert-triangle" class="h-3 w-3"></i>
-                                            @daysOverdue day@(daysOverdue != 1 ? "s" : "")
+                                            @task.DaysOverdue day@(task.DaysOverdue != 1 ? "s" : "")
                                         </span>
                                     }
                                     else
                                     {
-                                        var daysDue = Math.Abs(daysOverdue);
+                                        var daysDue = Math.Abs(task.DaysOverdue);
                                         <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                                             <i data-lucide="clock" class="h-3 w-3"></i>
                                             Due in @daysDue day@(daysDue != 1 ? "s" : "")
@@ -209,23 +217,23 @@
                                 </td>
                                 <td class="px-6 py-4">
                                      @{
-                                         var (priorityLabel, priorityClass) = task.PriorityId switch {
-                                             TaskPriority.High => ("High", "bg-rose-50 text-rose-700"),
-                                             TaskPriority.Medium => ("Medium", "bg-amber-50 text-amber-700"),
-                                             _ => ("Low", "bg-slate-100 text-slate-600")
+                                         var priorityClass = task.PriorityName switch {
+                                             "High" => "bg-rose-50 text-rose-700",
+                                             "Medium" => "bg-amber-50 text-amber-700",
+                                             _ => "bg-slate-100 text-slate-600"
                                          };
                                      }
-                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @priorityClass">@priorityLabel</span>
+                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @priorityClass">@task.PriorityName</span>
                                  </td>
                                  <td class="px-6 py-4">
                                      @{
-                                         var (statusLabel, statusClass) = task.StatusId switch {
-                                             AppTaskStatus.InProgress => ("In Progress", "bg-blue-50 text-blue-700"),
-                                             AppTaskStatus.Done => ("Done", "bg-emerald-50 text-emerald-700"),
-                                             _ => ("To Do", "bg-slate-100 text-slate-600")
+                                         var statusClass = task.StatusName switch {
+                                             "In Progress" => "bg-blue-50 text-blue-700",
+                                             "Done" => "bg-emerald-50 text-emerald-700",
+                                             _ => "bg-slate-100 text-slate-600"
                                          };
                                      }
-                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
+                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@task.StatusName</span>
                                  </td>
                             </tr>
                         }
@@ -241,53 +249,18 @@
             <Pagination CurrentPage="currentPage"
                         TotalPages="TotalPages"
                         PageSize="pageSize"
-                        TotalCount="FilteredTasks.Count()"
+                        TotalCount="@(overdueReportPage?.TotalCount ?? 0)"
                         OnPageChanged="HandlePageChanged"
                         OnPageSizeChanged="HandlePageSizeChanged" />
-        </div>
-    }
-
-    @if (isAdjustModalOpen && selectedTaskForAdjustment != null)
-    {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
-            <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200">
-                <h3 class="text-lg font-bold text-slate-900 mb-2 font-sans">Adjust Due Date</h3>
-                <p class="text-sm text-slate-500 mb-4 font-sans">Update the due date for task: <span class="font-semibold text-slate-700">@selectedTaskForAdjustment.Title</span></p>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1.5 font-sans">New Due Date</label>
-                        <input @bind="adjustedDueDate" type="date" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(adjustError))
-                    {
-                        <div class="rounded-lg bg-rose-50 p-3 text-xs font-medium text-rose-700 font-sans">@adjustError</div>
-                    }
-
-                    <div class="flex items-center justify-end space-x-3 pt-2">
-                        <button @onclick="CloseAdjustModal" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors font-sans">
-                            Cancel
-                        </button>
-                        <button @onclick="SaveDueDateAdjustment" disabled="@isAdjusting" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-50 shadow-sm flex items-center font-sans">
-                            @if (isAdjusting)
-                            {
-                                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                            }
-                            Save Changes
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
     }
 </div>
 
 @code {
     private bool isLoading = true;
-    private List<TaskDto> allTasks = new();
-    private List<UserDto> allUsers = new();
-    private List<ProjectDto> allProjects = new();
+    private List<OverdueCriticalTaskDto> allOverdue = new();
+    private List<OverdueCriticalTaskDto> overdueReportTasks = new();
+    private PagedResult<OverdueCriticalTaskDto>? overdueReportPage;
 
     // Filters
     private string searchInput = "";
@@ -296,6 +269,8 @@
     private int appliedPriority = 0;
     private string filterDelayType = "all";
     private string appliedDelayType = "all";
+    private bool filterAssignToMe = false;
+    private bool filterAssignToMyTeam = false;
 
     // Pagination
     private int currentPage = 1;
@@ -307,88 +282,20 @@
     private int dueSoonCount = 0;
     private int avgDaysOverdue = 0;
     private bool canUpdateTask = false;
-    private List<OverdueCriticalTaskDto> overdueReportTasks = new();
-    private PagedResult<OverdueCriticalTaskDto>? overdueReportPage;
-    
-    private IEnumerable<TaskDto> FilteredTasks
-    {
-        get
-        {
-            var today = DateTime.Today;
-            var result = allTasks.AsEnumerable();
 
-            // Only show non-completed tasks that are overdue or due soon
-            result = result.Where(t => t.StatusId != AppTaskStatus.Done); // exclude Done
-
-            if (appliedDelayType == "overdue")
-                result = result.Where(t => t.DueDate < today);
-            else if (appliedDelayType == "soon")
-                result = result.Where(t => t.DueDate >= today && t.DueDate <= today.AddDays(3));
-            else
-                result = result.Where(t => t.DueDate <= today.AddDays(3)); // overdue + due within 3 days
-
-            if (!string.IsNullOrWhiteSpace(appliedSearch))
-            {
-                var q = appliedSearch.Trim().ToLower();
-                result = result.Where(t =>
-                    t.Title.ToLower().Contains(q) ||
-                    (t.Description != null && t.Description.ToLower().Contains(q)) ||
-                    (allUsers.FirstOrDefault(u => u.Id == t.AssignedTo) is { } usr &&
-                     ($"{usr.FirstName} {usr.LastName}").ToLower().Contains(q)) ||
-                    (allProjects.FirstOrDefault(p => p.Id == t.ProjectId) is { } prj &&
-                     prj.Name.ToLower().Contains(q))
-                );
-            }
-
-            if (appliedPriority > 0)
-                result = result.Where(t => (int)t.PriorityId == appliedPriority);
-
-            return result.OrderBy(t => t.Title).ThenBy(t => t.DueDate);
-        }
-    }
-
-    private int TotalPages => (int)Math.Ceiling((double)FilteredTasks.Count() / pageSize);
-    private IEnumerable<TaskDto> PagedTasks => FilteredTasks.Skip((currentPage - 1) * pageSize).Take(pageSize);
+    private int TotalPages => overdueReportPage?.TotalPages ?? 0;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        canUpdateTask = authState.User.IsInRole("Admin") || await MenuAuthorization.HasAccessCodeAsync(authState.User, "Tasks_Update");
-        var client = ApiClient.CreateClient();
-        try
-        {
-            var tasksTask    = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
-            var usersTask    = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
-            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
-            await System.Threading.Tasks.Task.WhenAll(tasksTask, usersTask, projectsTask);
-
-            allTasks    = tasksTask.Result    ?? new();
-            allUsers    = usersTask.Result    ?? new();
-            allProjects = projectsTask.Result ?? new();
-
-            ComputeSummary();
-            await LoadOverdueReport();
-        }
-        catch (Exception ex) { Console.WriteLine($"Load error: {ex.Message}"); }
-        finally { isLoading = false; }
+        canUpdateTask = await MenuAuthorization.HasAccessCodeAsync(authState.User, "Tasks_Update");
+        await LoadOverdueReport();
+        isLoading = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await JS.InvokeVoidAsync("initIcons");
-    }
-
-    private void ComputeSummary()
-    {
-        var today = DateTime.Today;
-        var activeTasks = allTasks.Where(t => t.StatusId != AppTaskStatus.Done).ToList();
-        var overdueTasks = activeTasks.Where(t => t.DueDate < today).ToList();
-        overdueCount = overdueTasks.Count;
-        criticalCount = overdueTasks.Count(t => t.PriorityId == TaskPriority.High);
-        dueSoonCount = activeTasks.Count(t => t.DueDate >= today && t.DueDate <= today.AddDays(3));
-        avgDaysOverdue = overdueTasks.Any()
-            ? (int)overdueTasks.Average(t => (today - t.DueDate).Days)
-            : 0;
     }
 
     private async Task LoadOverdueReport()
@@ -400,22 +307,43 @@
             if (!string.IsNullOrWhiteSpace(appliedSearch)) parts.Add($"search={Uri.EscapeDataString(appliedSearch)}");
             if (appliedPriority > 0) parts.Add($"priorityId={appliedPriority}");
             if (!string.IsNullOrWhiteSpace(appliedDelayType)) parts.Add($"delayType={Uri.EscapeDataString(appliedDelayType)}");
-            parts.Add($"page={currentPage}");
-            parts.Add($"limit={pageSize}");
+            if (filterAssignToMe) parts.Add("assignedToMe=true");
+            if (filterAssignToMyTeam) parts.Add("assignedToMyTeam=true");
 
-            var url = "Report/overdue-critical" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
-            var result = await client.GetFromJsonAsync<PagedResult<OverdueCriticalTaskDto>>(url, Serialization.CaseInsensitive);
-            if (result != null)
+            // 1. Fetch full matching list once to compute summary cards and for exports
+            var fullUrl = "Report/overdue-critical" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+            var fullResult = await client.GetFromJsonAsync<Result<List<OverdueCriticalTaskDto>>>(fullUrl, Serialization.CaseInsensitive);
+            if (fullResult != null && fullResult.IsSuccess && fullResult.Value != null)
             {
-                overdueReportPage = result;
-                overdueReportTasks = result.Items.ToList();
-                currentPage = result.Page;
-                pageSize = result.PageSize;
+                allOverdue = fullResult.Value;
+                var today = DateTime.Today;
+                var now = DateTime.UtcNow;
+                
+                overdueCount = allOverdue.Count(t => t.DueDate < now);
+                criticalCount = allOverdue.Count(t => t.PriorityName == "High");
+                dueSoonCount = allOverdue.Count(t => t.DueDate >= now && t.DueDate <= now.AddDays(3));
+                avgDaysOverdue = overdueCount > 0
+                    ? (int)allOverdue.Where(t => t.DueDate < now).Average(t => t.DaysOverdue)
+                    : 0;
+            }
+
+            // 2. Fetch paged list for the table view
+            var pagedParts = new List<string>(parts);
+            pagedParts.Add($"page={currentPage}");
+            pagedParts.Add($"limit={pageSize}");
+            var pagedUrl = "Report/overdue-critical" + (pagedParts.Count > 0 ? "?" + string.Join("&", pagedParts) : "");
+            var pagedResult = await client.GetFromJsonAsync<PagedResult<OverdueCriticalTaskDto>>(pagedUrl, Serialization.CaseInsensitive);
+            if (pagedResult != null)
+            {
+                overdueReportPage = pagedResult;
+                overdueReportTasks = pagedResult.Items.ToList();
+                currentPage = pagedResult.Page;
+                pageSize = pagedResult.PageSize;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Overdue report paging error: {ex.Message}");
+            Console.WriteLine($"Overdue report loading error: {ex.Message}");
         }
     }
 
@@ -436,6 +364,8 @@
         appliedPriority = 0;
         filterDelayType = "all";
         appliedDelayType = "all";
+        filterAssignToMe = false;
+        filterAssignToMyTeam = false;
         currentPage = 1;
         await LoadOverdueReport();
     }
@@ -455,44 +385,26 @@
 
     private async Task DownloadExcel()
     {
-        var rows = FilteredTasks.Select(task =>
+        var client = ApiClient.CreateClient();
+        try
         {
-            var daysOver = (DateTime.Today - task.DueDate).Days;
-            var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
-            var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
-            var priority = task.PriorityId switch { TaskPriority.High => "High", TaskPriority.Medium => "Medium", _ => "Low" };
-            var status = task.StatusId switch { AppTaskStatus.InProgress => "In Progress", AppTaskStatus.Done => "Done", _ => "To Do" };
-
-            return new object?[]
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(appliedSearch)) parts.Add($"search={Uri.EscapeDataString(appliedSearch)}");
+            if (appliedPriority > 0) parts.Add($"priorityId={appliedPriority}");
+            
+            var url = "Report/overdue-critical/excel" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+            var response = await client.GetAsync(url);
+            if (response.IsSuccessStatusCode)
             {
-                task.Title,
-                project?.Name ?? string.Empty,
-                assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : "Unassigned",
-                task.DueDate,
-                daysOver,
-                priority,
-                status
-            };
-        });
-
-        var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
-            "Overdue Tasks",
-            "Overdue & Delayed Tasks Report",
-            new[] { "Task", "Project", "Assignee", "Due Date", "Days Overdue", "Priority", "Status" },
-            rows,
-            new[]
-            {
-                $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All tasks" : appliedSearch)}",
-                $"Priority: {appliedPriority switch { 0 => "All", 1 => "Low", 2 => "Medium", 3 => "High", _ => appliedPriority.ToString() }}",
-                $"Delay Type: {appliedDelayType switch { "all" => "All delayed tasks", "overdue" => "Overdue", "soon" => "Due within 3 days", _ => appliedDelayType }}",
-                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
-            });
-
-        await JS.InvokeVoidAsync(
-            "downloadFileFromBase64",
-            $"OverdueTasksReport_{DateTime.Today:yyyyMMdd}.xlsx",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            Convert.ToBase64String(workbookBytes));
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                await JS.InvokeVoidAsync(
+                    "downloadFileFromBase64",
+                    $"OverdueTasksReport_{DateTime.Today:yyyyMMdd}.xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    Convert.ToBase64String(bytes));
+            }
+        }
+        catch (Exception ex) { Console.WriteLine($"Excel download error: {ex.Message}"); }
     }
 
     private async Task DownloadPdf()
@@ -505,22 +417,17 @@
             $"Generated: {DisplayFormats.Date(DateTime.Today)}"
         };
 
-        var rows = FilteredTasks.Select(task =>
+        var rows = allOverdue.Select(task =>
         {
-            var daysOver = (DateTime.Today - task.DueDate).Days;
-            var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo);
-            var project = allProjects.FirstOrDefault(p => p.Id == task.ProjectId);
-            var priority = task.PriorityId switch { TaskPriority.High => "High", TaskPriority.Medium => "Medium", _ => "Low" };
-            var status = task.StatusId switch { AppTaskStatus.InProgress => "In Progress", AppTaskStatus.Done => "Done", _ => "To Do" };
             return new[]
             {
                 task.Title,
-                project?.Name ?? string.Empty,
-                assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : "Unassigned",
+                task.ProjectName,
+                task.AssignedTo ?? "Unassigned",
                 DisplayFormats.Date(task.DueDate),
-                daysOver.ToString(),
-                priority,
-                status
+                task.DaysOverdue.ToString(),
+                task.PriorityName,
+                task.StatusName
             };
         });
 
@@ -535,85 +442,5 @@
             $"OverdueTasksReport_{DateTime.Today:yyyyMMdd}.pdf",
             "application/pdf",
             Convert.ToBase64String(pdfBytes));
-    }
-
-    // Adjust Due Date modal variables and methods
-    private bool isAdjustModalOpen = false;
-    private TaskDto? selectedTaskForAdjustment;
-    private DateTime adjustedDueDate = DateTime.Today;
-    private string adjustError = string.Empty;
-    private bool isAdjusting = false;
-
-    private void RemindAssignee(TaskDto task)
-    {
-        var assigneeName = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo) is { } usr ? $"{usr.FirstName} {usr.LastName}" : "Unassigned";
-        Console.WriteLine($"[REMINDER PLACEHOLDER] Sent reminder notification to assignee '{assigneeName}' for overdue task ID {task.Id} ('{task.Title}')");
-    }
-
-    private void OpenAdjustDueDateModal(TaskDto task)
-    {
-        selectedTaskForAdjustment = task;
-        adjustedDueDate = task.DueDate;
-        adjustError = string.Empty;
-        isAdjustModalOpen = true;
-    }
-
-    private void CloseAdjustModal()
-    {
-        isAdjustModalOpen = false;
-        selectedTaskForAdjustment = null;
-        adjustError = string.Empty;
-    }
-
-    private async Task SaveDueDateAdjustment()
-    {
-        if (!canUpdateTask)
-        {
-            return;
-        }
-
-        if (selectedTaskForAdjustment == null) return;
-
-        isAdjusting = true;
-        adjustError = string.Empty;
-        var client = ApiClient.CreateClient();
-        try
-        {
-            var updateDto = new UpdateTaskDto
-            {
-                Title = selectedTaskForAdjustment.Title,
-                Description = selectedTaskForAdjustment.Description,
-                StatusId = selectedTaskForAdjustment.StatusId,
-                PriorityId = selectedTaskForAdjustment.PriorityId,
-                AssignedTo = selectedTaskForAdjustment.AssignedTo,
-                AssignedBy = selectedTaskForAdjustment.AssignedBy,
-                DueDate = adjustedDueDate
-            };
-
-            var response = await client.PutAsJsonAsync($"Task/{selectedTaskForAdjustment.Id}", updateDto);
-            if (response.IsSuccessStatusCode)
-            {
-                var t = allTasks.FirstOrDefault(x => x.Id == selectedTaskForAdjustment.Id);
-                if (t != null)
-                {
-                    t.DueDate = adjustedDueDate;
-                }
-                ComputeSummary();
-                CloseAdjustModal();
-            }
-            else
-            {
-                var errorRes = await response.Content.ReadFromJsonAsync<Result>();
-                adjustError = errorRes?.ErrorMessage ?? "Failed to update due date. Please try again.";
-            }
-        }
-        catch (Exception ex)
-        {
-            adjustError = $"Error: {ex.Message}";
-        }
-        finally
-        {
-            isAdjusting = false;
-        }
     }
 }

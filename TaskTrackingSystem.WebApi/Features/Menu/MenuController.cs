@@ -49,7 +49,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
         {
             var canCreate = await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Create");
             var canUpdate = await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update");
-            if (!canCreate && !canUpdate && !User.IsInRole("Admin"))
+            if (!canCreate && !canUpdate)
             {
                 return Forbid();
             }

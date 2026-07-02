@@ -4,7 +4,7 @@
 @using TaskTrackingSystem.Shared.Models.AuditLog
 @using TaskTrackingSystem.WebApp.Components.Partial
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize]
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider

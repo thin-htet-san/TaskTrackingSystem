@@ -125,7 +125,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             }
 
             var userId = User.GetUserId();
-            var isAdmin = User.IsAdmin();
+            var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, User.GetRoleId());
 
             // Only comment creator or Admin can delete
             if (comment.UserId != userId && !isAdmin)
