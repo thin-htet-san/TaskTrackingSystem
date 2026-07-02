@@ -5,9 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using TaskTrackingSystem.Database;
 using TaskTrackingSystem.Database.AppDbContextModels;
-using TaskTrackingSystem.Shared.Models.Task;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Enums;
+using TaskTrackingSystem.Shared.Models.Task;
 using TaskTrackingSystem.WebApi.Infrastructure;
 
 namespace TaskTrackingSystem.WebApi.Features.Task
@@ -21,6 +21,13 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             _db = db;
             _notificationService = notificationService;
+        }
+
+        private static DateTime? GetCompletedAt(TaskTrackingSystem.Database.AppDbContextModels.Task task)
+        {
+            return task.StatusId == AppTaskStatus.Done
+                ? task.UpdatedAt ?? task.CreatedAt
+                : null;
         }
 
         public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(string roleName, long currentUserId)
@@ -38,17 +45,12 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     PriorityId = t.PriorityId,
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
-                    EstimatedHours = t.EstimatedHours,
-                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     IsArchived = t.IsArchived,
-                    CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
-                        .OrderBy(th => th.CreatedAt)
-                        .Select(th => th.CreatedAt)
-                        .FirstOrDefault()
-                }).ToListAsync();
+                    CompletedAt = GetCompletedAt(t)
+                })
+                .ToListAsync();
         }
 
         public async Task<PagedResult<TaskDto>> GetPagedTasksAsync(
@@ -105,16 +107,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     PriorityId = t.PriorityId,
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
-                    EstimatedHours = t.EstimatedHours,
-                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     IsArchived = t.IsArchived,
-                    CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
-                        .OrderBy(th => th.CreatedAt)
-                        .Select(th => th.CreatedAt)
-                        .FirstOrDefault()
+                    CompletedAt = GetCompletedAt(t)
                 })
                 .ToPagedResultAsync(page, pageSize);
         }
@@ -134,26 +130,23 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     PriorityId = t.PriorityId,
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
-                    EstimatedHours = t.EstimatedHours,
-                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     IsArchived = t.IsArchived,
-                    CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
-                        .OrderBy(th => th.CreatedAt)
-                        .Select(th => th.CreatedAt)
-                        .FirstOrDefault()
-                }).ToListAsync();
+                    CompletedAt = GetCompletedAt(t)
+                })
+                .ToListAsync();
         }
 
         public async Task<TaskDto?> GetTaskByIdAsync(long id, string roleName, long currentUserId)
         {
             var task = await BuildAccessibleTaskQuery(roleName, currentUserId)
-                .Include(t => t.TaskHistories)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
-            if (task == null) return null;
+            if (task == null)
+            {
+                return null;
+            }
 
             return new TaskDto
             {
@@ -165,16 +158,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 PriorityId = task.PriorityId,
                 AssignedTo = task.AssignedTo,
                 AssignedBy = task.AssignedBy,
-                EstimatedHours = task.EstimatedHours,
-                ActualHours = task.ActualHours,
                 DueDate = task.DueDate,
                 CreatedAt = task.CreatedAt ?? DateTime.UtcNow,
                 IsArchived = task.IsArchived,
-                CompletedAt = task.TaskHistories
-                    .Where(th => th.NewStatusId == AppTaskStatus.Done)
-                    .OrderBy(th => th.CreatedAt)
-                    .Select(th => th.CreatedAt)
-                    .FirstOrDefault()
+                CompletedAt = GetCompletedAt(task)
             };
         }
 
@@ -184,6 +171,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             {
                 return Result<TaskDto>.Failure(ResultMessages.TaskTitleRequired, 400);
             }
+
             if (dto.ProjectId == 0)
             {
                 return Result<TaskDto>.Failure(ResultMessages.SelectProjectRequired, 400);
@@ -214,8 +202,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 PriorityId = dto.PriorityId == 0 ? TaskPriority.Medium : dto.PriorityId,
                 AssignedTo = dto.AssignedTo,
                 AssignedBy = dto.AssignedBy,
-                EstimatedHours = dto.EstimatedHours,
-                ActualHours = dto.ActualHours,
                 DueDate = dto.DueDate,
                 IsDeleted = false,
                 IsArchived = false,
@@ -241,8 +227,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 PriorityId = task.PriorityId,
                 AssignedTo = task.AssignedTo,
                 AssignedBy = task.AssignedBy,
-                EstimatedHours = task.EstimatedHours,
-                ActualHours = task.ActualHours,
                 DueDate = task.DueDate,
                 CreatedAt = task.CreatedAt ?? DateTime.UtcNow,
                 CompletedAt = null,
@@ -260,7 +244,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             }
 
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true && !t.IsArchived);
-            if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
+            if (task == null)
+            {
+                return Result.Failure(ResultMessages.TaskNotFound(id), 404);
+            }
 
             var previousStatusId = task.StatusId;
             var previousAssignedTo = task.AssignedTo;
@@ -276,24 +263,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.PriorityId = dto.PriorityId;
             task.AssignedTo = dto.AssignedTo;
             task.AssignedBy = dto.AssignedBy;
-            task.EstimatedHours = dto.EstimatedHours;
-            task.ActualHours = dto.ActualHours;
             task.DueDate = dto.DueDate;
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
-
-            if (previousStatusId != dto.StatusId)
-            {
-                _db.TaskHistories.Add(new TaskHistory
-                {
-                    TaskId = task.Id,
-                    ModifiedById = currentUserId ?? task.UpdatedBy ?? task.CreatedBy ?? 0,
-                    OldStatusId = previousStatusId,
-                    NewStatusId = dto.StatusId,
-                    CreatedBy = currentUserId ?? task.CreatedBy ?? 0,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
 
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
@@ -307,13 +279,17 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             {
                 await _notificationService.NotifyTaskStatusChangedAsync(task, currentUserId.Value, previousStatusId, dto.StatusId);
             }
+
             return Result.Success(200);
         }
 
         public async Task<Result> SoftDeleteTaskAsync(long id, long currentUserId)
         {
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true && !t.IsArchived);
-            if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
+            if (task == null)
+            {
+                return Result.Failure(ResultMessages.TaskNotFound(id), 404);
+            }
 
             task.IsDeleted = true;
             task.UpdatedAt = DateTime.UtcNow;
@@ -343,16 +319,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     PriorityId = t.PriorityId,
                     AssignedTo = t.AssignedTo,
                     AssignedBy = t.AssignedBy,
-                    EstimatedHours = t.EstimatedHours,
-                    ActualHours = t.ActualHours,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                     IsArchived = t.IsArchived,
-                    CompletedAt = t.TaskHistories
-                        .Where(th => th.NewStatusId == AppTaskStatus.Done)
-                        .OrderBy(th => th.CreatedAt)
-                        .Select(th => th.CreatedAt)
-                        .FirstOrDefault()
+                    CompletedAt = GetCompletedAt(t)
                 })
                 .ToListAsync();
 
@@ -372,16 +342,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.StatusId = statusId;
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
-
-            _db.TaskHistories.Add(new TaskHistory
-            {
-                TaskId = task.Id,
-                ModifiedById = currentUserId,
-                OldStatusId = previousStatusId,
-                NewStatusId = statusId,
-                CreatedBy = currentUserId,
-                CreatedAt = DateTime.UtcNow
-            });
 
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();

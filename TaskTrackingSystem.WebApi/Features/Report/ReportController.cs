@@ -175,16 +175,6 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                         $"OverdueCriticalTasks_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
-        [HttpGet("time-tracking")]
-        public async Task<ActionResult<Result<TimeTrackingReportDto>>> GetTimeTracking(
-            [FromQuery] string? search,
-            [FromQuery] long? projectId,
-            [FromQuery] AppTaskStatus? statusId)
-        {
-            var result = await _reportService.GetTimeTrackingReportAsync(search, projectId, statusId, User.GetRoleName(), User.GetUserId());
-            return StatusCode(result.StatusCode, result);
-        }
-
         [HttpGet("employee-productivity")]
         [ProducesResponseType(typeof(PagedResult<EmployeeProductivityReportDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

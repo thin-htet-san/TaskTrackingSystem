@@ -18,7 +18,6 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public string? AssignedToUser { get; set; }
         public long? AssignedToUserId { get; set; }
         public string? AssignedByUser { get; set; }
-        public decimal? EstimatedHours { get; set; }
         public DateTime DueDate { get; set; }
         public DateTime CreatedAt { get; set; }
     }

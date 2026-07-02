@@ -1,0 +1,741 @@
+@page "/issues"
+@page "/issues/all"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using TaskTrackingSystem.Shared
+@using TaskTrackingSystem.Shared.Enums
+@using TaskTrackingSystem.Shared.Models.Issue
+@using TaskTrackingSystem.Shared.Models.Project
+@using TaskTrackingSystem.Shared.Models.Task
+@using TaskTrackingSystem.Shared.Models.User
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
+@inject NavigationManager Navigation
+
+<PageTitle>Issues</PageTitle>
+
+<SuccessAlert Message="@successMessage" />
+
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Issues</h2>
+            <p class="text-slate-500 mt-1">Track daily work items, update progress, and review what was done.</p>
+        </div>
+        @if (canCreateIssue)
+        {
+            <button @onclick="GoToAddIssue" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+                New Issue
+            </button>
+        }
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading issues..." />
+    }
+    else
+    {
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="grid grid-cols-1 lg:grid-cols-6 gap-3">
+                <div class="lg:col-span-2">
+                    <input @bind="searchInput" type="text" placeholder="Search issues..."
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+                <div>
+                    <select @bind="taskIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">All Tasks</option>
+                        @foreach (var task in tasks)
+                        {
+                            <option value="@task.Id">@task.Title</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <select @bind="projectIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">All Projects</option>
+                        @foreach (var project in projects)
+                        {
+                            <option value="@project.Id">@project.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <select @bind="statusIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="">All Statuses</option>
+                        <option value="@AppTaskStatus.Todo">To Do</option>
+                        <option value="@AppTaskStatus.InProgress">In Progress</option>
+                        <option value="@AppTaskStatus.Done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <select @bind="priorityIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="">All Priorities</option>
+                        <option value="@TaskPriority.Low">Low</option>
+                        <option value="@TaskPriority.Medium">Medium</option>
+                        <option value="@TaskPriority.High">High</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input type="checkbox" @bind="assignedOnly" class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
+                    Assigned to me only
+                </label>
+                <button @onclick="ApplySearch" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                    <i data-lucide="search" class="h-4 w-4 mr-2"></i>
+                    Search
+                </button>
+                <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[1200px]">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/60">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Dates</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @if (issues.Any())
+                        {
+                            @foreach (var entry in issues.Select((issue, index) => (issue, index)))
+                            {
+                                var issue = entry.issue;
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
+                                    <td class="px-6 py-4">
+                                        <button @onclick="() => OpenEditModal(issue)" class="text-sm font-semibold text-slate-900 hover:text-violet-600 transition-colors">
+                                            @issue.Title
+                                        </button>
+                                        @if (!string.IsNullOrWhiteSpace(issue.Description))
+                                        {
+                                            <p class="mt-0.5 max-w-xs truncate text-xs text-slate-400">@issue.Description</p>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-700">
+                                        <a href="@($"/tasks/{issue.TaskId}/details")" class="font-medium text-violet-700 hover:text-violet-800 transition-colors">
+                                            @issue.TaskTitle
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">@issue.ProjectName</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        <div class="flex flex-col">
+                                            <span>@(issue.ActualHours?.ToString("0.##") ?? "-") hr</span>
+                                            <span class="text-xs text-slate-400">@issue.StartDate.ToString("dd MMM yyyy")</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">
+                                            @GetStatusLabel(issue.StatusId)
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @GetPriorityBadge(issue.PriorityId)">
+                                            @GetPriorityLabel(issue.PriorityId)
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        <div class="flex flex-col">
+                                            <span>@issue.StartDate.ToString("dd MMM yyyy")</span>
+                                            <span class="text-xs text-slate-400">Due @issue.DueDate.ToString("dd MMM yyyy")</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">
+                                        @(!string.IsNullOrWhiteSpace(issue.AssignedToName) ? issue.AssignedToName : "Unassigned")
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end space-x-2">
+                                            @if (canEditIssue)
+                                            {
+                                                <button @onclick="() => OpenEditModal(issue)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                                    <i data-lucide="pencil" class="h-4 w-4"></i>
+                                                </button>
+                                            }
+                                            @if (canDeleteIssue)
+                                            {
+                                                <button @onclick="() => RequestDeleteConfirmation(issue.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <EmptyState ColSpan="10" Icon="file-pen-line" Title="No issues yet" Subtitle="Create your first issue to start tracking daily work." />
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="totalPages"
+                        PageSize="pageSize"
+                        TotalCount="totalCount"
+                        OnPageChanged="HandlePageChanged"
+                        OnPageSizeChanged="HandlePageSizeChanged" />
+        </div>
+    }
+</div>
+
+@if (showModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">Edit Issue</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Issue #@editingId</p>
+                </div>
+                <button @onclick="CloseModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Task</p>
+                        <p class="mt-1 text-sm font-semibold text-slate-900">@SelectedTaskLabel</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Project</p>
+                        <p class="mt-1 text-sm font-semibold text-slate-900">@SelectedProjectLabel</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Title <span class="text-red-500">*</span></label>
+                    <input @bind="formTitle" type="text" placeholder="Issue title"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+                    <textarea @bind="formDescription" rows="4" placeholder="Describe the work..."
+                              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Assignee</label>
+                        <select @bind="formAssignedTo" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                            <option value="">Unassigned</option>
+                            @foreach (var user in filteredProjectMembers)
+                            {
+                                <option value="@user.Id">@user.FirstName @user.LastName</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Actual Hours</label>
+                        <input @bind="formActualHours" type="number" step="0.25" min="0" max="7"
+                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Start Date</label>
+                        <input @bind="formStartDate" type="date"
+                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
+                        <input @bind="formDueDate" type="date"
+                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+                        <select @bind="formStatusId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                            <option value="@AppTaskStatus.Todo">To Do</option>
+                            <option value="@AppTaskStatus.InProgress">In Progress</option>
+                            <option value="@AppTaskStatus.Done">Done</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
+                        <select @bind="formPriorityId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                            <option value="@TaskPriority.Low">Low</option>
+                            <option value="@TaskPriority.Medium">Medium</option>
+                            <option value="@TaskPriority.High">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="rounded-lg border border-rose-100 bg-rose-50 p-3">
+                        <p class="text-sm text-rose-600">@errorMessage</p>
+                    </div>
+                }
+            </div>
+
+            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                <button @onclick="RequestSaveConfirmation" disabled="@isSaving" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                    @(isSaving ? "Saving..." : "Update")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog IsVisible="showDeleteConfirm"
+               Title="Delete Issue?"
+               Message="@deleteConfirmMessage"
+               ConfirmText="Yes, Delete"
+               Icon="trash-2"
+               IconBgClass="bg-rose-50"
+               IconTextClass="text-rose-600"
+               ButtonClass="bg-rose-600 hover:bg-rose-700"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CloseDeleteConfirm" />
+
+<ConfirmDialog IsVisible="showSaveConfirm"
+               Title="Save Changes?"
+               Message="Are you sure you want to save these issue changes?"
+               ConfirmText="Yes, Save"
+               Icon="save"
+               IconBgClass="bg-violet-50"
+               IconTextClass="text-violet-600"
+               ButtonClass="bg-violet-600 hover:bg-violet-700"
+               OnConfirm="ConfirmSave"
+               OnCancel="CloseSaveConfirm" />
+
+@code {
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool canCreateIssue;
+    private bool canEditIssue;
+    private bool canDeleteIssue;
+    private bool isAdmin;
+    private bool showModal;
+    private bool showDeleteConfirm;
+    private bool showSaveConfirm;
+
+    private string? successMessage;
+    private string? errorMessage;
+    private string deleteConfirmMessage = "Are you sure you want to delete this issue?";
+    private long deleteIssueId;
+    private long currentUserId;
+
+    private List<IssueDto> issues = new();
+    private List<TaskDto> tasks = new();
+    private List<ProjectDto> projects = new();
+    private List<UserDto> projectMembers = new();
+
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalCount;
+    private int totalPages;
+
+    private string searchInput = "";
+    private long taskIdInput;
+    private long projectIdInput;
+    private AppTaskStatus? statusIdInput;
+    private TaskPriority? priorityIdInput;
+    private bool assignedOnly;
+
+    private long editingId;
+    private long formTaskId;
+    private string formTitle = "";
+    private string? formDescription;
+    private long? formAssignedTo;
+    private decimal? formActualHours = 7m;
+    private DateTime formStartDate = DateTime.Today;
+    private DateTime formDueDate = DateTime.Today;
+    private AppTaskStatus formStatusId = AppTaskStatus.Todo;
+    private TaskPriority formPriorityId = TaskPriority.Medium;
+
+    private string SelectedTaskLabel => tasks.FirstOrDefault(t => t.Id == formTaskId)?.Title ?? $"Task #{formTaskId}";
+    private string SelectedProjectLabel => tasks.FirstOrDefault(t => t.Id == formTaskId) is { } task
+        ? projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name ?? $"Project #{task.ProjectId}"
+        : "Unknown project";
+
+    private IEnumerable<UserDto> filteredProjectMembers => projectMembers.Where(u => u.IsActive);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAdmin = user.IsInRole("Admin");
+
+        if (long.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId))
+        {
+            currentUserId = userId;
+        }
+
+        canCreateIssue = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Issues_Create");
+        canEditIssue = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Issues_Update");
+        canDeleteIssue = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Issues_Delete");
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var issuesTask = LoadIssuesPageAsync(client);
+            var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+
+            await System.Threading.Tasks.Task.WhenAll(issuesTask, tasksTask, projectsTask, usersTask);
+
+            ApplyPageResult(issuesTask.Result);
+            tasks = tasksTask.Result ?? new();
+            projects = projectsTask.Result ?? new();
+            projectMembers = usersTask.Result?.Where(u => u.IsActive).OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task<PagedResult<IssueDto>?> LoadIssuesPageAsync(HttpClient? client = null)
+    {
+        client ??= ApiClient.CreateClient();
+        return await client.GetFromJsonAsync<PagedResult<IssueDto>>(BuildIssuesUrl(), Serialization.CaseInsensitive);
+    }
+
+    private void ApplyPageResult(PagedResult<IssueDto>? result)
+    {
+        issues = result?.Items ?? new();
+        totalCount = result?.TotalCount ?? 0;
+        totalPages = result?.TotalPages ?? 0;
+        currentPage = result?.Page ?? currentPage;
+        pageSize = result?.PageSize ?? pageSize;
+    }
+
+    private async Task LoadIssues()
+    {
+        var client = ApiClient.CreateClient();
+        var result = await LoadIssuesPageAsync(client);
+        ApplyPageResult(result);
+    }
+
+    private string BuildIssuesUrl()
+    {
+        var query = new List<string>
+        {
+            $"page={currentPage}",
+            $"limit={pageSize}"
+        };
+
+        if (!string.IsNullOrWhiteSpace(searchInput))
+        {
+            query.Add($"search={Uri.EscapeDataString(searchInput.Trim())}");
+        }
+
+        if (taskIdInput > 0)
+        {
+            query.Add($"taskId={taskIdInput}");
+        }
+
+        if (projectIdInput > 0)
+        {
+            query.Add($"projectId={projectIdInput}");
+        }
+
+        if (statusIdInput.HasValue)
+        {
+            query.Add($"statusId={(int)statusIdInput.Value}");
+        }
+
+        if (priorityIdInput.HasValue)
+        {
+            query.Add($"priorityId={(int)priorityIdInput.Value}");
+        }
+
+        if (assignedOnly)
+        {
+            query.Add("assignedOnly=true");
+        }
+
+        return $"Issue?{string.Join("&", query)}";
+    }
+
+    private async Task ApplySearch()
+    {
+        currentPage = 1;
+        await LoadIssues();
+    }
+
+    private async Task ResetSearch()
+    {
+        searchInput = "";
+        taskIdInput = 0;
+        projectIdInput = 0;
+        statusIdInput = null;
+        priorityIdInput = null;
+        assignedOnly = false;
+        currentPage = 1;
+        await LoadIssues();
+    }
+
+    private async Task HandlePageChanged(int page)
+    {
+        currentPage = page;
+        await LoadIssues();
+    }
+
+    private async Task HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+        await LoadIssues();
+    }
+
+    private void GoToAddIssue()
+    {
+        Navigation.NavigateTo("/issues/add");
+    }
+
+    private async Task OpenEditModal(IssueDto issue)
+    {
+        if (!canEditIssue)
+        {
+            return;
+        }
+
+        editingId = issue.Id;
+        formTaskId = issue.TaskId;
+        formTitle = issue.Title;
+        formDescription = issue.Description;
+        formAssignedTo = issue.AssignedTo;
+        formActualHours = issue.ActualHours;
+        formStartDate = issue.StartDate;
+        formDueDate = issue.DueDate;
+        formStatusId = issue.StatusId;
+        formPriorityId = issue.PriorityId;
+        errorMessage = null;
+        showModal = true;
+
+        await LoadMembersForTaskAsync(issue.TaskId);
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        errorMessage = null;
+        editingId = 0;
+    }
+
+    private async Task LoadMembersForTaskAsync(long taskId)
+    {
+        projectMembers.Clear();
+
+        var task = tasks.FirstOrDefault(t => t.Id == taskId);
+        if (task == null)
+        {
+            return;
+        }
+
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var membersResult = await client.GetFromJsonAsync<Result<IEnumerable<UserDto>>>($"Project/{task.ProjectId}/members", Serialization.CaseInsensitive);
+            if (membersResult?.IsSuccess == true && membersResult.Value != null)
+            {
+                projectMembers = membersResult.Value.Where(u => u.IsActive).OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load issue assignees: {ex.Message}");
+        }
+    }
+
+    private void RequestSaveConfirmation()
+    {
+        showSaveConfirm = true;
+    }
+
+    private void CloseSaveConfirm()
+    {
+        showSaveConfirm = false;
+    }
+
+    private async Task ConfirmSave()
+    {
+        showSaveConfirm = false;
+        await SaveIssueAsync();
+    }
+
+    private async Task SaveIssueAsync()
+    {
+        if (editingId <= 0)
+        {
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            var client = ApiClient.CreateClient();
+            var dto = new UpdateIssueDto
+            {
+                Title = formTitle.Trim(),
+                Description = formDescription,
+                AssignedTo = formAssignedTo,
+                ActualHours = formActualHours,
+                StartDate = formStartDate,
+                DueDate = formDueDate,
+                StatusId = formStatusId,
+                PriorityId = formPriorityId
+            };
+
+            var response = await client.PutAsJsonAsync($"Issue/{editingId}", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Issue updated successfully!";
+                showModal = false;
+                await LoadIssues();
+            }
+            else
+            {
+                errorMessage = await ReadErrorMessageAsync(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void RequestDeleteConfirmation(long issueId)
+    {
+        if (!canDeleteIssue)
+        {
+            return;
+        }
+
+        deleteIssueId = issueId;
+        deleteConfirmMessage = "Are you sure you want to delete this issue?";
+        showDeleteConfirm = true;
+    }
+
+    private void CloseDeleteConfirm()
+    {
+        showDeleteConfirm = false;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        showDeleteConfirm = false;
+
+        try
+        {
+            var client = ApiClient.CreateClient();
+            var response = await client.DeleteAsync($"Issue/{deleteIssueId}");
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Issue deleted successfully!";
+                await LoadIssues();
+            }
+            else
+            {
+                errorMessage = await ReadErrorMessageAsync(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private static async Task<string> ReadErrorMessageAsync(HttpResponseMessage response)
+    {
+        var body = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return $"Request failed with status {(int)response.StatusCode}.";
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("message", out var message))
+            {
+                return message.GetString() ?? body;
+            }
+        }
+        catch
+        {
+        }
+
+        return body;
+    }
+
+    private string GetStatusBadge(AppTaskStatus statusId) => statusId switch
+    {
+        AppTaskStatus.Todo => "bg-slate-100 text-slate-700",
+        AppTaskStatus.InProgress => "bg-blue-100 text-blue-700",
+        AppTaskStatus.Done => "bg-emerald-100 text-emerald-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private string GetStatusLabel(AppTaskStatus statusId) => statusId switch
+    {
+        AppTaskStatus.Todo => "To Do",
+        AppTaskStatus.InProgress => "In Progress",
+        AppTaskStatus.Done => "Done",
+        _ => "Unknown"
+    };
+
+    private string GetPriorityBadge(TaskPriority priorityId) => priorityId switch
+    {
+        TaskPriority.Low => "bg-slate-100 text-slate-600",
+        TaskPriority.Medium => "bg-amber-100 text-amber-700",
+        TaskPriority.High => "bg-red-100 text-red-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private string GetPriorityLabel(TaskPriority priorityId) => priorityId switch
+    {
+        TaskPriority.Low => "Low",
+        TaskPriority.Medium => "Medium",
+        TaskPriority.High => "High",
+        _ => "Unknown"
+    };
+}

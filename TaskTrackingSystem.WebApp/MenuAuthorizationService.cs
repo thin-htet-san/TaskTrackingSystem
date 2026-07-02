@@ -100,10 +100,8 @@ public class MenuAuthorizationService
                 var hasTasksAccess = accessItems.Any(m => 
                     m.MenuCode.Equals("TASKS_LIST", StringComparison.OrdinalIgnoreCase) ||
                     m.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) ||
-                    m.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase) ||
                     m.SubMenus.Any(sm => sm.MenuCode.Equals("TASKS_LIST", StringComparison.OrdinalIgnoreCase) ||
-                                         sm.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase) ||
-                                         sm.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase)));
+                                         sm.MenuCode.Equals("TASKS_BOARD", StringComparison.OrdinalIgnoreCase)));
                 if (hasTasksAccess)
                 {
                     return true;
@@ -125,18 +123,6 @@ public class MenuAuthorizationService
                 {
                     return true;
                 }
-            }
-        }
-
-        // Special case for Task Backlog split-screen page
-        if (cleanRelative.Equals("tasks/backlog", StringComparison.OrdinalIgnoreCase))
-        {
-            var hasTasksAccess = accessItems.Any(m => 
-                m.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase) ||
-                m.SubMenus.Any(sm => sm.MenuCode.Equals("TASKS_BACKLOG", StringComparison.OrdinalIgnoreCase)));
-            if (hasTasksAccess)
-            {
-                return true;
             }
         }
 

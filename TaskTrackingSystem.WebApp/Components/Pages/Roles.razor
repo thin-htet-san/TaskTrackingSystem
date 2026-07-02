@@ -1331,7 +1331,25 @@
             }
             else
             {
-                accessSaveError = "Failed to save access. Please try again.";
+                var body = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(body))
+                {
+                    accessSaveError = $"Failed to save access. Server returned {(int)response.StatusCode}.";
+                }
+                else
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(body);
+                        accessSaveError = doc.RootElement.TryGetProperty("message", out var message)
+                            ? message.GetString()
+                            : body;
+                    }
+                    catch
+                    {
+                        accessSaveError = body;
+                    }
+                }
             }
         }
         catch (Exception ex)

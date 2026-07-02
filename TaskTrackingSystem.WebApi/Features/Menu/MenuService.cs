@@ -299,6 +299,20 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                 return new List<string>();
             }
 
+            var validMenuCodes = await _db.Menus
+                .Where(m => !m.IsDeleted)
+                .Select(m => m.MenuCode)
+                .ToListAsync();
+
+            var validPermissionCodes = await _db.Permissions
+                .Where(p => !p.IsDeleted)
+                .Select(p => p.PermissionCode)
+                .ToListAsync();
+
+            var validCodes = validMenuCodes
+                .Concat(validPermissionCodes)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             var menuCodes = await _db.RoleMenus
                 .Where(rm => rm.RoleId == roleId && !rm.IsDeleted)
                 .Select(rm => rm.Menu.MenuCode)
@@ -311,6 +325,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
 
             return menuCodes
                 .Concat(permissionCodes)
+                .Where(code => validCodes.Contains(code))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }

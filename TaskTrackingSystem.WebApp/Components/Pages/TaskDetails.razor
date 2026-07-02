@@ -215,44 +215,6 @@
                             }
                         </div>
 
-                        <!-- Estimated Hours Property -->
-                        <div class="flex flex-col gap-1.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Estimated Hours</span>
-                            @if (hasTaskManagePermission)
-                            {
-                                <div class="relative flex items-center w-full">
-                                    <input type="number" step="0.5" min="0" max="999" value="@task.EstimatedHours" @onchange="OnEstimatedHoursChanged" placeholder="0.0" class="h-9 rounded-lg border border-slate-200 pl-3 pr-8 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm" />
-                                    <span class="absolute right-3 text-xs text-slate-400 pointer-events-none">hr</span>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="h-9 flex items-center px-1 text-sm text-slate-800 cursor-not-allowed select-none font-medium text-slate-700">
-                                    <i data-lucide="clock" class="h-4 w-4 mr-2 text-slate-400"></i>
-                                    @(task.EstimatedHours.HasValue ? $"{task.EstimatedHours} hr" : "Not set")
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Actual Hours Property -->
-                        <div class="flex flex-col gap-1.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Actual Hours</span>
-                            @if (hasTaskManagePermission)
-                            {
-                                <div class="relative flex items-center w-full">
-                                    <input type="number" step="0.5" min="0" max="999.99" value="@task.ActualHours" @onchange="OnActualHoursChanged" placeholder="0.0" class="h-9 rounded-lg border border-slate-200 pl-3 pr-8 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm" />
-                                    <span class="absolute right-3 text-xs text-slate-400 pointer-events-none">hr</span>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="h-9 flex items-center px-1 text-sm text-slate-800 cursor-not-allowed select-none font-medium text-slate-700">
-                                    <i data-lucide="timer" class="h-4 w-4 mr-2 text-slate-400"></i>
-                                    @(task.ActualHours.HasValue ? $"{task.ActualHours} hr" : "Not set")
-                                </div>
-                            }
-                        </div>
-
                         <!-- Created At Property -->
                         <div class="flex flex-col gap-1.5">
                             <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Created At</span>
@@ -556,28 +518,6 @@
         }
     }
 
-    private async Task OnEstimatedHoursChanged(ChangeEventArgs e)
-    {
-        var input = e.Value?.ToString();
-        decimal? newEstimatedHours = null;
-        if (!string.IsNullOrWhiteSpace(input) && decimal.TryParse(input, out var val))
-        {
-            newEstimatedHours = val;
-        }
-        await UpdateTaskProperty(dto => dto.EstimatedHours = newEstimatedHours);
-    }
-
-    private async Task OnActualHoursChanged(ChangeEventArgs e)
-    {
-        var input = e.Value?.ToString();
-        decimal? newActualHours = null;
-        if (!string.IsNullOrWhiteSpace(input) && decimal.TryParse(input, out var val))
-        {
-            newActualHours = val;
-        }
-        await UpdateTaskProperty(dto => dto.ActualHours = newActualHours);
-    }
-
     private async Task UpdateTaskProperty(Action<UpdateTaskDto> applyChange)
     {
         if (task == null) return;
@@ -590,9 +530,7 @@
             PriorityId = task.PriorityId,
             DueDate = task.DueDate,
             AssignedTo = task.AssignedTo,
-            AssignedBy = task.AssignedBy,
-            EstimatedHours = task.EstimatedHours,
-            ActualHours = task.ActualHours
+            AssignedBy = task.AssignedBy
         };
 
         applyChange(dto);
@@ -609,8 +547,6 @@
                 task.PriorityId = dto.PriorityId;
                 task.DueDate = dto.DueDate;
                 task.AssignedTo = dto.AssignedTo;
-                task.EstimatedHours = dto.EstimatedHours;
-                task.ActualHours = dto.ActualHours;
 
                 await OnTaskUpdated.InvokeAsync();
                 await JS.InvokeVoidAsync("initIcons");
