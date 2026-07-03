@@ -49,13 +49,6 @@
                 </NavLink>
             }
         }
-        @if (isAdmin)
-        {
-            <NavLink class="nav-link-item mt-2 flex items-center rounded-lg border-t border-white/10 px-3 py-2.5 pt-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/10 hover:text-white" href="/audit-logs" Match="NavLinkMatch.All">
-                <i data-lucide="file-text" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
-                <span>@Language.Texts.AuditLogs</span>
-            </NavLink>
-        }
     }
     else
     {
@@ -67,7 +60,6 @@
 
 @code {
     private List<MenuDto> menus = new();
-    private bool isAdmin = false;
     private string currentPath = string.Empty;
     private HashSet<string> expandedMenuGroups = new();
 
@@ -84,8 +76,6 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                var codes = await MenuAuthorization.GetCurrentAccessCodesAsync(user);
-                isAdmin = codes.Contains("Roles_List");
                 var rawMenus = await MenuAuthorization.GetUserMenusAsync(user);
                 menus = ProcessMenus(rawMenus);
                 BuildUrlHierarchy(menus);
@@ -136,8 +126,6 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                var codes = await MenuAuthorization.GetCurrentAccessCodesAsync(user);
-                isAdmin = codes.Contains("Roles_List");
                 var freshMenus = await MenuAuthorization.GetUserMenusAsync(user);
                 var processedMenus = ProcessMenus(freshMenus);
 
