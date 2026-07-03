@@ -1,0 +1,32 @@
+<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    @if (!Buckets.Any())
+    {
+        <div class="col-span-full rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        @foreach (var bucket in Buckets)
+        {
+            var height = MaxValue > 0 ? Math.Clamp(bucket.Value / MaxValue * 100, 8, 100) : 8;
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div class="flex h-28 items-end rounded-lg bg-white p-2">
+                    <div class="w-full rounded-md" style="height: @height%; background-color: @bucket.Color;"></div>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-slate-700">@bucket.Label</span>
+                    <span class="text-lg font-bold tabular-nums text-slate-950">@bucket.Value.ToString("0")</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(bucket.Detail))
+                {
+                    <p class="mt-1 text-[11px] text-slate-500">@bucket.Detail</p>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<ReportChartItem> Buckets { get; set; } = Array.Empty<ReportChartItem>();
+    [Parameter] public string EmptyText { get; set; } = "No aging data available.";
+    private double MaxValue => Math.Max(1, Buckets.Select(bucket => bucket.Value).DefaultIfEmpty(0).Max());
+}

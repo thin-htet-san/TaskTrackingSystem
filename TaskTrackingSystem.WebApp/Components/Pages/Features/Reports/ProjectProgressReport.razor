@@ -152,14 +152,87 @@
 
         @if (isChartView)
         {
-            <!-- Chart View: SVG Project Progress Bars -->
-            <ChartCard Title="Project Health Chart" TitleClass="font-semibold text-slate-900 mb-4 font-sans text-md" BodyClass="mt-0">
-                <ChildContent>
-                    <div class="max-w-2xl">
-                        <ProgressListChart Items="ProjectHealthItems" MaxValue="ProjectHealthMax" EmptyText="No data available." />
-                    </div>
-                </ChildContent>
-            </ChartCard>
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                <div class="xl:col-span-6">
+                    <RiskMatrixCard Title="Project health matrix" Subtitle="Progress health against issue risk." Points="ProjectHealthMatrix" Insight="Projects in the upper-right combine low progress with active issue pressure." />
+                </div>
+                <div class="xl:col-span-6">
+                    <ReportChartCard Title="Completion vs risk" Subtitle="Each project plotted by completion and issue pressure." Insight="Lower completion with higher issue pressure should be reviewed first.">
+                        @if (!ProjectQuadrantPoints.Any())
+                        {
+                            <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">No project risk data available.</div>
+                        }
+                        else
+                        {
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-[44px_minmax(0,1fr)] gap-2">
+                                    <div class="flex items-center justify-center rounded-lg bg-slate-50 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 [writing-mode:vertical-rl] rotate-180">
+                                        Risk
+                                    </div>
+                                    <div class="relative h-[280px] overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                        <div class="absolute inset-0 grid grid-cols-2 grid-rows-2">
+                                            <div class="border-b border-r border-slate-200 bg-rose-50/50 p-3">
+                                                <div class="text-xs font-bold text-rose-700">Review now</div>
+                                                <div class="text-[11px] text-rose-600">Low completion · high risk</div>
+                                            </div>
+                                            <div class="border-b border-slate-200 bg-amber-50/50 p-3">
+                                                <div class="text-xs font-bold text-amber-700">Watch closely</div>
+                                                <div class="text-[11px] text-amber-600">High completion · high risk</div>
+                                            </div>
+                                            <div class="border-r border-slate-200 bg-blue-50/50 p-3">
+                                                <div class="text-xs font-bold text-blue-700">Recover plan</div>
+                                                <div class="text-[11px] text-blue-600">Low completion · low risk</div>
+                                            </div>
+                                            <div class="bg-emerald-50/50 p-3">
+                                                <div class="text-xs font-bold text-emerald-700">On track</div>
+                                                <div class="text-[11px] text-emerald-600">High completion · low risk</div>
+                                            </div>
+                                        </div>
+
+                                        @foreach (var point in ProjectQuadrantPoints)
+                                        {
+                                            <div class="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
+                                                 title="@point.Tooltip"
+                                                 style="left: @point.Left%; top: @point.Top%; width: 14px; height: 14px; background-color: @point.Color;">
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-[44px_minmax(0,1fr)] gap-2">
+                                    <div></div>
+                                    <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                                        <span>0% complete</span>
+                                        <span>Completion</span>
+                                        <span>100%</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+                                    <span class="font-semibold uppercase tracking-wider text-slate-400">Color</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>Healthy</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>Watch</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>At risk</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>Critical</span>
+                                </div>
+                            </div>
+                        }
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-5">
+                    <ReportChartCard Title="Top at-risk projects" Subtitle="Projects needing planning attention first." Insight="Risk blends overdue, blocked, open issues, and project health.">
+                        <TopRiskList Items="AtRiskProjectItems" EmptyText="No at-risk projects in the current filter." />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-7">
+                    <ReportChartCard Title="Timeline summary" Subtitle="Project schedule window with completion overlay." Insight="This gives the planning horizon without leaving the report.">
+                        <TimelineChart Items="ProjectTimelineItems" WrapperClass="max-h-[340px] overflow-auto" />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-12">
+                    <ReportChartCard Title="Open, overdue, and blocking issues by project" Subtitle="Issue composition across the project portfolio." Insight="Open work is normal; overdue and blocked work are the triage signal.">
+                        <StackedProgressBar Segments="ProjectIssueSegments" AriaLabel="Project issue summary" />
+                    </ReportChartCard>
+                </div>
+            </div>
         }
         else
         {
@@ -234,21 +307,57 @@
     private bool filterAssignToMe = false;
     private bool filterAssignToMyTeam = false;
 
-    private List<ProgressListChartItem> ProjectHealthItems => allProjects
-        .Select(proj =>
-        {
-            var value = Math.Min(Math.Max(proj.OpenIssues + proj.OverdueIssues + proj.BlockedIssues, 1) * 10, 100);
-            var color = proj.ProjectHealth == "Critical" ? "#f43f5e" : proj.ProjectHealth == "At Risk" ? "#f59e0b" : "#10b981";
+    private List<RiskMatrixPoint> ProjectHealthMatrix => allProjects
+        .Select(project => new RiskMatrixPoint(
+            project.ProjectName,
+            GetProjectSeverity(project),
+            GetProjectUrgency(project),
+            1,
+            project.ProjectHealth == "Critical" ? "#ef4444" : project.IsAtRisk ? "#f59e0b" : "#3b82f6",
+            $"{project.Progress:0}% complete, {project.BlockedIssues} blocked, {project.OverdueIssues} overdue"))
+        .ToList();
 
-            return new ProgressListChartItem(
-                proj.ProjectName,
-                value,
-                $"{proj.OpenIssues} open, {proj.OverdueIssues} overdue, {proj.BlockedIssues} blocked",
-                color);
+    private List<ProjectQuadrantPoint> ProjectQuadrantPoints => allProjects
+        .OrderByDescending(project => GetProjectRiskScore(project))
+        .Take(10)
+        .Select(project =>
+        {
+            var risk = GetProjectRiskScore(project);
+            var left = Math.Clamp(project.Progress, 2, 98);
+            var top = Math.Clamp(100 - risk, 2, 98);
+            var color = project.ProjectHealth == "Critical"
+                ? "#ef4444"
+                : project.IsAtRisk
+                    ? "#f59e0b"
+                    : risk > 35 ? "#3b82f6" : "#10b981";
+            var tooltip = $"{project.ProjectName}\n{project.Progress:0}% complete\nRisk score: {risk:0}\n{project.BlockedIssues} blocked, {project.OverdueIssues} overdue, {project.OpenIssues} open";
+            return new ProjectQuadrantPoint(project.ProjectName, left, top, color, tooltip);
         })
         .ToList();
 
-    private double ProjectHealthMax => Math.Max(100, ProjectHealthItems.Select(item => item.Value).DefaultIfEmpty(0).Max());
+    private List<TopRiskItem> AtRiskProjectItems => allProjects
+        .Select(project =>
+        {
+            var score = GetProjectRiskScore(project);
+            var tone = project.ProjectHealth == "Critical" || project.BlockedIssues > 0 ? "rose" : project.IsAtRisk ? "amber" : "blue";
+            return new TopRiskItem(project.ProjectName, $"{project.Progress:0}% complete · {project.OpenIssues} open issues", score, project.ProjectHealth, tone, $"{project.OverdueIssues} overdue · {project.BlockedIssues} blocked");
+        })
+        .OrderByDescending(item => item.Score)
+        .Take(5)
+        .ToList();
+
+    private List<TimelineChartItem> ProjectTimelineItems => allProjects
+        .OrderBy(project => project.StartDate)
+        .Take(8)
+        .Select(project => new TimelineChartItem(project.ProjectName, project.StartDate, project.EndDate, project.Progress, project.IsAtRisk ? "#f59e0b" : "#3b82f6"))
+        .ToList();
+
+    private List<StackedSegment> ProjectIssueSegments => new()
+    {
+        new("Open issues", allProjects.Sum(project => project.OpenIssues), "#3b82f6"),
+        new("Overdue issues", allProjects.Sum(project => project.OverdueIssues), "#ef4444"),
+        new("Blocked issues", allProjects.Sum(project => project.BlockedIssues), "#f59e0b")
+    };
 
     // Search and Pagination
     private string searchInput = "";
@@ -460,4 +569,34 @@
         "At Risk" => "bg-amber-50 text-amber-700",
         _ => "bg-emerald-50 text-emerald-700"
     };
+
+    private static double GetProjectRiskScore(ProjectProgressReportDto project)
+    {
+        var issueRisk = (project.OpenIssues * 8) + (project.OverdueIssues * 16) + (project.BlockedIssues * 22);
+        var progressRisk = Math.Max(0, 65 - project.Progress) * 0.45;
+        var healthRisk = project.ProjectHealth == "Critical" ? 25 : project.IsAtRisk ? 15 : 0;
+        return Math.Min(100, issueRisk + progressRisk + healthRisk);
+    }
+
+    private static int GetProjectSeverity(ProjectProgressReportDto project)
+    {
+        if (project.ProjectHealth == "Critical" || project.BlockedIssues > 0)
+        {
+            return 3;
+        }
+
+        return project.IsAtRisk || project.OverdueIssues > 0 ? 2 : 1;
+    }
+
+    private static int GetProjectUrgency(ProjectProgressReportDto project)
+    {
+        if (project.Progress < 35 || project.OverdueIssues > 2)
+        {
+            return 3;
+        }
+
+        return project.Progress < 70 || project.OpenIssues > 0 ? 2 : 1;
+    }
+
+    private sealed record ProjectQuadrantPoint(string Label, double Left, double Top, string Color, string Tooltip);
 }

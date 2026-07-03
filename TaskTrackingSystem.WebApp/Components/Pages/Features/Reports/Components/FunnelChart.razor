@@ -1,0 +1,64 @@
+<div class="space-y-3">
+    @if (!Items.Any())
+    {
+        <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        @foreach (var item in Items.Select((value, index) => new { value, index }))
+        {
+            var stage = item.value;
+            var percent = Baseline > 0 ? stage.Value / Baseline * 100 : 0;
+            var width = stage.Value <= 0 ? 0 : Math.Clamp(percent, MinVisiblePercent, 100);
+            <div class="rounded-lg border border-transparent p-2 transition-colors hover:border-slate-100 hover:bg-slate-50" title="@BuildTitle(stage, percent)">
+                <div class="mb-1.5 grid grid-cols-[96px_1fr_72px] items-center gap-3 text-xs">
+                    <span class="truncate font-semibold text-slate-700">@stage.Label</span>
+                    <span class="text-[11px] text-slate-400">@GetStageHelper(stage)</span>
+                    <span class="text-right font-bold tabular-nums text-slate-950">@stage.Value.ToString("0") · @percent.ToString("0")%</span>
+                </div>
+                <div class="h-8 rounded-lg bg-slate-100 p-1">
+                    <div class="@GetFillClass(stage)" style="width: @width%; background-color: @(stage.Value > 0 ? stage.Color : "transparent");">
+                        @if (stage.Value > 0)
+                        {
+                            <span class="truncate px-2">@stage.Label</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            Width is measured against @Items.First().Label.ToLowerInvariant() (@Baseline.ToString("0")). Zero-value stages keep an empty track with no colored fill.
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<ReportChartItem> Items { get; set; } = Array.Empty<ReportChartItem>();
+    [Parameter] public string EmptyText { get; set; } = "No funnel data available.";
+    [Parameter] public double MinVisiblePercent { get; set; } = 4;
+
+    private double Baseline => Math.Max(1, Items.FirstOrDefault()?.Value ?? Items.Select(item => item.Value).DefaultIfEmpty(0).Max());
+
+    private static string GetFillClass(ReportChartItem item)
+    {
+        return item.Value > 0
+            ? "flex h-full items-center justify-end rounded-md text-[11px] font-semibold text-white transition-all"
+            : "h-full rounded-md";
+    }
+
+    private static string GetStageHelper(ReportChartItem item)
+    {
+        if (item.Value <= 0)
+        {
+            return $"No {item.Label.ToLowerInvariant()}";
+        }
+
+        return item.Detail ?? string.Empty;
+    }
+
+    private static string BuildTitle(ReportChartItem item, double percent)
+    {
+        return $"{item.Label}: {item.Value:0} ({percent:0}% of baseline)";
+    }
+}

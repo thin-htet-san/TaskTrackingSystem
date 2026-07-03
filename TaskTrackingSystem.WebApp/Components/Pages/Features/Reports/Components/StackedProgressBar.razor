@@ -1,0 +1,36 @@
+<div class="space-y-3">
+    @if (!Segments.Any() || Total <= 0)
+    {
+        <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        <div class="flex h-4 overflow-hidden rounded-full bg-slate-100" role="img" aria-label="@AriaLabel">
+            @foreach (var segment in Segments)
+            {
+                var width = segment.Value / Total * 100;
+                <div title="@($"{segment.Label}: {segment.Value:0}")" class="h-full" style="width: @width%; background-color: @segment.Color;"></div>
+            }
+        </div>
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            @foreach (var segment in Segments)
+            {
+                var pct = segment.Value / Total * 100;
+                <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <span class="flex min-w-0 items-center gap-2 text-xs font-medium text-slate-700">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: @segment.Color"></span>
+                        <span class="truncate">@segment.Label</span>
+                    </span>
+                    <span class="text-xs font-semibold tabular-nums text-slate-900">@segment.Value.ToString("0.#") · @pct.ToString("0")%</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<StackedSegment> Segments { get; set; } = Array.Empty<StackedSegment>();
+    [Parameter] public string EmptyText { get; set; } = "No data available.";
+    [Parameter] public string AriaLabel { get; set; } = "Stacked progress";
+    private double Total => Segments.Sum(segment => Math.Max(0, segment.Value));
+}

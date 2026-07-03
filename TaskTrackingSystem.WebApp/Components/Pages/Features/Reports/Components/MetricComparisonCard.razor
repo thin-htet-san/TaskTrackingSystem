@@ -1,0 +1,26 @@
+<ReportChartCard Title="@Title" Subtitle="@Subtitle" Value="@PrimaryValue" ValueLabel="@PrimaryLabel" Insight="@Insight">
+    <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@PrimaryLabel</div>
+                <div class="mt-1 text-2xl font-bold tabular-nums text-slate-950">@PrimaryValue</div>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@SecondaryLabel</div>
+                <div class="mt-1 text-2xl font-bold tabular-nums text-slate-950">@SecondaryValue</div>
+            </div>
+        </div>
+        <StackedProgressBar Segments="Segments" EmptyText="No comparison data available." />
+    </div>
+</ReportChartCard>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string PrimaryLabel { get; set; } = "Actual";
+    [Parameter] public string PrimaryValue { get; set; } = "0";
+    [Parameter] public string SecondaryLabel { get; set; } = "Target";
+    [Parameter] public string SecondaryValue { get; set; } = "0";
+    [Parameter] public string? Insight { get; set; }
+    [Parameter] public IReadOnlyList<StackedSegment> Segments { get; set; } = Array.Empty<StackedSegment>();
+}

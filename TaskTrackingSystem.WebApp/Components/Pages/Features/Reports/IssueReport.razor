@@ -98,11 +98,35 @@
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 @if (isChartView)
                 {
-                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-                        @BarChart("Issues by Status", StatusChart)
-                        @BarChart("Issues by Priority", PriorityChart)
-                        @BarChart("Issues by Employee", EmployeeChart)
-                        @BarChart("Issues by Project", ProjectChart)
+                    <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                        <div class="xl:col-span-5">
+                            <ReportChartCard Title="Issue lifecycle funnel" Subtitle="How issues move from backlog to resolution." Insight="A large in-progress or blocked band is a daily execution signal.">
+                                <FunnelChart Items="IssueFunnelItems" />
+                            </ReportChartCard>
+                        </div>
+                        <div class="xl:col-span-4">
+                            <ReportChartCard Title="Issue status donut" Subtitle="Current status distribution, including overdue pressure." Insight="@IssueStatusInsight">
+                                <DonutStatusChart Items="IssueStatusItems" CenterLabel="issues" />
+                            </ReportChartCard>
+                        </div>
+                        <div class="xl:col-span-3">
+                            <RadialMetricCard Title="Blocked / overdue" Subtitle="Execution risk in the filtered issue set." Percent="@BlockedOverduePercent" Value="@((BlockedIssues + OverdueIssues).ToString())" ValueLabel="risk issues" CenterLabel="risk" Color="#ef4444" Insight="Focus standup discussion here first." />
+                        </div>
+                        <div class="xl:col-span-4">
+                            <ReportChartCard Title="Issues by project" Subtitle="Where issue volume is concentrated." Insight="Useful for project-level triage and planning health.">
+                                <TopRiskList Items="IssueProjectItems" EmptyText="No project issues found." />
+                            </ReportChartCard>
+                        </div>
+                        <div class="xl:col-span-4">
+                            <ReportChartCard Title="Issues by assignee" Subtitle="Support needs by assignee." Insight="Use as a support signal, especially when overdue or blocked items cluster.">
+                                <TopRiskList Items="IssueAssigneeItems" EmptyText="No assignee issues found." />
+                            </ReportChartCard>
+                        </div>
+                        <div class="xl:col-span-4">
+                            <ReportChartCard Title="Resolution aging" Subtitle="How close issues are to or past due date." Insight="Older overdue buckets should be cleared before new scope expands.">
+                                <AgingBucketChart Buckets="IssueAgingBuckets" />
+                            </ReportChartCard>
+                        </div>
                     </div>
                 }
                 else
@@ -283,27 +307,67 @@
     private IReadOnlyList<(string Label, int Value)> EmployeeChart => FilteredIssues.GroupBy(i => i.AssignedToName ?? "Unassigned").OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
     private IReadOnlyList<(string Label, int Value)> ProjectChart => FilteredIssues.GroupBy(i => i.ProjectName).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
     private IEnumerable<string> Insights => new[] { $"{OverdueIssues} overdue issues need attention.", $"{BlockedIssues} issues are blocked.", $"Actual hours are {FilteredIssues.Sum(i => i.ActualHours ?? 0):N1} against {FilteredIssues.Sum(i => i.EstimatedHours ?? 0):N1} estimated." };
+    private double BlockedOverduePercent => FilteredIssues.Any() ? (BlockedIssues + OverdueIssues) / (double)FilteredIssues.Count() * 100 : 0;
+    private string IssueStatusInsight => OpenIssues > FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)
+        ? $"{OpenIssues} issues are still open across the selected scope."
+        : "Resolved issues are leading this filtered set.";
+
+    private List<ReportChartItem> IssueFunnelItems => new()
+    {
+        new("Created", FilteredIssues.Count(), "#7c3aed", "All reported issues"),
+        new("Open", OpenIssues, "#3b82f6", "Unresolved issues"),
+        new("In Progress", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress), "#06b6d4", "Currently being worked"),
+        new("Blocked", BlockedIssues, "#f59e0b", "Needs unblock review"),
+        new("Resolved", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done), "#10b981", "Completed issues")
+    };
+
+    private List<ReportChartItem> IssueStatusItems => new()
+    {
+        new("To Do", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Todo), "#94a3b8"),
+        new("In Progress", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress), "#3b82f6"),
+        new("Done", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done), "#10b981"),
+        new("Overdue", OverdueIssues, "#ef4444")
+    };
+
+    private List<TopRiskItem> IssueProjectItems => FilteredIssues
+        .GroupBy(i => i.ProjectName)
+        .Select(g =>
+        {
+            var blocked = g.Count(i => i.IsBlocked);
+            var overdue = g.Count(IsOverdue);
+            var score = Math.Min(100, (g.Count() * 10) + (blocked * 25) + (overdue * 20));
+            return new TopRiskItem(g.Key, $"{g.Count()} issues · {blocked} blocked", score, overdue > 0 ? $"{overdue} overdue" : $"{g.Count()} issues", overdue > 0 || blocked > 0 ? "rose" : "blue");
+        })
+        .OrderByDescending(item => item.Score)
+        .Take(5)
+        .ToList();
+
+    private List<TopRiskItem> IssueAssigneeItems => FilteredIssues
+        .GroupBy(i => i.AssignedToName ?? "Unassigned")
+        .Select(g =>
+        {
+            var blocked = g.Count(i => i.IsBlocked);
+            var overdue = g.Count(IsOverdue);
+            var score = Math.Min(100, (g.Count() * 12) + (blocked * 22) + (overdue * 18));
+            return new TopRiskItem(g.Key, $"{g.Count()} assigned issues", score, blocked > 0 ? $"{blocked} blocked" : $"{overdue} overdue", blocked > 0 || overdue > 0 ? "amber" : "blue", "Support signal");
+        })
+        .OrderByDescending(item => item.Score)
+        .Take(5)
+        .ToList();
+
+    private List<ReportChartItem> IssueAgingBuckets => new()
+    {
+        new("Due later", FilteredIssues.Count(i => !IsOverdue(i) && i.DueDate.Date > DateTime.Today.AddDays(3)), "#3b82f6"),
+        new("Due soon", FilteredIssues.Count(i => !IsOverdue(i) && i.DueDate.Date <= DateTime.Today.AddDays(3)), "#f59e0b"),
+        new("1-7d late", FilteredIssues.Count(i => IsOverdue(i) && (DateTime.Today - i.DueDate.Date).Days <= 7), "#fb7185"),
+        new("8d+ late", FilteredIssues.Count(i => IsOverdue(i) && (DateTime.Today - i.DueDate.Date).Days > 7), "#ef4444")
+    };
 
     private RenderFragment MetricCard(string label, string value, string icon, string color) => builder =>
     {
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"rounded-xl border border-{color}-100 bg-{color}-50 p-5 shadow-sm");
         builder.AddMarkupContent(2, $"<div class=\"flex items-center justify-between\"><div><p class=\"text-xs font-semibold uppercase tracking-wider text-{color}-600\">{label}</p><p class=\"mt-1 text-3xl font-bold text-{color}-700\">{value}</p></div><span class=\"flex h-11 w-11 items-center justify-center rounded-xl bg-white/70\"><i data-lucide=\"{icon}\" class=\"h-6 w-6 text-{color}-600\"></i></span></div>");
-        builder.CloseElement();
-    };
-
-    private RenderFragment BarChart(string title, IReadOnlyList<(string Label, int Value)> rows) => builder =>
-    {
-        var max = Math.Max(1, rows.Select(r => r.Value).DefaultIfEmpty(0).Max());
-        builder.OpenElement(0, "div");
-        builder.AddAttribute(1, "class", "rounded-xl border border-slate-100 bg-slate-50 p-4");
-        builder.AddMarkupContent(2, $"<h3 class=\"mb-4 text-sm font-semibold text-slate-900\">{title}</h3>");
-        var seq = 3;
-        foreach (var row in rows)
-        {
-            var width = row.Value * 100 / max;
-            builder.AddMarkupContent(seq++, $"<div class=\"mb-3\"><div class=\"mb-1 flex justify-between text-xs font-semibold text-slate-600\"><span>{row.Label}</span><span>{row.Value}</span></div><div class=\"h-2.5 rounded-full bg-white\"><div class=\"h-full rounded-full bg-violet-600\" style=\"width:{width}%\"></div></div></div>");
-        }
         builder.CloseElement();
     };
 
