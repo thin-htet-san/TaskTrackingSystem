@@ -1,0 +1,47 @@
+@using TaskTrackingSystem.WebApp.Components.Shared.Charts
+
+<div class="@WrapperClass">
+    @if (!Items.Any())
+    {
+        <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+            @EmptyText
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Items)
+        {
+            var width = Math.Clamp(item.Value, 0, MaxValue) / MaxValue * 100;
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div class="flex items-center gap-3">
+                    @if (!string.IsNullOrWhiteSpace(item.LeadingText))
+                    {
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white text-sm font-bold text-white shadow-sm" style="background-color: @item.Color;">
+                            @item.LeadingText
+                        </div>
+                    }
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="truncate text-sm font-semibold text-slate-950">@item.Label</div>
+                            <div class="shrink-0 text-sm text-slate-500">@item.ValueLabel</div>
+                        </div>
+                        <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                            <div class="h-full rounded-full" style="width: @width%; background-color: @item.Color;"></div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(item.Detail))
+                        {
+                            <div class="mt-2 text-xs text-slate-500">@item.Detail</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<ProgressListChartItem> Items { get; set; } = Array.Empty<ProgressListChartItem>();
+    [Parameter] public double MaxValue { get; set; } = 100;
+    [Parameter] public string EmptyText { get; set; } = "No data available.";
+    [Parameter] public string WrapperClass { get; set; } = "space-y-4";
+}

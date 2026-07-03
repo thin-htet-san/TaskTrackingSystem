@@ -1,0 +1,34 @@
+<div class="@WrapperClass">
+    <div class="relative mx-auto flex h-44 w-44 items-center justify-center">
+        <svg viewBox="0 0 180 180" class="h-44 w-44 -rotate-90">
+            <circle cx="90" cy="90" r="70" fill="none" stroke="#e2e8f0" stroke-width="18" />
+            <circle cx="90" cy="90" r="70" fill="none" stroke="@Color" stroke-width="18" stroke-dasharray="@DashArray" stroke-linecap="round" />
+        </svg>
+        <div class="absolute text-center">
+            <div class="text-3xl font-bold text-slate-950">@ClampedValue.ToString("0")%</div>
+            @if (!string.IsNullOrWhiteSpace(Label))
+            {
+                <div class="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-400">@Label</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Color { get; set; } = "#7c3aed";
+    [Parameter] public string WrapperClass { get; set; } = string.Empty;
+
+    private double ClampedValue => Math.Clamp(Value, 0, 100);
+    private string DashArray
+    {
+        get
+        {
+            const double radius = 70;
+            var circumference = 2 * Math.PI * radius;
+            var arc = circumference * ClampedValue / 100;
+            return $"{arc:0.##} {(circumference - arc):0.##}";
+        }
+    }
+}

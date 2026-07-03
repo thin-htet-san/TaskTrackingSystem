@@ -1,0 +1,87 @@
+@using TaskTrackingSystem.WebApp.Components.Shared.Charts
+
+<div class="@WrapperClass">
+    @if (Points.Count < 2)
+    {
+        <div class="flex h-[260px] items-center justify-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        <svg viewBox="0 0 760 340" class="h-[340px] w-full">
+            <defs>
+                <linearGradient id="@GradientId" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="@Color" stop-opacity="0.18" />
+                    <stop offset="100%" stop-color="@Color" stop-opacity="0" />
+                </linearGradient>
+            </defs>
+
+            @for (var i = 0; i < 5; i++)
+            {
+                var y = 60 + (i * 55);
+                <line x1="48" y1="@y" x2="730" y2="@y" stroke="#e2e8f0" stroke-width="1" />
+            }
+
+            @for (var i = 0; i < 6; i++)
+            {
+                var x = 60 + (i * 125);
+                <line x1="@x" y1="40" x2="@x" y2="280" stroke="#e2e8f0" stroke-width="1" />
+            }
+
+            <path d="@AreaPath" fill="url(#@GradientId)" />
+            <path d="@LinePath" fill="none" stroke="@Color" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+
+            @foreach (var point in SvgPoints)
+            {
+                <circle cx="@point.X" cy="@point.Y" r="5" fill="@Color" stroke="#ddd6fe" stroke-width="3" />
+            }
+        </svg>
+
+        <div class="mt-4 flex items-center justify-between text-xs text-slate-500">
+            @foreach (var point in Points)
+            {
+                <span class="text-center">@point.Label</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private readonly string GradientId = $"lineFill{Guid.NewGuid():N}";
+
+    [Parameter] public IReadOnlyList<LineChartPoint> Points { get; set; } = Array.Empty<LineChartPoint>();
+    [Parameter] public string Color { get; set; } = "#2563eb";
+    [Parameter] public string EmptyText { get; set; } = "No data available";
+    [Parameter] public string WrapperClass { get; set; } = string.Empty;
+
+    private IReadOnlyList<(double X, double Y)> SvgPoints => BuildSvgPoints();
+    private string LinePath => BuildLinePath();
+    private string AreaPath => string.IsNullOrWhiteSpace(LinePath)
+        ? string.Empty
+        : $"{LinePath} L {SvgPoints.Last().X:0},{280:0} L {SvgPoints.First().X:0},{280:0} Z";
+
+    private IReadOnlyList<(double X, double Y)> BuildSvgPoints()
+    {
+        const double left = 48;
+        const double right = 730;
+        const double top = 48;
+        const double bottom = 280;
+        var max = Math.Max(1, Points.Select(point => point.Value).DefaultIfEmpty(0).Max());
+
+        return Points.Select((point, index) =>
+        {
+            var x = left + (index * ((right - left) / Math.Max(Points.Count - 1, 1)));
+            var y = bottom - Math.Min(point.Value, max) / max * (bottom - top);
+            return (x, y);
+        }).ToList();
+    }
+
+    private string BuildLinePath()
+    {
+        if (!SvgPoints.Any())
+        {
+            return string.Empty;
+        }
+
+        return $"M {string.Join(" L ", SvgPoints.Select(point => $"{point.X:0},{point.Y:0}"))}";
+    }
+}

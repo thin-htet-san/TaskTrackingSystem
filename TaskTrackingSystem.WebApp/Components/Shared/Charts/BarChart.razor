@@ -1,0 +1,104 @@
+@using TaskTrackingSystem.WebApp.Components.Shared.Charts
+
+<div class="@WrapperClass">
+    @if (!Groups.Any())
+    {
+        <div class="flex h-full min-h-[220px] items-center justify-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        <svg viewBox="0 0 760 280" class="h-full min-h-[260px] w-full overflow-visible">
+            @foreach (var tick in YTicks)
+            {
+                var y = TickToY(tick);
+                <g>
+                    <line x1="@PlotLeft" y1="@y" x2="@PlotRight" y2="@y" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" />
+                    <text x="42" y="@(y + 4)" text-anchor="end" font-size="12" fill="#64748b">@tick.ToString("0")</text>
+                </g>
+            }
+
+            @for (var i = 0; i < Groups.Count; i++)
+            {
+                var group = Groups[i];
+                var slotWidth = (PlotRight - PlotLeft) / Groups.Count;
+                var centerX = PlotLeft + (slotWidth * i) + (slotWidth / 2);
+                var bars = group.Bars.Take(MaxBarsPerGroup).ToList();
+                var totalBarWidth = (bars.Count * BarWidth) + Math.Max(0, bars.Count - 1) * BarGap;
+                var startX = centerX - (totalBarWidth / 2);
+
+                <g>
+                    @for (var j = 0; j < bars.Count; j++)
+                    {
+                        var bar = bars[j];
+                        var height = ValueToHeight(bar.Value);
+                        <rect x="@(startX + (j * (BarWidth + BarGap)))"
+                              y="@(PlotBottom - height)"
+                              width="@BarWidth"
+                              height="@height"
+                              rx="8"
+                              fill="@bar.Color" />
+                    }
+                    <text x="@centerX" y="246" text-anchor="middle" font-size="13" fill="#64748b">@group.Label</text>
+                </g>
+            }
+        </svg>
+
+        @if (ShowLegend)
+        {
+            <div class="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                @foreach (var item in LegendItems)
+                {
+                    <div class="flex items-center gap-2">
+                        <span class="h-3 w-3 rounded-full" style="background-color: @item.Color"></span>
+                        @item.Label
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private const double PlotLeft = 56;
+    private const double PlotRight = 724;
+    private const double PlotTop = 40;
+    private const double PlotBottom = 200;
+    private const double BarGap = 8;
+
+    [Parameter] public IReadOnlyList<BarChartGroup> Groups { get; set; } = Array.Empty<BarChartGroup>();
+    [Parameter] public string WrapperClass { get; set; } = "relative h-[280px]";
+    [Parameter] public string EmptyText { get; set; } = "No data available";
+    [Parameter] public bool ShowLegend { get; set; } = true;
+    [Parameter] public double BarWidth { get; set; } = 18;
+    [Parameter] public int MaxBarsPerGroup { get; set; } = 4;
+
+    private double MaxValue => Math.Max(1, Groups.SelectMany(group => group.Bars).Select(bar => bar.Value).DefaultIfEmpty(0).Max());
+
+    private IReadOnlyList<double> YTicks
+    {
+        get
+        {
+            var interval = Math.Max(1, Math.Ceiling(MaxValue / 4.0));
+            var highest = interval * 4;
+            return new[] { 0, highest * 0.25, highest * 0.5, highest * 0.75, highest };
+        }
+    }
+
+    private IReadOnlyList<ChartDataPoint> LegendItems => Groups
+        .SelectMany(group => group.Bars)
+        .GroupBy(bar => bar.Label)
+        .Select(group => group.First())
+        .ToList();
+
+    private double TickToY(double tickValue)
+    {
+        var chartHeight = PlotBottom - PlotTop;
+        return PlotBottom - (Math.Min(tickValue, MaxValue) / MaxValue * chartHeight);
+    }
+
+    private double ValueToHeight(double value)
+    {
+        var chartHeight = PlotBottom - PlotTop;
+        return Math.Round(Math.Min(value, MaxValue) / MaxValue * chartHeight, 2);
+    }
+}

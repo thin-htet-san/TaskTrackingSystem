@@ -55,21 +55,7 @@
         }
         else
         {
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                @foreach (var metric in SummaryMetrics)
-                {
-                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-transform duration-200 hover:-translate-y-1">
-                        <div class="flex items-center justify-between">
-                            <div class="@metric.IconWrapClass">
-                                <i data-lucide="@metric.Icon" class="h-5 w-5"></i>
-                            </div>
-                            <span class="text-sm font-semibold @metric.BadgeClass">@metric.BadgeText</span>
-                        </div>
-                        <p class="mt-5 text-3xl font-bold text-slate-950">@metric.Value</p>
-                        <p class="mt-2 text-sm text-slate-500">@metric.Label</p>
-                    </div>
-                }
-            </div>
+            <EmployeeOverview Metrics="SummaryMetrics" />
 
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,1fr)]">
                 <div class="space-y-5">
@@ -323,7 +309,7 @@
         .OrderBy(task => task.DueDate)
         .ToList();
 
-    private List<SummaryMetricViewModel> SummaryMetrics => BuildSummaryMetrics();
+    private List<DashboardMetric> SummaryMetrics => BuildSummaryMetrics();
 
     protected override async Task OnInitializedAsync()
     {
@@ -391,7 +377,7 @@
         selectedDate = selectedDate.AddMonths(1);
     }
 
-    private List<SummaryMetricViewModel> BuildSummaryMetrics()
+    private List<DashboardMetric> BuildSummaryMetrics()
     {
         var inProgress = tasks.Count(task => task.StatusId == AppTaskStatus.InProgress);
         var todo = tasks.Count(task => task.StatusId == AppTaskStatus.Todo);
@@ -399,13 +385,13 @@
         var completed = tasks.Count(task => task.StatusId == AppTaskStatus.Done);
         var overdue = tasks.Count(task => task.DueDate.Date < DateTime.Today && task.StatusId != AppTaskStatus.Done);
 
-        return new List<SummaryMetricViewModel>
+        return new List<DashboardMetric>
         {
-            new("timer-reset", "active", inProgress.ToString(), "In Progress", "rounded-2xl bg-violet-700 p-3 text-white", "text-violet-700"),
-            new("list-checks", "queued", todo.ToString(), "To Do", "rounded-2xl bg-cyan-600 p-3 text-white", "text-cyan-600"),
-            new("calendar-clock", "soon", dueSoon.ToString(), "Due Soon", "rounded-2xl bg-amber-500 p-3 text-white", "text-amber-600"),
-            new("circle-check-big", "done", completed.ToString(), "Completed", "rounded-2xl bg-emerald-600 p-3 text-white", "text-emerald-600"),
-            new("triangle-alert", "late", overdue.ToString(), "Overdue", "rounded-2xl bg-rose-600 p-3 text-white", "text-rose-600")
+            new("timer-reset", "active", inProgress.ToString(), "In Progress", "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-violet-700"),
+            new("list-checks", "queued", todo.ToString(), "To Do", "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-cyan-600"),
+            new("calendar-clock", "soon", dueSoon.ToString(), "Due Soon", "rounded-2xl bg-amber-500 p-3 text-white", "text-sm font-semibold text-amber-600"),
+            new("circle-check-big", "done", completed.ToString(), "Completed", "rounded-2xl bg-emerald-600 p-3 text-white", "text-sm font-semibold text-emerald-600"),
+            new("triangle-alert", "late", overdue.ToString(), "Overdue", "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
         };
     }
 
@@ -523,14 +509,6 @@
         var days = (DateTime.Today - task.DueDate.Date).Days;
         return days <= 0 ? "Due today" : $"{days}d ago";
     }
-
-    private sealed record SummaryMetricViewModel(
-        string Icon,
-        string BadgeText,
-        string Value,
-        string Label,
-        string IconWrapClass,
-        string BadgeClass);
 
     private sealed record CalendarCellViewModel(
         DateTime Date,
