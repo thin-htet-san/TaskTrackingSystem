@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using TaskTrackingSystem.WebApp.Localization;
 using TaskTrackingSystem.WebApp;
 using TaskTrackingSystem.WebApp.Components;
 
@@ -39,6 +40,7 @@ webApiBuilder.ConfigurePrimaryHttpMessageHandler(() =>
 builder.Services.AddScoped<UserSessionState>();
 builder.Services.AddScoped<ApiClientService>();
 builder.Services.AddScoped<MenuAuthorizationService>();
+builder.Services.AddScoped<UiLanguageService>();
 
 // Cookie authentication for Blazor pages and HTTP middleware.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

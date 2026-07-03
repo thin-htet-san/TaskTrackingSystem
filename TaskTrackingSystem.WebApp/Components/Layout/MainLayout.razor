@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @using System.Security.Claims
+@inject TaskTrackingSystem.WebApp.Localization.UiLanguageService Language
 
 <div class="flex h-screen bg-background font-sans text-slate-800 antialiased overflow-hidden">
     <aside class="flex w-64 flex-col border-r border-slate-800 bg-slate-950 text-white shrink-0 overflow-hidden">
@@ -26,7 +27,7 @@
                                 <AntiforgeryToken />
                                 <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all text-slate-300">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
-                                    Sign Out
+                                    @Language.Texts.SignOut
                                 </button>
                              </form>
                         </div>
@@ -34,7 +35,7 @@
                 </Authorized>
                 <NotAuthorized>
                     <a href="/login" class="flex items-center justify-center rounded-xl bg-slate-800 text-white px-4 py-2.5 text-sm font-medium hover:bg-slate-700 transition-all">
-                        Sign In
+                        @Language.Texts.SignIn
                     </a>
                 </NotAuthorized>
             </AuthorizeView>
@@ -46,15 +47,15 @@
                     <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4" style="background-color: var(--status-warning-bg); color: var(--brand-accent);">
                         <i data-lucide="log-out" class="h-7 w-7"></i>
                     </div>
-                    <h3 class="text-lg font-semibold text-slate-900">Sign Out?</h3>
-                    <p class="text-sm mt-2 text-slate-500">Are you sure you want to sign out of Taskify?</p>
+                    <h3 class="text-lg font-semibold text-slate-900">@Language.Texts.SignOutTitle</h3>
+                    <p class="text-sm mt-2 text-slate-500">@Language.Texts.SignOutDescription</p>
                 </div>
                 <div class="flex items-center justify-center space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                     <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='none';" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-slate-200 bg-white hover:bg-slate-50 text-slate-500">
-                        Cancel
+                        @Language.Texts.Cancel
                     </button>
                     <button type="button" onclick="document.getElementById('logout-form').submit();" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors" style="background-color: var(--brand-accent);">
-                        Yes, Sign Out
+                        @Language.Texts.ConfirmSignOut
                     </button>
                 </div>
             </div>
@@ -63,7 +64,7 @@
 
     <main class="flex-1 flex flex-col overflow-y-auto">
         <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
-            <h1 class="text-lg font-semibold text-slate-900">Workspace</h1>
+            <h1 class="text-lg font-semibold text-slate-900">@Language.Texts.Workspace</h1>
             <div class="flex items-center space-x-4">
                 <AuthorizeView>
                     <Authorized>
@@ -71,6 +72,7 @@
                     </Authorized>
                 </AuthorizeView>
                 <NotificationBell />
+                <LanguageToggle />
                 <ThemeToggle />
             </div>
         </header>
@@ -86,13 +88,13 @@
                     <div class="rounded-full p-4 mb-4" style="color: var(--brand-accent); background-color: var(--status-warning-bg);">
                         <i data-lucide="shield-alert" class="h-12 w-12"></i>
                     </div>
-                    <h3 class="text-xl font-bold" style="color: var(--text-primary);">Access Denied</h3>
+                    <h3 class="text-xl font-bold" style="color: var(--text-primary);">@Language.Texts.AccessDenied</h3>
                     <p class="text-center mt-2 max-w-sm text-sm" style="color: var(--text-muted);">
-                        You do not have permission to access this page. Please contact your system administrator.
+                        @Language.Texts.AccessDeniedDescription
                     </p>
                     <a href="@dashboardHref" class="mt-6 inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors shadow-sm hover:opacity-90" style="background-color: var(--brand-primary);">
                         <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
-                        Back to Dashboard
+                        @Language.Texts.BackToDashboard
                     </a>
                 </div>
             }
@@ -123,11 +125,12 @@
         "dashboard" => "Dashboard",
         "dashboard/manager" => "Manager Dashboard",
         "dashboard/employee" => "Employee Dashboard",
-        _ => "Workspace"
+        _ => Language.Texts.Workspace
     };
 
     protected override async Task OnInitializedAsync()
     {
+        Language.Changed += OnLanguageChanged;
         Navigation.LocationChanged += OnLocationChanged;
         var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
         await UpdateAuthorizationAsync(relativePath);
@@ -143,6 +146,11 @@
         var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
 
         _ = UpdateAuthorizationAsync(relativePath);
+    }
+
+    private void OnLanguageChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task UpdateAuthorizationAsync(string relativePath)
@@ -193,6 +201,7 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        Language.Changed -= OnLanguageChanged;
     }
 
     private static string ResolveDashboardHref(IEnumerable<TaskTrackingSystem.Shared.Models.Menu.MenuDto> menus)

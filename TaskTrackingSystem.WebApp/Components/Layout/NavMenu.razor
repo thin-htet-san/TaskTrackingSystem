@@ -4,6 +4,7 @@
 @using TaskTrackingSystem.Shared.Models.Menu
 @using Microsoft.JSInterop
 @implements IDisposable
+@inject TaskTrackingSystem.WebApp.Localization.UiLanguageService Language
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 @inject NavigationManager Navigation
@@ -51,14 +52,14 @@
         {
             <NavLink class="nav-link-item mt-2 pt-2 border-t border-slate-100" href="/audit-logs" Match="NavLinkMatch.All">
                 <i data-lucide="file-text" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
-                <span>Audit Logs</span>
+                <span>@Language.Texts.AuditLogs</span>
             </NavLink>
         }
     }
     else
     {
         <div class="px-4 py-6 text-xs text-slate-400">
-            No access items are available for this role.
+            @Language.Texts.NoAccessItems
         </div>
     }
 </nav>
@@ -71,6 +72,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Language.Changed += OnLanguageChanged;
         currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/');
         Navigation.LocationChanged += OnLocationChanged;
 
@@ -106,6 +108,11 @@
     {
         currentPath = Navigation.ToBaseRelativePath(e.Location).Trim('/');
         InvokeAsync(RefreshMenusAsync);
+    }
+
+    private void OnLanguageChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private List<MenuDto> ProcessMenus(List<MenuDto> rawMenus)
@@ -265,5 +272,6 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        Language.Changed -= OnLanguageChanged;
     }
 }
