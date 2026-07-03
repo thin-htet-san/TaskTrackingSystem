@@ -1,0 +1,52 @@
+<div class="space-y-3">
+    @if (!Items.Any())
+    {
+        <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        @foreach (var item in Items.Take(Limit))
+        {
+            <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="truncate text-sm font-semibold text-slate-950">@item.Title</div>
+                        <div class="mt-1 text-xs text-slate-500">@item.Meta</div>
+                    </div>
+                    <div class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold @GetBadgeClass(item.Tone)">@item.Badge</div>
+                </div>
+                <div class="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                    <div class="h-full rounded-full @GetBarClass(item.Tone)" style="width: @Math.Clamp(item.Score, 0, 100)%"></div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(item.Detail))
+                {
+                    <p class="mt-2 text-xs text-slate-500">@item.Detail</p>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TopRiskItem> Items { get; set; } = Array.Empty<TopRiskItem>();
+    [Parameter] public int Limit { get; set; } = 5;
+    [Parameter] public string EmptyText { get; set; } = "No risk items to show.";
+
+    private static string GetBadgeClass(string tone) => tone switch
+    {
+        "rose" => "bg-rose-50 text-rose-700",
+        "amber" => "bg-amber-50 text-amber-700",
+        "emerald" => "bg-emerald-50 text-emerald-700",
+        "blue" => "bg-blue-50 text-blue-700",
+        _ => "bg-slate-100 text-slate-700"
+    };
+
+    private static string GetBarClass(string tone) => tone switch
+    {
+        "rose" => "bg-rose-500",
+        "amber" => "bg-amber-500",
+        "emerald" => "bg-emerald-500",
+        "blue" => "bg-blue-500",
+        _ => "bg-violet-600"
+    };
+}

@@ -23,7 +23,15 @@
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Overdue &amp; Delayed Tasks</h2>
             <p class="text-slate-500 mt-1">Track tasks that have passed their due date or are at risk of delay.</p>
         </div>
-        <div class="flex items-center space-x-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                </button>
+                <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                </button>
+            </div>
             <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                 <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
             </button>
@@ -135,7 +143,34 @@
     }
     else
     {
-        <!-- Results Table -->
+        @if (isChartView)
+        {
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                <div class="xl:col-span-7">
+                    <ReportChartCard Title="Aging buckets" Subtitle="How long delayed work has been waiting." Insight="@AgingInsight">
+                        <AgingBucketChart Buckets="AgingBuckets" />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-5">
+                    <RadialMetricCard Title="High-priority overdue" Subtitle="Critical work that needs immediate support." Percent="@HighPriorityOverduePercent" Value="@criticalCount.ToString()" ValueLabel="high priority" CenterLabel="critical" Color="#ef4444" Insight="Phrase these as capacity risks so teams can unblock work, not assign blame." />
+                </div>
+                <div class="xl:col-span-6">
+                    <ReportChartCard Title="Delays by project" Subtitle="Project areas where delay concentration is highest." Insight="Use this to rebalance planning pressure across projects.">
+                        <TopRiskList Items="DelayProjectItems" EmptyText="No project delay concentration found." />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-6">
+                    <ReportChartCard Title="Delays by assignee" Subtitle="People who may need support or scope adjustment." Insight="Support signal only: high counts should trigger help, not blame.">
+                        <TopRiskList Items="DelayAssigneeItems" EmptyText="No assignee delay concentration found." />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-12">
+                    <RiskMatrixCard Title="Severity vs days overdue" Subtitle="High priority and older delays sit in the upper-right risk zone." Points="OverdueRiskMatrix" Insight="The matrix combines priority severity with age of delay to show triage order." />
+                </div>
+            </div>
+        }
+        else
+        {
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-slate-700">
@@ -240,11 +275,13 @@
                         OnPageChanged="HandlePageChanged"
                         OnPageSizeChanged="HandlePageSizeChanged" />
         </div>
+        }
     }
 </div>
 
 @code {
     private bool isLoading = true;
+    private bool isChartView = false;
     private List<OverdueCriticalTaskDto> allOverdue = new();
     private List<OverdueCriticalTaskDto> overdueReportTasks = new();
     private PagedResult<OverdueCriticalTaskDto>? overdueReportPage;
@@ -271,6 +308,48 @@
     private bool canUpdateTask = false;
 
     private int TotalPages => overdueReportPage?.TotalPages ?? 0;
+    private double HighPriorityOverduePercent => overdueCount > 0 ? criticalCount / (double)overdueCount * 100 : 0;
+    private string AgingInsight => avgDaysOverdue > 7
+        ? $"Average delay is {avgDaysOverdue} days; focus on older buckets first."
+        : "Most delayed work is still in a manageable window.";
+
+    private List<ReportChartItem> AgingBuckets => new()
+    {
+        new("Due soon", allOverdue.Count(t => t.DaysOverdue <= 0), "#f59e0b", "not overdue yet"),
+        new("1-3d", allOverdue.Count(t => t.DaysOverdue >= 1 && t.DaysOverdue <= 3), "#3b82f6", "early delay"),
+        new("4-7d", allOverdue.Count(t => t.DaysOverdue >= 4 && t.DaysOverdue <= 7), "#f59e0b", "needs action"),
+        new("8d+", allOverdue.Count(t => t.DaysOverdue >= 8), "#ef4444", "high risk")
+    };
+
+    private List<TopRiskItem> DelayProjectItems => allOverdue
+        .GroupBy(t => t.ProjectName)
+        .Select(g =>
+        {
+            var overdue = g.Count(t => t.DaysOverdue > 0);
+            var high = g.Count(t => t.PriorityName == "High");
+            var score = Math.Min(100, (overdue * 18) + (high * 15) + g.Sum(t => Math.Max(0, t.DaysOverdue)));
+            return new TopRiskItem(g.Key, $"{overdue} overdue · {high} high priority", score, $"{g.Count()} tasks", score >= 70 ? "rose" : "amber", $"{g.Sum(t => t.OverdueIssues)} overdue issues");
+        })
+        .OrderByDescending(item => item.Score)
+        .Take(5)
+        .ToList();
+
+    private List<TopRiskItem> DelayAssigneeItems => allOverdue
+        .GroupBy(t => string.IsNullOrWhiteSpace(t.AssignedTo) ? "Unassigned" : t.AssignedTo!)
+        .Select(g =>
+        {
+            var overdue = g.Count(t => t.DaysOverdue > 0);
+            var score = Math.Min(100, (overdue * 20) + g.Sum(t => Math.Max(0, t.DaysOverdue)));
+            return new TopRiskItem(g.Key, $"{overdue} overdue tasks", score, $"{score:0} risk", score >= 70 ? "rose" : "amber", "Capacity support may be needed");
+        })
+        .OrderByDescending(item => item.Score)
+        .Take(5)
+        .ToList();
+
+    private List<RiskMatrixPoint> OverdueRiskMatrix => allOverdue
+        .GroupBy(t => new { Severity = GetPrioritySeverity(t.PriorityName), Urgency = GetOverdueUrgency(t.DaysOverdue), t.ProjectName })
+        .Select(g => new RiskMatrixPoint(g.Key.ProjectName, g.Key.Severity, g.Key.Urgency, g.Count(), g.Key.Severity * g.Key.Urgency >= 9 ? "#ef4444" : "#f59e0b", $"{g.Count()} delayed task(s)"))
+        .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -357,6 +436,11 @@
         await LoadOverdueReport();
     }
 
+    private void SetView(bool chartView)
+    {
+        isChartView = chartView;
+    }
+
     private async Task HandlePageChanged(int page)
     {
         currentPage = page;
@@ -438,4 +522,13 @@
         3 => "Manager",
         _ => "None"
     };
+
+    private static int GetPrioritySeverity(string priorityName) => priorityName switch
+    {
+        "High" => 3,
+        "Medium" => 2,
+        _ => 1
+    };
+
+    private static int GetOverdueUrgency(int daysOverdue) => daysOverdue >= 8 ? 3 : daysOverdue >= 4 ? 2 : 1;
 }

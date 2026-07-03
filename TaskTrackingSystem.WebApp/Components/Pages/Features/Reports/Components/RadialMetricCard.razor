@@ -1,0 +1,37 @@
+<ReportChartCard Title="@Title" Subtitle="@Subtitle" Value="@Value" ValueLabel="@ValueLabel" Insight="@Insight">
+    <div class="flex items-center justify-center">
+        <div class="relative h-36 w-36">
+            <svg viewBox="0 0 160 160" class="h-36 w-36 -rotate-90" role="img" aria-label="@($"{Title}: {Percent:0}%")">
+                <circle cx="80" cy="80" r="58" fill="none" stroke="#e2e8f0" stroke-width="16" />
+                <circle cx="80" cy="80" r="58" fill="none" stroke="@Color" stroke-width="16" stroke-dasharray="@DashArray" stroke-linecap="round" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-3xl font-bold tabular-nums text-slate-950">@ClampedPercent.ToString("0")%</span>
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@CenterLabel</span>
+            </div>
+        </div>
+    </div>
+</ReportChartCard>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string? ValueLabel { get; set; }
+    [Parameter] public string? Insight { get; set; }
+    [Parameter] public string CenterLabel { get; set; } = "score";
+    [Parameter] public double Percent { get; set; }
+    [Parameter] public string Color { get; set; } = "#7c3aed";
+
+    private double ClampedPercent => Math.Clamp(Percent, 0, 100);
+    private string DashArray
+    {
+        get
+        {
+            const double radius = 58;
+            var circumference = 2 * Math.PI * radius;
+            var arc = circumference * ClampedPercent / 100;
+            return $"{arc:0.##} {(circumference - arc):0.##}";
+        }
+    }
+}

@@ -1,0 +1,64 @@
+<div class="grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
+    @if (Total <= 0)
+    {
+        <div class="col-span-full rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        <div class="relative mx-auto h-40 w-40">
+            <svg viewBox="0 0 180 180" class="h-40 w-40 -rotate-90" role="img" aria-label="@AriaLabel">
+                <circle cx="90" cy="90" r="66" fill="none" stroke="#e2e8f0" stroke-width="22" />
+                @foreach (var slice in Slices)
+                {
+                    <circle cx="90" cy="90" r="66" fill="none" stroke="@slice.Color" stroke-width="22" stroke-dasharray="@slice.DashArray" stroke-dashoffset="@slice.DashOffset" stroke-linecap="round" />
+                }
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span class="text-2xl font-bold tabular-nums text-slate-950">@Total.ToString("0")</span>
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@CenterLabel</span>
+            </div>
+        </div>
+        <div class="space-y-2">
+            @foreach (var item in Items)
+            {
+                var pct = Total > 0 ? item.Value / Total * 100 : 0;
+                <div class="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div class="flex min-w-0 items-center gap-2">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: @item.Color"></span>
+                        <span class="truncate text-xs font-medium text-slate-700">@item.Label</span>
+                    </div>
+                    <span class="shrink-0 text-xs font-semibold tabular-nums text-slate-900">@item.Value.ToString("0") · @pct.ToString("0")%</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<ReportChartItem> Items { get; set; } = Array.Empty<ReportChartItem>();
+    [Parameter] public string CenterLabel { get; set; } = "total";
+    [Parameter] public string EmptyText { get; set; } = "No data available.";
+    [Parameter] public string AriaLabel { get; set; } = "Status distribution";
+
+    private double Total => Items.Sum(item => Math.Max(0, item.Value));
+    private IReadOnlyList<Slice> Slices => BuildSlices();
+
+    private IReadOnlyList<Slice> BuildSlices()
+    {
+        const double radius = 66;
+        var circumference = 2 * Math.PI * radius;
+        var offset = 0.0;
+        var slices = new List<Slice>();
+
+        foreach (var item in Items)
+        {
+            var arc = Total > 0 ? circumference * Math.Max(0, item.Value) / Total : 0;
+            slices.Add(new Slice(item.Color, $"{arc:0.##} {(circumference - arc):0.##}", -offset));
+            offset += arc;
+        }
+
+        return slices;
+    }
+
+    private sealed record Slice(string Color, string DashArray, double DashOffset);
+}

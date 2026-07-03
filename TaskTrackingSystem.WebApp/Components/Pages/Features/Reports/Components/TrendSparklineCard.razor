@@ -1,0 +1,50 @@
+<ReportChartCard Title="@Title" Subtitle="@Subtitle" Value="@Value" ValueLabel="@ValueLabel" Insight="@Insight">
+    @if (Points.Count < 2)
+    {
+        <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        <svg viewBox="0 0 320 120" class="h-28 w-full" role="img" aria-label="@Title">
+            <path d="@AreaPath" fill="@Color" opacity="0.12" />
+            <path d="@LinePath" fill="none" stroke="@Color" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+            @foreach (var point in SvgPoints)
+            {
+                <circle cx="@point.X" cy="@point.Y" r="4" fill="white" stroke="@Color" stroke-width="3" />
+            }
+        </svg>
+        <div class="mt-2 flex justify-between text-[11px] font-medium text-slate-400">
+            <span>@Points.First().Label</span>
+            <span>@Points.Last().Label</span>
+        </div>
+    }
+</ReportChartCard>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string? ValueLabel { get; set; }
+    [Parameter] public string? Insight { get; set; }
+    [Parameter] public IReadOnlyList<SparklinePoint> Points { get; set; } = Array.Empty<SparklinePoint>();
+    [Parameter] public string Color { get; set; } = "#7c3aed";
+    [Parameter] public string EmptyText { get; set; } = "Not enough data for a trend yet.";
+
+    private IReadOnlyList<(double X, double Y)> SvgPoints => BuildSvgPoints();
+    private string LinePath => SvgPoints.Any() ? $"M {string.Join(" L ", SvgPoints.Select(p => $"{p.X:0},{p.Y:0}"))}" : string.Empty;
+    private string AreaPath => SvgPoints.Any() ? $"{LinePath} L {SvgPoints.Last().X:0},112 L {SvgPoints.First().X:0},112 Z" : string.Empty;
+
+    private IReadOnlyList<(double X, double Y)> BuildSvgPoints()
+    {
+        var max = Math.Max(1, Points.Max(point => point.Value));
+        var min = Math.Min(0, Points.Min(point => point.Value));
+        var range = Math.Max(1, max - min);
+
+        return Points.Select((point, index) =>
+        {
+            var x = 16 + index * (288d / Math.Max(1, Points.Count - 1));
+            var y = 104 - ((point.Value - min) / range * 88);
+            return (x, y);
+        }).ToList();
+    }
+}

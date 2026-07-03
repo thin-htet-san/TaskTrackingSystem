@@ -111,14 +111,29 @@
     {
         @if (isChartView)
         {
-            <!-- Chart View: SVG Horizontal Bar Chart showing Efficiency -->
-            <ChartCard Title="Workload by Employee" TitleClass="font-semibold text-slate-900 mb-4 font-sans text-md" BodyClass="mt-0">
-                <ChildContent>
-                    <div class="max-w-2xl">
-                        <ProgressListChart Items="EmployeeWorkloadItems" MaxValue="EmployeeWorkloadMax" EmptyText="No data available." />
-                    </div>
-                </ChildContent>
-            </ChartCard>
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                <div class="xl:col-span-7">
+                    <WorkloadHeatmap Title="Workload heatmap" Subtitle="Capacity signals across assigned work, open issues, overdue issues, and hours." Rows="EmployeeHeatmapRows" Columns="EmployeeHeatmapColumns" Cells="EmployeeHeatmapCells" Insight="Darker cells mean someone may need support or scope adjustment." />
+                </div>
+                <div class="xl:col-span-5">
+                    <ReportChartCard Title="Capacity support list" Subtitle="Highest support signals, phrased as capacity risk." Insight="Use this to route help and remove blockers, not to rank people negatively.">
+                        <TopRiskList Items="EmployeeCapacityRiskItems" EmptyText="No capacity risks in the current filter." />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-5">
+                    <ReportChartCard Title="Completed vs open issues" Subtitle="Team execution balance by issue state." Value="@CompletedIssueTotal.ToString()" ValueLabel="completed tasks">
+                        <StackedProgressBar Segments="EmployeeCompletionSegments" AriaLabel="Completed versus open employee workload" />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-4">
+                    <ReportChartCard Title="Overdue support" Subtitle="Employees with overdue issue load." Insight="Treat overdue counts as support requests.">
+                        <TopRiskList Items="EmployeeOverdueItems" EmptyText="No overdue support needs found." />
+                    </ReportChartCard>
+                </div>
+                <div class="xl:col-span-3">
+                    <TrendSparklineCard Title="Completion pattern" Subtitle="Completion rate across visible employees." Value="@($"{AverageCompletionRate:0}%")" ValueLabel="avg rate" Points="EmployeeCompletionSparkline" Color="#3b82f6" Insight="A quick view of whether completion is clustered or balanced." />
+                </div>
+            </div>
         }
         else
         {
@@ -201,15 +216,52 @@
     private bool filterAssignToMe = false;
     private bool filterAssignToMyTeam = false;
 
-    private List<ProgressListChartItem> EmployeeWorkloadItems => allEmployees
-        .Select(emp => new ProgressListChartItem(
-            $"{emp.FullName} ({emp.Username})",
-            Math.Min(emp.OpenIssues * 10, 100),
-            $"{emp.OpenIssues} open, {emp.OverdueIssues} overdue, {emp.ActualHours:N1} hrs",
-            "#7c3aed"))
+    private List<string> EmployeeHeatmapRows => allEmployees.Take(6).Select(emp => emp.FullName).ToList();
+    private List<string> EmployeeHeatmapColumns => new() { "Assigned", "Open", "Overdue", "Hours" };
+    private int CompletedIssueTotal => allEmployees.Sum(emp => emp.CompletedCount);
+    private double AverageCompletionRate => allEmployees.Any() ? allEmployees.Average(emp => emp.CompletionRate) : 0;
+
+    private List<HeatmapCell> EmployeeHeatmapCells => allEmployees.Take(6)
+        .SelectMany(emp => new[]
+        {
+            new HeatmapCell(emp.FullName, "Assigned", Math.Min(100, emp.AssignedCount * 8), $"{emp.AssignedCount} assigned tasks"),
+            new HeatmapCell(emp.FullName, "Open", Math.Min(100, emp.OpenIssues * 12), $"{emp.OpenIssues} open issues"),
+            new HeatmapCell(emp.FullName, "Overdue", Math.Min(100, emp.OverdueIssues * 20), $"{emp.OverdueIssues} overdue issues"),
+            new HeatmapCell(emp.FullName, "Hours", Math.Min(100, (double)emp.ActualHours * 5), $"{emp.ActualHours:N1} actual hours")
+        })
         .ToList();
 
-    private double EmployeeWorkloadMax => Math.Max(100, EmployeeWorkloadItems.Select(item => item.Value).DefaultIfEmpty(0).Max());
+    private List<TopRiskItem> EmployeeCapacityRiskItems => allEmployees
+        .Select(emp =>
+        {
+            var score = Math.Min(100, (emp.OpenIssues * 14) + (emp.OverdueIssues * 24) + (emp.AssignedCount * 4) + (double)emp.ActualHours);
+            var tone = score >= 70 ? "rose" : score >= 45 ? "amber" : "blue";
+            return new TopRiskItem(emp.FullName, $"{emp.WorkloadLevel} · {emp.ActualHours:N1}h tracked", score, "needs support", tone, $"{emp.OpenIssues} open · {emp.OverdueIssues} overdue");
+        })
+        .OrderByDescending(item => item.Score)
+        .Take(5)
+        .ToList();
+
+    private List<StackedSegment> EmployeeCompletionSegments => new()
+    {
+        new("Completed tasks", allEmployees.Sum(emp => emp.CompletedCount), "#10b981"),
+        new("Assigned tasks", allEmployees.Sum(emp => Math.Max(0, emp.AssignedCount - emp.CompletedCount)), "#3b82f6"),
+        new("Open issues", allEmployees.Sum(emp => emp.OpenIssues), "#f59e0b")
+    };
+
+    private List<TopRiskItem> EmployeeOverdueItems => allEmployees
+        .Where(emp => emp.OverdueIssues > 0)
+        .OrderByDescending(emp => emp.OverdueIssues)
+        .Take(5)
+        .Select(emp => new TopRiskItem(emp.FullName, $"{emp.OpenIssues} open issues", Math.Min(100, emp.OverdueIssues * 25), $"{emp.OverdueIssues} overdue", "rose", "Capacity risk"))
+        .ToList();
+
+    private List<SparklinePoint> EmployeeCompletionSparkline => allEmployees
+        .OrderByDescending(emp => emp.AssignedCount)
+        .Take(8)
+        .Select(emp => new SparklinePoint(BuildShortName(emp.FullName), emp.CompletionRate))
+        .DefaultIfEmpty(new SparklinePoint("No data", 0))
+        .ToList();
 
     // Search and Pagination
     private string searchInput = "";
@@ -419,4 +471,10 @@
         "Declining" => "bg-rose-50 text-rose-700",
         _ => "bg-blue-50 text-blue-700"
     };
+
+    private static string BuildShortName(string fullName)
+    {
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 0 ? "User" : parts.Length == 1 ? parts[0] : $"{parts[0]} {parts[^1][0]}.";
+    }
 }
