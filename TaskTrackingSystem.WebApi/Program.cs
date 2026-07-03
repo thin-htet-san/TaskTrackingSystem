@@ -134,6 +134,8 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    await EnsureReportUpgradeSchemaAsync(db);
+
     var dashboardMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "DASHBOARD");
     if (dashboardMenu == null)
     {
@@ -316,6 +318,8 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
 
     await db.SaveChangesAsync();
 
+    await EnsureIssueReportMenuAsync(db);
+
     // Soft-delete existing tasks that belong to deleted projects
     var orphanedTasks = await db.Tasks
         .Where(t => t.IsDeleted != true && t.Project.IsDeleted == true)
@@ -328,6 +332,85 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     if (orphanedTasks.Any())
     {
         db.Tasks.UpdateRange(orphanedTasks);
+    }
+
+    await db.SaveChangesAsync();
+}
+
+static async System.Threading.Tasks.Task EnsureReportUpgradeSchemaAsync(AppDbContext db)
+{
+    await db.Database.ExecuteSqlRawAsync(@"
+IF COL_LENGTH('dbo.Issues', 'DelayReason') IS NULL
+    ALTER TABLE [dbo].[Issues] ADD [DelayReason] NVARCHAR(300) NULL;
+
+IF COL_LENGTH('dbo.Issues', 'IsBlocked') IS NULL
+    ALTER TABLE [dbo].[Issues] ADD [IsBlocked] BIT NOT NULL CONSTRAINT [DF_Issues_IsBlocked] DEFAULT ((0));
+
+IF COL_LENGTH('dbo.Issues', 'BlockedBy') IS NULL
+    ALTER TABLE [dbo].[Issues] ADD [BlockedBy] NVARCHAR(200) NULL;
+
+IF COL_LENGTH('dbo.Issues', 'EscalationLevel') IS NULL
+    ALTER TABLE [dbo].[Issues] ADD [EscalationLevel] INT NOT NULL CONSTRAINT [DF_Issues_EscalationLevel] DEFAULT ((0));
+");
+}
+
+static async System.Threading.Tasks.Task EnsureIssueReportMenuAsync(AppDbContext db)
+{
+    var reportsMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "REPORTS" && !m.IsDeleted);
+    var issueReportMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "REPORTS_ISSUES");
+
+    if (issueReportMenu == null)
+    {
+        issueReportMenu = new Menu
+        {
+            MenuCode = "REPORTS_ISSUES",
+            ParentMenuId = reportsMenu?.MenuId,
+            MenuName = "Issue Report",
+            MenuUrl = "/reports/issues",
+            Icon = "file-pen-line",
+            Visible = true,
+            OrderNo = 15,
+            IsDeleted = false,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Menus.Add(issueReportMenu);
+        await db.SaveChangesAsync();
+    }
+    else
+    {
+        issueReportMenu.ParentMenuId = reportsMenu?.MenuId;
+        issueReportMenu.MenuName = "Issue Report";
+        issueReportMenu.MenuUrl = "/reports/issues";
+        issueReportMenu.Icon = "file-pen-line";
+        issueReportMenu.Visible = true;
+        issueReportMenu.OrderNo = 15;
+        issueReportMenu.IsDeleted = false;
+        issueReportMenu.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+    }
+
+    var reportRoles = await db.Roles
+        .Where(role => !role.IsDeleted && (role.Name == "Admin" || role.Name == "Manager" || role.Name == "Employee"))
+        .ToListAsync();
+
+    foreach (var role in reportRoles)
+    {
+        var roleMenu = await db.RoleMenus.FirstOrDefaultAsync(rm => rm.RoleId == role.Id && rm.MenuId == issueReportMenu.MenuId);
+        if (roleMenu == null)
+        {
+            db.RoleMenus.Add(new RoleMenu
+            {
+                RoleId = role.Id,
+                MenuId = issueReportMenu.MenuId,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            roleMenu.IsDeleted = false;
+            roleMenu.UpdatedAt = DateTime.UtcNow;
+        }
     }
 
     await db.SaveChangesAsync();

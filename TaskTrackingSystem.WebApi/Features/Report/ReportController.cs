@@ -29,7 +29,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         [ProducesResponseType(typeof(List<IssueDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<Result<List<IssueDto>>>> GetIssuesReport()
         {
-            var result = await _reportService.GetIssuesReportAsync();
+            var result = await _reportService.GetIssuesReportAsync(User.GetRoleId(), User.GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 

@@ -152,8 +152,37 @@
             </div>
         </div>
     }
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700 shadow-sm">
+            <div class="flex items-start gap-3">
+                <i data-lucide="alert-triangle" class="mt-0.5 h-5 w-5 shrink-0"></i>
+                <div>
+                    <p class="font-semibold">Task report could not load.</p>
+                    <p class="mt-1">@errorMessage</p>
+                </div>
+            </div>
+        </div>
+    }
     else
     {
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            @TaskMetricCard("Total", FilteredList.Count().ToString(), "file-text", "violet")
+            @TaskMetricCard("Completed", FilteredList.Count(t => t.StatusId == AppTaskStatus.Done).ToString(), "check-circle-2", "emerald")
+            @TaskMetricCard("In Progress", FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress).ToString(), "timer", "blue")
+            @TaskMetricCard("Overdue", FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done).ToString(), "alarm-clock", "rose")
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="text-sm font-semibold text-slate-900">Key Insights</h3>
+            <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                @foreach (var insight in TaskInsights)
+                {
+                    <div class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">@insight</div>
+                }
+            </div>
+        </div>
+
         @if (isChartView)
         {
             <!-- Chart View -->
@@ -250,6 +279,16 @@
                         }
                     </div>
                 </div>
+
+                <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="font-semibold text-slate-900 mb-4">Tasks by Project</h3>
+                    @MiniBars(FilteredList.GroupBy(t => t.ProjectName).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToArray())
+                </div>
+
+                <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="font-semibold text-slate-900 mb-4">Tasks with Most Issues</h3>
+                    @MiniBars(FilteredList.OrderByDescending(t => t.OpenIssues + t.OverdueIssues).Take(5).Select(t => (t.Title, t.OpenIssues + t.OverdueIssues)).ToArray())
+                </div>
             </div>
         }
         else
@@ -264,8 +303,8 @@
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned To</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Health</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issues</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -276,7 +315,9 @@
                                 var t = entry.t;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
                                     <td class="px-6 py-3 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
-                                    <td class="px-6 py-3 text-sm font-medium text-slate-900">@t.Title</td>
+                                    <td class="px-6 py-3">
+                                        <button @onclick="() => ToggleExpanded(t.TaskId)" class="text-left text-sm font-medium text-slate-900 hover:text-violet-600">@t.Title</button>
+                                    </td>
                                     <td class="px-6 py-3 text-sm text-slate-500">@t.ProjectName</td>
                                     <td class="px-6 py-3">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(t.StatusId)">@t.StatusName</span>
@@ -284,9 +325,24 @@
                                     <td class="px-6 py-3">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(t.PriorityId)">@t.PriorityName</span>
                                     </td>
-                                    <td class="px-6 py-3 text-sm text-slate-500">@(t.AssignedToUser ?? "Unassigned")</td>
-                                    <td class="px-6 py-3 text-sm text-slate-500">@DisplayFormats.Date(t.DueDate)</td>
+                                    <td class="px-6 py-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold @GetHealthBadge(t.TaskHealth)">@t.TaskHealth</span>
+                                    </td>
+                                    <td class="px-6 py-3 text-sm text-slate-600">@t.IssueSummary</td>
                                 </tr>
+                                @if (expandedTasks.Contains(t.TaskId))
+                                {
+                                    <tr class="bg-slate-50/60">
+                                        <td colspan="7" class="px-6 py-4">
+                                            <div class="grid grid-cols-1 gap-3 text-sm text-slate-600 md:grid-cols-4">
+                                                <div><span class="font-semibold text-slate-800">Assignee:</span> @(t.AssignedToUser ?? "Unassigned")</div>
+                                                <div><span class="font-semibold text-slate-800">Due:</span> @DisplayFormats.Date(t.DueDate)</div>
+                                                <div><span class="font-semibold text-slate-800">Open issues:</span> @t.OpenIssues</div>
+                                                <div><span class="font-semibold text-slate-800">Last activity:</span> @DisplayFormats.Date(t.LastActivity)</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
                             }
                         }
                         else
@@ -327,8 +383,10 @@
     private bool isLoading = true;
     private bool isChartView = false;
     private List<TaskReportDto> taskReports = new();
+    private HashSet<long> expandedTasks = new();
     private PagedResult<TaskReportDto>? taskReportPage;
     private List<ProjectDto> projects = new();
+    private string? errorMessage;
 
     // Filters
     private string filterPeriod = "all";
@@ -399,6 +457,13 @@
 
     private IEnumerable<TaskReportDto> PagedList => taskReportPage?.Items ?? Enumerable.Empty<TaskReportDto>();
 
+    private IEnumerable<string> TaskInsights => new[]
+    {
+        $"{FilteredList.Count(t => t.TaskHealth == "Critical")} critical tasks need attention.",
+        $"{FilteredList.Sum(t => t.OpenIssues)} open issues are attached to reported tasks.",
+        $"{FilteredList.Count(t => t.OverdueIssues > 0)} tasks have overdue issues."
+    };
+
     protected override async Task OnInitializedAsync()
     {
         var client = ApiClient.CreateClient();
@@ -424,6 +489,14 @@
     private void SetView(bool chartView)
     {
         isChartView = chartView;
+    }
+
+    private void ToggleExpanded(long taskId)
+    {
+        if (!expandedTasks.Remove(taskId))
+        {
+            expandedTasks.Add(taskId);
+        }
     }
 
     private void ShowProjectSuggestions()
@@ -489,6 +562,7 @@
         var client = ApiClient.CreateClient();
         try
         {
+            errorMessage = null;
             var query = BuildTaskReportQuery();
             var fullTask = client.GetFromJsonAsync<Result<List<TaskReportDto>>>(query);
             var pagedTask = client.GetFromJsonAsync<PagedResult<TaskReportDto>>(BuildTaskReportQuery(includePaging: true));
@@ -497,6 +571,10 @@
             if (fullTask.Result?.IsSuccess == true && fullTask.Result.Value != null)
             {
                 taskReports = fullTask.Result.Value;
+            }
+            else if (fullTask.Result?.IsSuccess == false)
+            {
+                errorMessage = fullTask.Result.ErrorMessage ?? "The server returned an error while loading task report data.";
             }
 
             if (pagedTask.Result != null)
@@ -509,6 +587,9 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Task report error: {ex.Message}");
+            errorMessage = ex.Message;
+            taskReports = new();
+            taskReportPage = null;
         }
         finally
         {
@@ -615,5 +696,34 @@
         TaskPriority.Medium => "bg-amber-100 text-amber-700",
         TaskPriority.High => "bg-red-100 text-red-700",
         _ => "bg-slate-100 text-slate-600"
+    };
+
+    private static string GetHealthBadge(string health) => health switch
+    {
+        "Critical" => "bg-rose-50 text-rose-700",
+        "At Risk" => "bg-amber-50 text-amber-700",
+        _ => "bg-emerald-50 text-emerald-700"
+    };
+
+    private RenderFragment TaskMetricCard(string label, string value, string icon, string color) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", $"rounded-xl border border-{color}-100 bg-{color}-50 p-5 shadow-sm");
+        builder.AddMarkupContent(2, $"<div class=\"flex items-center justify-between\"><div><p class=\"text-xs font-semibold uppercase tracking-wider text-{color}-600\">{label}</p><p class=\"mt-1 text-3xl font-bold text-{color}-700\">{value}</p></div><span class=\"flex h-11 w-11 items-center justify-center rounded-xl bg-white/70\"><i data-lucide=\"{icon}\" class=\"h-6 w-6 text-{color}-600\"></i></span></div>");
+        builder.CloseElement();
+    };
+
+    private RenderFragment MiniBars(IReadOnlyList<(string Label, int Value)> rows) => builder =>
+    {
+        var max = Math.Max(1, rows.Select(r => r.Value).DefaultIfEmpty(0).Max());
+        var seq = 0;
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "space-y-3");
+        foreach (var row in rows)
+        {
+            var width = row.Value * 100 / max;
+            builder.AddMarkupContent(seq++, $"<div><div class=\"mb-1 flex justify-between text-xs font-semibold text-slate-600\"><span>{row.Label}</span><span>{row.Value}</span></div><div class=\"h-2.5 rounded-full bg-slate-100\"><div class=\"h-full rounded-full bg-violet-600\" style=\"width:{width}%\"></div></div></div>");
+        }
+        builder.CloseElement();
     };
 }

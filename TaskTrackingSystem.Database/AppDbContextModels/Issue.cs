@@ -20,6 +20,14 @@ public partial class Issue
 
     public decimal? ActualHours { get; set; }
 
+    public string? DelayReason { get; set; }
+
+    public bool IsBlocked { get; set; }
+
+    public string? BlockedBy { get; set; }
+
+    public int EscalationLevel { get; set; }
+
     public DateTime StartDate { get; set; }
 
     public DateTime DueDate { get; set; }

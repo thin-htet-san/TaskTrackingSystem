@@ -157,6 +157,10 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 AssignedTo = dto.AssignedTo,
                 EstimatedHours = dto.EstimatedHours,
                 ActualHours = dto.ActualHours,
+                DelayReason = dto.DelayReason,
+                IsBlocked = dto.IsBlocked,
+                BlockedBy = dto.BlockedBy,
+                EscalationLevel = dto.EscalationLevel,
                 StartDate = dto.StartDate,
                 DueDate = dto.DueDate,
                 StatusId = dto.StatusId == 0 ? AppTaskStatus.Todo : dto.StatusId,
@@ -206,6 +210,10 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
             issue.AssignedTo = dto.AssignedTo;
             issue.EstimatedHours = dto.EstimatedHours;
             issue.ActualHours = dto.ActualHours;
+            issue.DelayReason = dto.DelayReason;
+            issue.IsBlocked = dto.IsBlocked;
+            issue.BlockedBy = dto.BlockedBy;
+            issue.EscalationLevel = dto.EscalationLevel;
             issue.StartDate = dto.StartDate;
             issue.DueDate = dto.DueDate;
             issue.StatusId = dto.StatusId;
@@ -307,6 +315,10 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                     : null,
                 EstimatedHours = i.EstimatedHours,
                 ActualHours = i.ActualHours,
+                DelayReason = i.DelayReason,
+                IsBlocked = i.IsBlocked,
+                BlockedBy = i.BlockedBy,
+                EscalationLevel = i.EscalationLevel,
                 StartDate = i.StartDate,
                 DueDate = i.DueDate,
                 StatusId = i.StatusId,

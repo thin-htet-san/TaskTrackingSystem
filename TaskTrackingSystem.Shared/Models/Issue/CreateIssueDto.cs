@@ -27,6 +27,17 @@ namespace TaskTrackingSystem.Shared.Models.Issue
         [Range(typeof(decimal), "0", "100000")]
         public decimal? ActualHours { get; set; }
 
+        [MaxLength(300)]
+        public string? DelayReason { get; set; }
+
+        public bool IsBlocked { get; set; }
+
+        [MaxLength(200)]
+        public string? BlockedBy { get; set; }
+
+        [Range(0, 3)]
+        public int EscalationLevel { get; set; }
+
         [Required]
         public DateTime StartDate { get; set; }
 
