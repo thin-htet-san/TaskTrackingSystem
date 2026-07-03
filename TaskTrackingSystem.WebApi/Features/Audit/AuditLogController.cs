@@ -33,7 +33,7 @@ namespace TaskTrackingSystem.WebApi.Features.Audit
             [FromQuery] string? search,
             [FromQuery] PaginationQuery? paging = null)
         {
-            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "List"))
+            if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/AuditLog", "List"))
             {
                 return Forbid();
             }
