@@ -81,7 +81,7 @@
                     }
                     else
                     {
-                        <h2 class="text-2xl font-bold text-slate-900 leading-tight flex items-center gap-2 group">
+                        <h2 class="text-xl font-bold text-slate-900 leading-tight flex items-center gap-2 group">
                             @task.Title
                             @if (hasTaskManagePermission)
                             {
@@ -661,7 +661,7 @@
         }
     }
 
-    // ——— CONFIRM DIALOG LOGIC —————————————————————————————————————————————————
+    // --- CONFIRM DIALOG LOGIC -------------------------------------------------
 
     private async Task ExecuteConfirmAction()
     {
@@ -679,7 +679,7 @@
         confirmAction = null;
     }
 
-    // ——— DISPLAY UTILITIES ————————————————————————————————————————————————————
+    // --- DISPLAY UTILITIES ----------------------------------------------------
 
     private string GetStatusLabel(AppTaskStatus statusId) => statusId switch
     {

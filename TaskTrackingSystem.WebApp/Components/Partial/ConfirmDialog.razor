@@ -1,7 +1,7 @@
 @if (IsVisible)
 {
     <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden animate-in border border-slate-100 bg-white">
+        <div class="w-full max-w-sm mx-4 overflow-hidden rounded-lg border border-slate-100 bg-white shadow-lg animate-in">
             <div class="p-6 text-center">
                 <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4" style="background-color: @GetIconBg(); color: @GetIconColor();">
                     <i data-lucide="@Icon" class="h-7 w-7"></i>
@@ -16,7 +16,7 @@
                         Cancel
                     </button>
                 }
-                <button @onclick="OnConfirm" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors" style="background-color: @GetButtonBg();">
+                <button @onclick="OnConfirm" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors @ButtonClass" style="@ConfirmButtonStyle">
                     @ConfirmText
                 </button>
             </div>
@@ -37,24 +37,28 @@
     [Parameter] public EventCallback OnConfirm { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
+    private string ConfirmButtonStyle => string.IsNullOrWhiteSpace(ButtonClass)
+        ? $"background-color: {GetButtonBg()};"
+        : string.Empty;
+
     private string GetIconBg()
     {
         if (Icon.Contains("trash") || Icon.Contains("alert"))
-            return "var(--status-warning-bg)";
+            return "var(--status-danger-bg)";
         return "var(--status-success-bg)";
     }
 
     private string GetIconColor()
     {
         if (Icon.Contains("trash") || Icon.Contains("alert"))
-            return "var(--brand-accent)";
+            return "var(--status-danger-text)";
         return "var(--brand-primary)";
     }
 
     private string GetButtonBg()
     {
         if (Icon.Contains("trash") || Icon.Contains("alert"))
-            return "var(--brand-accent)";
+            return "var(--status-danger-text)";
         return "var(--brand-primary)";
     }
 }

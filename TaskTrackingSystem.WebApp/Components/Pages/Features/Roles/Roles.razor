@@ -83,7 +83,7 @@
                                         <span class="text-sm font-semibold text-slate-900">@role.Name</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">@(role.Description ?? "—")</td>
+                                <td class="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">@(role.Description ?? "-")</td>
                                 <td class="px-6 py-4 text-sm text-slate-400">@DisplayFormats.Date(role.CreatedAt)</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
@@ -135,11 +135,11 @@
 @if (showRoleModal)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 flex flex-col overflow-hidden"
+        <div class="bg-white rounded-2xl shadow-lg w-full mx-4 flex flex-col overflow-hidden"
              style="max-width: @(isEditing ? "30rem" : "58rem"); max-height: 88vh;">
 
             <!-- Header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white shrink-0">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50 shrink-0">
                 <div class="flex items-center gap-3">
                     <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
                         <i data-lucide="@(isEditing ? "pencil" : "shield-plus")" class="h-4 w-4"></i>
@@ -255,7 +255,7 @@
                                             var parentChecked = formSelectedAccessCodes.Contains(parent.MenuCode);
 
                                             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                                                <label class="flex items-start gap-3 px-4 py-3 bg-gradient-to-r from-slate-50 to-white cursor-pointer hover:bg-slate-50 transition-colors">
+                                                <label class="flex items-start gap-3 px-4 py-3 bg-slate-50 cursor-pointer hover:bg-slate-50 transition-colors">
                                                     <input type="checkbox" checked="@parentChecked"
                                                            @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: true)"
                                                            class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-violet-600" />
@@ -387,16 +387,16 @@
 @if (showAccessModal)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl mx-4 overflow-hidden flex flex-col" style="max-height: 88vh;">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-6xl mx-4 overflow-hidden flex flex-col" style="max-height: 88vh;">
 
             <!-- Header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-indigo-50">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
                 <div class="flex items-center gap-3">
                     <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
                         <i data-lucide="shield-check" class="h-4 w-4"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-semibold text-slate-900">Role Access — <span class="text-violet-700">@selectedRoleName</span></h3>
+                        <h3 class="text-base font-semibold text-slate-900">Role Access - <span class="text-violet-700">@selectedRoleName</span></h3>
                         <p class="text-xs text-slate-500">Configure access and permissions</p>
                     </div>
                 </div>
@@ -459,7 +459,7 @@
                                 var parentChecked = selectedAccessCodes.Contains(parent.MenuCode);
 
                                 <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                                    <label class="flex items-start gap-3 px-4 py-3 bg-gradient-to-r from-slate-50 to-white cursor-pointer hover:bg-slate-50 transition-colors">
+                                    <label class="flex items-start gap-3 px-4 py-3 bg-slate-50 cursor-pointer hover:bg-slate-50 transition-colors">
                                         <input type="checkbox" checked="@parentChecked"
                                                @onchange="(e) => ToggleAccessSelection(parent, (bool)(e.Value ?? false), isForm: false)"
                                                class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-violet-600" />

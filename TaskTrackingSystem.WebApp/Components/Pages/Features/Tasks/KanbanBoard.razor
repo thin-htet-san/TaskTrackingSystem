@@ -145,7 +145,7 @@
 @if (showTaskModal)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg mx-4 overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <h3 class="text-lg font-semibold text-slate-900">New Task</h3>
                 <button @onclick="CloseTaskModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
@@ -607,7 +607,7 @@
         TaskPriority.Low => "Low",
         TaskPriority.Medium => "Medium",
         TaskPriority.High => "High",
-        _ => "â€”"
+        _ => "-"
     };
 
     private record KanbanColumn(AppTaskStatus StatusId, string Name, string DotColor);
