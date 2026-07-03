@@ -26,20 +26,22 @@
             </button>
         </div>
 
-        <NavMenu @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+        <div class="flex-1 overflow-y-auto pb-28">
+            <NavMenu @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+        </div>
 
-        <div class="app-sidebar-user mt-auto shrink-0 border-t border-white/10 p-3">
+        <div class="app-sidebar-user absolute inset-x-0 bottom-0 z-20 shrink-0 border-t border-white/10 bg-slate-950/95 p-3 backdrop-blur">
             <AuthorizeView>
                 <Authorized>
                     <div class="flex items-center rounded-lg border border-white/10 bg-white/[0.04] p-2 transition-colors hover:bg-white/[0.08]">
                         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white font-semibold text-sm shrink-0">
                             @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
                         </span>
-                        <div class="ml-3 overflow-hidden flex flex-col">
-                            <span class="text-sm font-semibold truncate max-w-[130px] text-white">@context.User.Identity?.Name</span>
+                        <div class="ml-3 flex min-w-0 flex-col overflow-hidden">
+                            <span class="max-w-[130px] truncate text-sm font-semibold text-white">@context.User.Identity?.Name</span>
                             <form id="logout-form" method="post" action="/account/logout" class="mt-0.5">
                                 <AntiforgeryToken />
-                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-90 font-semibold text-left flex items-center gap-1 transition-all text-slate-300">
+                                <button type="button" onclick="document.body.classList.remove('tts-sidebar-open'); document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-90 font-semibold text-left flex items-center gap-1 transition-all text-slate-300">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
                                     @Language.Texts.SignOut
                                 </button>
@@ -48,46 +50,26 @@
                     </div>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="/login" class="flex items-center justify-center rounded-lg bg-white/10 text-white px-4 py-2.5 text-sm font-medium hover:bg-white/15 transition-colors">
+                    <a href="/login" class="flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/15">
                         @Language.Texts.SignIn
                     </a>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
-
-        <div id="logout-confirm-dialog" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" style="display: none;">
-            <div class="rounded-lg shadow-lg w-full max-w-sm mx-4 overflow-hidden animate-in border border-slate-100 bg-white">
-                <div class="p-6 text-center">
-                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4" style="background-color: var(--status-warning-bg); color: var(--status-warning-text);">
-                        <i data-lucide="log-out" class="h-7 w-7"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900">@Language.Texts.SignOutTitle</h3>
-                    <p class="text-sm mt-2 text-slate-500">@Language.Texts.SignOutDescription</p>
-                </div>
-                <div class="flex items-center justify-center space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                    <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='none';" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-slate-200 bg-white hover:bg-slate-50 text-slate-500">
-                        @Language.Texts.Cancel
-                    </button>
-                    <button type="button" onclick="document.getElementById('logout-form').submit();" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors" style="background-color: var(--brand-accent);">
-                        @Language.Texts.ConfirmSignOut
-                    </button>
-                </div>
-            </div>
-        </div>
     </aside>
 
     <main class="app-main flex min-w-0 flex-1 flex-col lg:min-h-screen">
-        <header class="app-topbar flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:px-6">
+        <header class="app-topbar flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/95 px-4 text-slate-900 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 dark:text-slate-100 lg:px-6">
             <div class="flex min-w-0 items-center gap-3">
                 <button type="button"
-                        class="control-button mobile-sidebar-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-blue-600 lg:hidden"
+                        class="control-button mobile-sidebar-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white lg:hidden"
                         onclick="document.body.classList.add('tts-sidebar-open');"
                         aria-label="Open navigation">
                     <i data-lucide="menu" class="h-4 w-4"></i>
                 </button>
                 <div class="app-topbar-title min-w-0">
-                    <h1 class="truncate text-base font-bold tracking-normal text-slate-950">@CurrentPageTitle</h1>
-                    <p class="hidden truncate text-xs font-medium text-slate-500 sm:block">@CurrentPageDescription</p>
+                    <h1 class="truncate text-base font-bold tracking-normal text-slate-950 dark:text-slate-50">@CurrentPageTitle</h1>
+                    <p class="hidden truncate text-xs font-medium text-slate-500 dark:text-slate-400 sm:block">@CurrentPageDescription</p>
                 </div>
             </div>
             <div class="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -125,6 +107,26 @@
             }
         </div>
     </main>
+
+    <div id="logout-confirm-dialog" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm" style="display: none;">
+        <div class="w-full max-w-sm overflow-hidden rounded-lg border border-slate-100 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
+            <div class="p-6 text-center">
+                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full" style="background-color: var(--status-warning-bg); color: var(--status-warning-text);">
+                    <i data-lucide="log-out" class="h-7 w-7"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">@Language.Texts.SignOutTitle</h3>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">@Language.Texts.SignOutDescription</p>
+            </div>
+            <div class="flex items-center justify-center space-x-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='none';" class="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                    @Language.Texts.Cancel
+                </button>
+                <button type="button" onclick="document.getElementById('logout-form').submit();" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors" style="background-color: var(--brand-accent);">
+                    @Language.Texts.ConfirmSignOut
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
