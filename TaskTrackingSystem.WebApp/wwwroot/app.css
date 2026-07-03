@@ -492,6 +492,7 @@ html.dark .flatpickr-day.endRange {
 
 /* Taskify UI system */
 .app-shell {
+    --app-sidebar-width: 18rem;
     display: flex;
     min-height: 100vh;
     background:
@@ -504,7 +505,7 @@ html.dark .flatpickr-day.endRange {
 .app-sidebar {
     position: relative;
     display: flex;
-    width: 17rem;
+    width: var(--app-sidebar-width);
     min-height: 100vh;
     flex-shrink: 0;
     flex-direction: column;
@@ -617,6 +618,27 @@ html.dark .flatpickr-day.endRange {
     flex: 1;
     overflow-y: auto;
     padding: clamp(1rem, 2vw, 2rem);
+}
+
+@media (min-width: 1024px) {
+    .app-shell {
+        height: 100dvh;
+        min-height: 100dvh;
+        padding-left: var(--app-sidebar-width);
+    }
+
+    .app-shell .app-sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        height: 100dvh;
+        min-height: 100dvh;
+        transform: translateX(0);
+    }
+
+    .app-main {
+        height: 100dvh;
+        min-height: 100dvh;
+    }
 }
 
 .mobile-sidebar-toggle,
