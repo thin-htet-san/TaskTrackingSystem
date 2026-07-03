@@ -29,6 +29,48 @@
         })();
     </script>
     <script>
+        (() => {
+            const storageKey = 'tts-language';
+            let language = 'en';
+            try {
+                language = localStorage.getItem(storageKey) === 'my' ? 'my' : 'en';
+            } catch {
+            }
+            document.documentElement.lang = language;
+        })();
+    </script>
+    <script>
+        window.languagePreference = {
+            normalize(code) {
+                return code === 'my' ? 'my' : 'en';
+            },
+            apply(storageKey, code) {
+                const normalized = this.normalize(code);
+                document.documentElement.lang = normalized;
+                try {
+                    localStorage.setItem(storageKey, normalized);
+                } catch {
+                }
+                return normalized;
+            },
+            init(storageKey) {
+                let code = 'en';
+                try {
+                    code = this.normalize(localStorage.getItem(storageKey));
+                } catch {
+                }
+                return this.apply(storageKey, code);
+            },
+            toggle(storageKey) {
+                const next = document.documentElement.lang === 'my' ? 'en' : 'my';
+                return this.apply(storageKey, next);
+            },
+            set(storageKey, code) {
+                return this.apply(storageKey, code);
+            }
+        };
+    </script>
+    <script>
         const brandDark = "#111827";
         const brandDarkAlt = "#1F2937";
         const brandPrimary = "#111827";

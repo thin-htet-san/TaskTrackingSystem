@@ -1,0 +1,46 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@implements IDisposable
+@inject TaskTrackingSystem.WebApp.Localization.UiLanguageService Language
+
+<button type="button"
+        @onclick="ToggleLanguage"
+        class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400"
+        title="@ButtonTitle"
+        aria-label="@ButtonTitle">
+    <span class="text-xs font-semibold tracking-wide">@ButtonLabel</span>
+</button>
+
+@code {
+    private string ButtonTitle => Language.CurrentLanguage == TaskTrackingSystem.WebApp.Localization.AppLanguage.Burmese
+        ? Language.Texts.LanguageTitle + ": " + Language.Texts.LanguageEnglish
+        : Language.Texts.LanguageTitle + ": " + Language.Texts.LanguageBurmese;
+
+    private string ButtonLabel => Language.CurrentLanguage == TaskTrackingSystem.WebApp.Localization.AppLanguage.Burmese
+        ? "MY"
+        : "EN";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Language.Changed += OnLanguageChanged;
+            await Language.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleLanguage()
+    {
+        await Language.ToggleAsync();
+    }
+
+    private void OnLanguageChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Language.Changed -= OnLanguageChanged;
+    }
+}
