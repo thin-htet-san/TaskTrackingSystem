@@ -1,0 +1,88 @@
+@using TaskTrackingSystem.WebApp.Components.Shared.Charts
+
+<div class="@WrapperClass">
+    @if (!Items.Any())
+    {
+        <div class="flex items-center justify-center py-16 text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        <div class="min-w-[760px] space-y-3">
+            <div class="grid gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400" style="@GridStyle">
+                @foreach (var month in Months)
+                {
+                    <span>@month.ToString("MMM")</span>
+                }
+            </div>
+
+            @foreach (var item in Bars)
+            {
+                <div class="grid items-center gap-3" style="grid-template-columns: 180px minmax(0, 1fr);">
+                    <div class="truncate text-sm font-semibold text-slate-700">@item.Label</div>
+                    <div class="relative h-8 rounded-full bg-slate-100">
+                        <div class="absolute inset-y-1 rounded-full" style="left: @item.Left%; width: @item.Width%; background-color: @item.Color;">
+                            <div class="h-full rounded-full bg-white/25" style="width: @item.CompletionPercentage%;"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TimelineChartItem> Items { get; set; } = Array.Empty<TimelineChartItem>();
+    [Parameter] public string EmptyText { get; set; } = "No timeline data available.";
+    [Parameter] public string WrapperClass { get; set; } = "overflow-auto";
+
+    private IReadOnlyList<DateTime> Months => BuildMonths();
+    private string GridStyle => $"grid-template-columns: 180px repeat({Math.Max(Months.Count, 1)}, minmax(56px, 1fr));";
+    private IReadOnlyList<TimelineBar> Bars => BuildBars();
+
+    private IReadOnlyList<DateTime> BuildMonths()
+    {
+        if (!Items.Any())
+        {
+            return Array.Empty<DateTime>();
+        }
+
+        var start = new DateTime(Items.Min(item => item.StartDate).Year, Items.Min(item => item.StartDate).Month, 1);
+        var end = new DateTime(Items.Max(item => item.EndDate).Year, Items.Max(item => item.EndDate).Month, 1);
+        var months = new List<DateTime>();
+
+        for (var current = start; current <= end; current = current.AddMonths(1))
+        {
+            months.Add(current);
+        }
+
+        return months;
+    }
+
+    private IReadOnlyList<TimelineBar> BuildBars()
+    {
+        if (!Months.Any())
+        {
+            return Array.Empty<TimelineBar>();
+        }
+
+        var first = Months.First();
+        var slots = Months.Count;
+
+        return Items.Select(item =>
+        {
+            var startIndex = ((item.StartDate.Year - first.Year) * 12) + item.StartDate.Month - first.Month;
+            var endIndex = ((item.EndDate.Year - first.Year) * 12) + item.EndDate.Month - first.Month;
+            startIndex = Math.Clamp(startIndex, 0, slots - 1);
+            endIndex = Math.Clamp(endIndex, startIndex, slots - 1);
+
+            return new TimelineBar(
+                item.Label,
+                startIndex / (double)slots * 100,
+                Math.Max(2, (endIndex - startIndex + 1) / (double)slots * 100),
+                Math.Clamp(item.CompletionPercentage, 0, 100),
+                item.Color);
+        }).ToList();
+    }
+
+    private sealed record TimelineBar(string Label, double Left, double Width, double CompletionPercentage, string Color);
+}

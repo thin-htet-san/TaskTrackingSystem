@@ -1,0 +1,31 @@
+<div class="@CardClass">
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <h3 class="@TitleClass">@Title</h3>
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <p class="mt-1 text-sm text-slate-500">@Subtitle</p>
+            }
+        </div>
+        @if (Actions is not null)
+        {
+            <div class="shrink-0">
+                @Actions
+            </div>
+        }
+    </div>
+
+    <div class="@BodyClass">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string CardClass { get; set; } = "rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60";
+    [Parameter] public string TitleClass { get; set; } = "text-xl font-bold text-slate-900";
+    [Parameter] public string BodyClass { get; set; } = "mt-6";
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

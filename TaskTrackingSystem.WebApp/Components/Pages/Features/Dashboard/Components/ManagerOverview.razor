@@ -1,0 +1,17 @@
+@namespace TaskTrackingSystem.WebApp.Components.Pages.Features.Dashboard.Components
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @foreach (var metric in Metrics)
+    {
+        <KpiCard Icon="@metric.Icon"
+                 Value="@metric.Value"
+                 Label="@metric.Label"
+                 BadgeText="@metric.BadgeText"
+                 IconWrapClass="@metric.IconWrapClass"
+                 BadgeClass="@metric.BadgeClass" />
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<DashboardMetric> Metrics { get; set; } = Array.Empty<DashboardMetric>();
+}

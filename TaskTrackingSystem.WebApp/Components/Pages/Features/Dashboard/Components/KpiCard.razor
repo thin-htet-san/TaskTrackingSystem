@@ -1,0 +1,23 @@
+<div class="@CardClass">
+    <div class="flex items-center justify-between">
+        <div class="@IconWrapClass">
+            <i data-lucide="@Icon" class="h-5 w-5"></i>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(BadgeText))
+        {
+            <span class="@BadgeClass">@BadgeText</span>
+        }
+    </div>
+    <p class="mt-5 text-3xl font-bold text-slate-950">@Value</p>
+    <p class="mt-2 text-sm text-slate-500">@Label</p>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string? BadgeText { get; set; }
+    [Parameter] public string IconWrapClass { get; set; } = "rounded-2xl bg-violet-700 p-3 text-white";
+    [Parameter] public string BadgeClass { get; set; } = "text-sm font-semibold text-emerald-700";
+    [Parameter] public string CardClass { get; set; } = "rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50 transition-transform duration-200 hover:-translate-y-1";
+}

@@ -148,10 +148,26 @@
         @if (isChartView)
         {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                @EffortChart("Estimated vs Actual", new[] { ("Estimated", (double)totalHours), ("Actual", (double)actualHours) })
-                @EffortChart("Effort by Project", FilteredIssues.GroupBy(i => i.ProjectName).OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0)).Take(5).Select(g => (g.Key, (double)g.Sum(i => i.ActualHours ?? 0))).ToArray())
-                @EffortChart("Effort by Employee", FilteredIssues.GroupBy(i => i.AssignedToName ?? "Unassigned").OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0)).Take(5).Select(g => (g.Key, (double)g.Sum(i => i.ActualHours ?? 0))).ToArray())
-                @EffortChart("Estimate Accuracy", new[] { ("On / Under", (double)FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0))), ("Over", (double)FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0))) })
+                <ChartCard Title="Estimated vs Actual" TitleClass="mb-4 text-sm font-semibold text-slate-900" BodyClass="mt-0">
+                    <ChildContent>
+                        <ProgressListChart Items="EstimatedVsActualItems" MaxValue="EstimatedVsActualMax" WrapperClass="space-y-3" />
+                    </ChildContent>
+                </ChartCard>
+                <ChartCard Title="Effort by Project" TitleClass="mb-4 text-sm font-semibold text-slate-900" BodyClass="mt-0">
+                    <ChildContent>
+                        <ProgressListChart Items="EffortByProjectItems" MaxValue="EffortByProjectMax" WrapperClass="space-y-3" />
+                    </ChildContent>
+                </ChartCard>
+                <ChartCard Title="Effort by Employee" TitleClass="mb-4 text-sm font-semibold text-slate-900" BodyClass="mt-0">
+                    <ChildContent>
+                        <ProgressListChart Items="EffortByEmployeeItems" MaxValue="EffortByEmployeeMax" WrapperClass="space-y-3" />
+                    </ChildContent>
+                </ChartCard>
+                <ChartCard Title="Estimate Accuracy" TitleClass="mb-4 text-sm font-semibold text-slate-900" BodyClass="mt-0">
+                    <ChildContent>
+                        <ProgressListChart Items="EstimateAccuracyItems" MaxValue="EstimateAccuracyMax" WrapperClass="space-y-3" />
+                    </ChildContent>
+                </ChartCard>
             </div>
         }
         else
@@ -395,20 +411,52 @@
 
     private static decimal GetVariance(IssueDto issue) => (issue.ActualHours ?? 0) - (issue.EstimatedHours ?? 0);
 
-    private RenderFragment EffortChart(string title, IReadOnlyList<(string Label, double Value)> rows) => builder =>
+    private List<ProgressListChartItem> EstimatedVsActualItems => new[]
     {
-        var max = Math.Max(1, rows.Select(r => r.Value).DefaultIfEmpty(0).Max());
-        builder.OpenElement(0, "div");
-        builder.AddAttribute(1, "class", "rounded-xl border border-slate-200 bg-white p-6 shadow-sm");
-        builder.AddMarkupContent(2, $"<h3 class=\"mb-4 text-sm font-semibold text-slate-900\">{title}</h3>");
-        var seq = 3;
-        foreach (var row in rows)
+        new ProgressListChartItem("Estimated", (double)totalHours, $"{totalHours:N1}", "#7c3aed"),
+        new ProgressListChartItem("Actual", (double)actualHours, $"{actualHours:N1}", "#06b6d4")
+    }.ToList();
+
+    private double EstimatedVsActualMax => GetMax(EstimatedVsActualItems);
+
+    private List<ProgressListChartItem> EffortByProjectItems => FilteredIssues
+        .GroupBy(i => i.ProjectName)
+        .OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0))
+        .Take(5)
+        .Select(g =>
         {
-            var width = row.Value * 100 / max;
-            builder.AddMarkupContent(seq++, $"<div class=\"mb-4\"><div class=\"mb-1 flex justify-between text-xs font-semibold text-slate-600\"><span>{row.Label}</span><span>{row.Value:N1}</span></div><div class=\"h-3 rounded-full bg-slate-100\"><div class=\"h-full rounded-full bg-violet-600\" style=\"width:{width}%\"></div></div></div>");
-        }
-        builder.CloseElement();
-    };
+            var hours = (double)g.Sum(i => i.ActualHours ?? 0);
+            return new ProgressListChartItem(g.Key, hours, $"{hours:N1}", "#7c3aed");
+        })
+        .ToList();
+
+    private double EffortByProjectMax => GetMax(EffortByProjectItems);
+
+    private List<ProgressListChartItem> EffortByEmployeeItems => FilteredIssues
+        .GroupBy(i => i.AssignedToName ?? "Unassigned")
+        .OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0))
+        .Take(5)
+        .Select(g =>
+        {
+            var hours = (double)g.Sum(i => i.ActualHours ?? 0);
+            return new ProgressListChartItem(g.Key, hours, $"{hours:N1}", "#7c3aed");
+        })
+        .ToList();
+
+    private double EffortByEmployeeMax => GetMax(EffortByEmployeeItems);
+
+    private List<ProgressListChartItem> EstimateAccuracyItems => new[]
+    {
+        new ProgressListChartItem("On / Under", FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0)), FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0)).ToString(), "#10b981"),
+        new ProgressListChartItem("Over", FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0)), FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0)).ToString(), "#ef4444")
+    }.ToList();
+
+    private double EstimateAccuracyMax => GetMax(EstimateAccuracyItems);
+
+    private static double GetMax(IEnumerable<ProgressListChartItem> items)
+    {
+        return Math.Max(1, items.Select(item => item.Value).DefaultIfEmpty(0).Max());
+    }
 
     private Task ApplyFilters()
     {

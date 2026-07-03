@@ -44,51 +44,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
-            <div class="flex items-center justify-between">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500 text-white">
-                    <i data-lucide="users" class="h-5 w-5"></i>
-                </div>
-                <span class="text-sm font-semibold text-emerald-500">@UsersDeltaText</span>
-            </div>
-            <p class="mt-5 text-3xl font-bold">@summary.TotalUsers</p>
-            <p class="mt-2 text-sm text-slate-500">Total users</p>
-        </div>
-
-        <div class="rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
-            <div class="flex items-center justify-between">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white">
-                    <i data-lucide="folder-kanban" class="h-5 w-5"></i>
-                </div>
-                <span class="text-sm font-semibold text-emerald-500">@ProjectsDeltaText</span>
-            </div>
-            <p class="mt-5 text-3xl font-bold">@projectsList.Count</p>
-            <p class="mt-2 text-sm text-slate-500">Total projects</p>
-        </div>
-
-        <div class="rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
-            <div class="flex items-center justify-between">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white">
-                    <i data-lucide="check-square" class="h-5 w-5"></i>
-                </div>
-                <span class="text-sm font-semibold text-emerald-500">@TasksDeltaText</span>
-            </div>
-            <p class="mt-5 text-3xl font-bold">@ActiveTasksCount</p>
-            <p class="mt-2 text-sm text-slate-500">Active tasks</p>
-        </div>
-
-        <div class="rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/50">
-            <div class="flex items-center justify-between">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white">
-                    <i data-lucide="trending-up" class="h-5 w-5"></i>
-                </div>
-                <span class="text-sm font-semibold text-emerald-500">@CompletionDeltaText</span>
-            </div>
-            <p class="mt-5 text-3xl font-bold">@CompletionRate%</p>
-            <p class="mt-2 text-sm text-slate-500">Completion rate</p>
-        </div>
-    </div>
+    <AdminOverview Metrics="SummaryMetrics" />
 
     <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,1fr)]">
         <div class="rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60">
@@ -158,28 +114,11 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60">
-            <h3 class="text-xl font-bold text-slate-900">Task Distribution</h3>
-            <p class="mt-1 text-sm text-slate-500">@TotalTasksCount total tasks</p>
-
-            <div class="mt-4 flex justify-center">
-                <div id="task-distribution-chart" class="w-full"></div>
-            </div>
-
-            <div class="mt-3 space-y-3">
-                @for (var i = 0; i < DistributionLegend.Count; i++)
-                {
-                    var item = DistributionLegend[i];
-                    <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                        <div class="flex items-center gap-3">
-                            <span class="h-3 w-3 rounded-full" style="background-color: @item.Color"></span>
-                            <span class="text-sm text-slate-600">@item.Label</span>
-                        </div>
-                        <span class="text-sm font-semibold text-slate-900">@item.Count</span>
-                    </div>
-                }
-            </div>
-        </div>
+        <ChartCard Title="Task Distribution" Subtitle="@($"{TotalTasksCount} total tasks")">
+            <ChildContent>
+                <DonutChart Items="DistributionChartItems" />
+            </ChildContent>
+        </ChartCard>
     </div>
 
     <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
@@ -345,6 +284,9 @@
     private List<ActivityPoint> ActivityPoints => BuildActivityPoints();
     private List<DistributionSlice> DonutSlices => BuildDonutSlices();
     private List<DistributionLegendItem> DistributionLegend => BuildDistributionLegend();
+    private List<ChartDataPoint> DistributionChartItems => DistributionLegend
+        .Select(item => new ChartDataPoint(item.Label, item.Count, item.Color))
+        .ToList();
     private int TotalTasksCount => taskList.Count;
     private int ActiveTasksCount => taskList.Count(t => t.StatusId != AppTaskStatus.Done);
     private int CompletedTasksCount => taskList.Count(t => t.StatusId == AppTaskStatus.Done);
@@ -353,6 +295,13 @@
     private string ProjectsDeltaText => BuildDeltaText(GetProjectsThisMonth() - GetProjectsPreviousMonth());
     private string TasksDeltaText => BuildDeltaText(GetActiveTasksThisMonth() - GetActiveTasksPreviousMonth());
     private string CompletionDeltaText => BuildCompletionDeltaText();
+    private List<DashboardMetric> SummaryMetrics => new()
+    {
+        new("users", UsersDeltaText, summary.TotalUsers.ToString(), "Total users", "flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500 text-white", "text-sm font-semibold text-emerald-500"),
+        new("folder-kanban", ProjectsDeltaText, projectsList.Count.ToString(), "Total projects", "flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white", "text-sm font-semibold text-emerald-500"),
+        new("check-square", TasksDeltaText, ActiveTasksCount.ToString(), "Active tasks", "flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white", "text-sm font-semibold text-emerald-500"),
+        new("trending-up", CompletionDeltaText, $"{CompletionRate}%", "Completion rate", "flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white", "text-sm font-semibold text-emerald-500")
+    };
     private string CalendarMonthLabel => DateTime.Today.ToString("MMMM yyyy");
     private List<CalendarCell> CalendarCells => BuildCalendarCells();
     private List<CalendarEventItem> UpcomingProjectStarts => BuildUpcomingProjectStarts();
@@ -441,19 +390,6 @@
     {
         try
         {
-            var todoCount = taskList.Count(t => t.StatusId == AppTaskStatus.Todo);
-            var inProgressCount = taskList.Count(t => t.StatusId == AppTaskStatus.InProgress);
-            var overdueCount = taskList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done);
-            var completedCount = CompletedTasksCount;
-
-            var pieData = new[]
-            {
-                new { name = "Completed", y = completedCount, color = "#10b981" },
-                new { name = "In Progress", y = inProgressCount, color = "#3b82f6" },
-                new { name = "To Do", y = todoCount, color = "#06b6d4" },
-                new { name = "Overdue", y = overdueCount, color = "#ef4444" }
-            };
-
             var ganttData = TimelineProjects.Select(p => {
                 var progress = GetProjectProgress(p.Id);
                 return new {
@@ -466,7 +402,6 @@
                 };
             }).ToList();
 
-            await JS.InvokeVoidAsync("renderPieChart", "task-distribution-chart", pieData);
             if (ganttData.Count > 0 && TryGetTimelineRange(out var timelineRange))
             {
                 await JS.InvokeVoidAsync("renderGanttChart", "project-timeline-chart", ganttData, new

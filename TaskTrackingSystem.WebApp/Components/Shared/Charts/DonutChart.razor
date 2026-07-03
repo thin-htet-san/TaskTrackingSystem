@@ -1,0 +1,67 @@
+@using TaskTrackingSystem.WebApp.Components.Shared.Charts
+
+<div class="@WrapperClass">
+    @if (!Items.Any() || Items.Sum(item => item.Value) <= 0)
+    {
+        <div class="flex h-56 items-center justify-center text-sm text-slate-400">@EmptyText</div>
+    }
+    else
+    {
+        <div class="flex justify-center">
+            <svg viewBox="0 0 190 190" class="h-56 w-56 -rotate-90">
+                <circle cx="95" cy="95" r="70" fill="none" stroke="#e2e8f0" stroke-width="24" />
+                @foreach (var slice in Slices)
+                {
+                    <circle cx="95" cy="95" r="70" fill="none" stroke="@slice.Color" stroke-width="24" stroke-dasharray="@slice.DashArray" stroke-dashoffset="@slice.DashOffset" stroke-linecap="round" />
+                }
+            </svg>
+        </div>
+
+        @if (ShowLegend)
+        {
+            <div class="mt-3 space-y-3">
+                @foreach (var item in Items)
+                {
+                    <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <span class="h-3 w-3 rounded-full" style="background-color: @item.Color"></span>
+                            <span class="text-sm text-slate-600">@item.Label</span>
+                        </div>
+                        <span class="text-sm font-semibold text-slate-900">@item.Value.ToString(ValueFormat)</span>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<ChartDataPoint> Items { get; set; } = Array.Empty<ChartDataPoint>();
+    [Parameter] public bool ShowLegend { get; set; } = true;
+    [Parameter] public string EmptyText { get; set; } = "No data available";
+    [Parameter] public string ValueFormat { get; set; } = "0";
+    [Parameter] public string WrapperClass { get; set; } = string.Empty;
+
+    private IReadOnlyList<Slice> Slices => BuildSlices();
+
+    private IReadOnlyList<Slice> BuildSlices()
+    {
+        const double radius = 70;
+        var circumference = 2 * Math.PI * radius;
+        var total = Items.Sum(item => Math.Max(0, item.Value));
+        var offset = 0.0;
+        var slices = new List<Slice>();
+
+        foreach (var item in Items)
+        {
+            var value = Math.Max(0, item.Value);
+            var arc = total > 0 ? circumference * value / total : 0;
+            slices.Add(new Slice(item.Color, $"{arc:0.##} {(circumference - arc):0.##}", -offset));
+            offset += arc;
+        }
+
+        return slices;
+    }
+
+    private sealed record Slice(string Color, string DashArray, double DashOffset);
+}

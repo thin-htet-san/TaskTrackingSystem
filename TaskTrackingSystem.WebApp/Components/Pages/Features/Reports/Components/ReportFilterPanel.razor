@@ -1,0 +1,8 @@
+<div class="@PanelClass">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string PanelClass { get; set; } = "rounded-xl border border-slate-200 bg-white p-6 shadow-sm";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
