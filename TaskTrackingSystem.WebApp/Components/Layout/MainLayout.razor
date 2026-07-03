@@ -3,29 +3,43 @@
 @using System.Security.Claims
 @inject TaskTrackingSystem.WebApp.Localization.UiLanguageService Language
 
-<div class="flex h-screen bg-background font-sans text-slate-800 antialiased overflow-hidden">
-    <aside class="flex w-64 flex-col border-r border-slate-800 bg-slate-950 text-white shrink-0 overflow-hidden">
-        <div class="flex h-20 items-center px-6">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white">
+<div class="app-shell min-h-screen bg-slate-50 text-slate-950 lg:flex lg:overflow-hidden">
+    <button type="button"
+            class="sidebar-scrim"
+            onclick="document.body.classList.remove('tts-sidebar-open');"
+            aria-label="Close navigation"></button>
+
+    <aside class="app-sidebar fixed inset-y-0 left-0 z-[60] flex w-72 -translate-x-full flex-col overflow-hidden border-r border-slate-800 bg-slate-950 text-white transition-transform duration-200 lg:static lg:z-auto lg:min-h-screen lg:translate-x-0 lg:shrink-0">
+        <div class="app-sidebar-brand flex min-h-20 items-center gap-3 px-5 py-4">
+            <span class="app-sidebar-logo inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                 <i data-lucide="flame" class="h-5 w-5 fill-current"></i>
             </span>
-            <span class="ml-3 font-bold text-xl tracking-tight text-white">Taskify</span>
+            <span class="app-sidebar-title flex flex-col leading-tight">
+                <strong class="text-lg font-bold tracking-normal text-white">Taskify</strong>
+                <span class="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Workspace</span>
+            </span>
+            <button type="button"
+                    class="control-button mobile-sidebar-close ml-auto inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white hover:bg-white/15 hover:text-white lg:hidden"
+                    onclick="document.body.classList.remove('tts-sidebar-open');"
+                    aria-label="Close navigation">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
         </div>
 
         <NavMenu @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 
-        <div class="border-t border-slate-800 p-4 shrink-0">
+        <div class="app-sidebar-user mt-auto shrink-0 border-t border-white/10 p-3">
             <AuthorizeView>
                 <Authorized>
-                    <div class="flex items-center rounded-xl p-2 hover:bg-white/10 transition-all">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-white font-semibold text-sm shrink-0">
+                    <div class="flex items-center rounded-lg border border-white/10 bg-white/[0.04] p-2 transition-colors hover:bg-white/[0.08]">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white font-semibold text-sm shrink-0">
                             @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
                         </span>
                         <div class="ml-3 overflow-hidden flex flex-col">
                             <span class="text-sm font-semibold truncate max-w-[130px] text-white">@context.User.Identity?.Name</span>
                             <form id="logout-form" method="post" action="/account/logout" class="mt-0.5">
                                 <AntiforgeryToken />
-                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all text-slate-300">
+                                <button type="button" onclick="document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-90 font-semibold text-left flex items-center gap-1 transition-all text-slate-300">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
                                     @Language.Texts.SignOut
                                 </button>
@@ -34,7 +48,7 @@
                     </div>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="/login" class="flex items-center justify-center rounded-xl bg-slate-800 text-white px-4 py-2.5 text-sm font-medium hover:bg-slate-700 transition-all">
+                    <a href="/login" class="flex items-center justify-center rounded-lg bg-white/10 text-white px-4 py-2.5 text-sm font-medium hover:bg-white/15 transition-colors">
                         @Language.Texts.SignIn
                     </a>
                 </NotAuthorized>
@@ -42,9 +56,9 @@
         </div>
 
         <div id="logout-confirm-dialog" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" style="display: none;">
-            <div class="rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden animate-in border border-slate-100 bg-white">
+            <div class="rounded-lg shadow-lg w-full max-w-sm mx-4 overflow-hidden animate-in border border-slate-100 bg-white">
                 <div class="p-6 text-center">
-                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4" style="background-color: var(--status-warning-bg); color: var(--brand-accent);">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4" style="background-color: var(--status-warning-bg); color: var(--status-warning-text);">
                         <i data-lucide="log-out" class="h-7 w-7"></i>
                     </div>
                     <h3 class="text-lg font-semibold text-slate-900">@Language.Texts.SignOutTitle</h3>
@@ -62,10 +76,21 @@
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col overflow-y-auto">
-        <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
-            <h1 class="text-lg font-semibold text-slate-900">@Language.Texts.Workspace</h1>
-            <div class="flex items-center space-x-4">
+    <main class="app-main flex min-w-0 flex-1 flex-col lg:min-h-screen">
+        <header class="app-topbar flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:px-6">
+            <div class="flex min-w-0 items-center gap-3">
+                <button type="button"
+                        class="control-button mobile-sidebar-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-blue-600 lg:hidden"
+                        onclick="document.body.classList.add('tts-sidebar-open');"
+                        aria-label="Open navigation">
+                    <i data-lucide="menu" class="h-4 w-4"></i>
+                </button>
+                <div class="app-topbar-title min-w-0">
+                    <h1 class="truncate text-base font-bold tracking-normal text-slate-950">@CurrentPageTitle</h1>
+                    <p class="hidden truncate text-xs font-medium text-slate-500 sm:block">@CurrentPageDescription</p>
+                </div>
+            </div>
+            <div class="flex shrink-0 items-center gap-2 sm:gap-3">
                 <AuthorizeView>
                     <Authorized>
                         <FirebaseTokenSync />
@@ -77,7 +102,7 @@
             </div>
         </header>
 
-        <div class="p-8 flex-1">
+        <div class="app-content flex-1 overflow-y-auto p-4 lg:p-8">
             @if (isAuthorizedPage)
             {
                 @Body
@@ -115,17 +140,65 @@
         string.IsNullOrEmpty(Navigation.ToBaseRelativePath(Navigation.Uri)) || 
         Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].Trim('/') is "dashboard" or "Home" or "";
 
-    private string CurrentPageTitle => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].Trim('/') switch
+    private string CurrentRoute => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].Trim('/');
+
+    private string CurrentPageTitle
     {
-        "projects" => "Projects",
-        "tasks" => "Tasks",
-        "reports" => "Reports",
-        "roles" => "Roles & Access",
-        "users" => "Users",
-        "dashboard" => "Dashboard",
-        "dashboard/manager" => "Manager Dashboard",
-        "dashboard/employee" => "Employee Dashboard",
-        _ => Language.Texts.Workspace
+        get
+        {
+            if (CurrentRoute.StartsWith("projects/", StringComparison.OrdinalIgnoreCase) &&
+                CurrentRoute.EndsWith("/tasks", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Kanban Board";
+            }
+
+            if (CurrentRoute.StartsWith("tasks/", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Task Details";
+            }
+
+            return CurrentRoute switch
+            {
+                "" or "dashboard" or "Home" => "Dashboard",
+                "dashboard/manager" => "Manager Dashboard",
+                "dashboard/employee" => "Employee Dashboard",
+                "projects" or "projects/all" => "Projects",
+                "projects/assign" => "Project Assignment",
+                "tasks" or "tasks/all" => "Tasks",
+                "board" => "Kanban Board",
+                "tasks/assign" => "Task Assignment",
+                "issues" or "issues/all" => "Issues",
+                "issues/add" => "Add Issue",
+                "reports/tasks" => "Task Report",
+                "reports/time" => "Time Tracking",
+                "reports/projects" => "Project Progress",
+                "reports/overdue" => "Overdue Tasks",
+                "reports/employees" => "Employee Report",
+                "roles" => "Roles & Access",
+                "users" => "Users",
+                "audit-logs" => "Audit Logs",
+                _ => Language.Texts.Workspace
+            };
+        }
+    }
+
+    private string CurrentPageDescription => CurrentPageTitle switch
+    {
+        "Dashboard" => "A quick overview of work, risk, and progress.",
+        "Manager Dashboard" => "Track projects, people, and delivery health.",
+        "Employee Dashboard" => "Focus on your tasks, due dates, and progress.",
+        "Projects" => "Manage project plans, timelines, and assignments.",
+        "Project Assignment" => "Assign team members to the right projects.",
+        "Tasks" => "Review, filter, and update work items.",
+        "Kanban Board" => "Move work through status columns.",
+        "Task Assignment" => "Assign tasks to project members.",
+        "Issues" => "Track blockers, notes, and daily work progress.",
+        "Add Issue" => "Record a new issue against a task.",
+        "Roles & Access" => "Control user roles, menus, and permissions.",
+        "Users" => "Manage people, status, and account details.",
+        "Audit Logs" => "Review system activity and changes.",
+        _ when CurrentPageTitle.Contains("Report", StringComparison.OrdinalIgnoreCase) => "Analyze work data and export reports.",
+        _ => "Workspace"
     };
 
     protected override async Task OnInitializedAsync()

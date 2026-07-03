@@ -132,7 +132,7 @@
 @if (showModal)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg mx-4 overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <h3 class="text-lg font-semibold text-slate-900">@(isEditing ? "Edit Project" : "New Project")</h3>
                 <button @onclick="CloseModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
@@ -209,8 +209,8 @@
 @if (showAssignModal)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-900">Assign Members</h3>
                     <p class="text-xs text-slate-500 mt-0.5">Project: <span class="font-semibold text-violet-700">@assigningProjectName</span></p>

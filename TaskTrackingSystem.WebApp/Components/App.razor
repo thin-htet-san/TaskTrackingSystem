@@ -71,39 +71,40 @@
         };
     </script>
     <script>
-        const brandDark = "#111827";
-        const brandDarkAlt = "#1F2937";
-        const brandPrimary = "#111827";
-        const brandAccent = "#374151";
-        const brandLight = "#E5E7EB";
-        const brandMuted = "#6B7280";
+        const brandDark = "#172554";
+        const brandDarkAlt = "#1E3A8A";
+        const brandPrimary = "#2563EB";
+        const brandPrimaryHover = "#1D4ED8";
+        const brandAccent = "#0F766E";
+        const brandLight = "#EFF6FF";
+        const brandMuted = "#64748B";
         
         const semanticRedBg = "#FFE4E6";
-        const semanticRedText = "#991B1B";
+        const semanticRedText = "#BE123C";
         
-        const semanticGreenBg = "#D1FAE5";
-        const semanticGreenText = "#065F46";
+        const semanticGreenBg = "#CCFBF1";
+        const semanticGreenText = "#0F766E";
         
-        const semanticNeutralBg = "#F3F4F6";
-        const semanticNeutralText = "#374151";
+        const semanticNeutralBg = "#F8FAFC";
+        const semanticNeutralText = "#475569";
         
-        const neutralBg = "#F8F9FA";
-        const neutralBorder = "#E5E7EB";
-        const neutralMuted = "#6B7280";
-        const neutralDark = "#111827";
+        const neutralBg = "#F6F8FB";
+        const neutralBorder = "#E2E8F0";
+        const neutralMuted = "#64748B";
+        const neutralDark = "#0F172A";
 
         const customGray = {
             50: neutralBg,
-            100: "#F3F4F6",
+            100: "#F1F5F9",
             200: neutralBorder,
-            300: "#D1D5DB",
-            400: "#9CA3AF",
+            300: "#CBD5E1",
+            400: "#94A3B8",
             500: neutralMuted,
-            600: "#4B5563",
-            700: "#374151",
-            800: "#1F2937",
+            600: "#475569",
+            700: "#334155",
+            800: "#1E293B",
             900: neutralDark,
-            950: neutralDark
+            950: "#020617"
         };
 
         tailwind.config = {
@@ -206,16 +207,16 @@
                         900: "#0C4A6E"
                     },
                     blue: {
-                        50: semanticNeutralBg,
-                        100: semanticNeutralBg,
-                        200: "#E5E7EB",
-                        300: "#D1D5DB",
-                        400: "#9CA3AF",
-                        500: semanticNeutralText,
-                        600: semanticNeutralText,
-                        700: "#1F2937",
-                        800: "#111827",
-                        900: "#111827"
+                        50: "#EFF6FF",
+                        100: "#DBEAFE",
+                        200: "#BFDBFE",
+                        300: "#93C5FD",
+                        400: "#60A5FA",
+                        500: "#3B82F6",
+                        600: brandPrimary,
+                        700: brandPrimaryHover,
+                        800: brandDarkAlt,
+                        900: brandDark
                     },
                     amber: {
                         50: "#FEF3C7",
@@ -243,49 +244,49 @@
                     },
                     violet: {
                         50: brandLight,
-                        100: "#E8E8FF",
-                        200: brandMuted,
-                        300: brandMuted,
-                        400: brandAccent,
-                        500: brandPrimary,
+                        100: "#DBEAFE",
+                        200: "#BFDBFE",
+                        300: "#93C5FD",
+                        400: "#60A5FA",
+                        500: "#3B82F6",
                         600: brandPrimary,
-                        700: brandDarkAlt,
+                        700: brandPrimaryHover,
                         800: brandDark,
                         900: brandDark,
                         950: brandDark
                     },
                     purple: {
                         50: brandLight,
-                        100: "#E8E8FF",
-                        200: brandMuted,
-                        300: brandMuted,
-                        400: brandAccent,
-                        500: brandPrimary,
+                        100: "#DBEAFE",
+                        200: "#BFDBFE",
+                        300: "#93C5FD",
+                        400: "#60A5FA",
+                        500: "#3B82F6",
                         600: brandPrimary,
-                        700: brandDarkAlt,
+                        700: brandPrimaryHover,
                         800: brandDark,
                         900: brandDark,
                         950: brandDark
                     },
                     indigo: {
                         50: brandLight,
-                        100: "#E8E8FF",
-                        200: brandMuted,
-                        300: brandMuted,
-                        400: brandAccent,
-                        500: brandPrimary,
+                        100: "#DBEAFE",
+                        200: "#BFDBFE",
+                        300: "#93C5FD",
+                        400: "#60A5FA",
+                        500: "#3B82F6",
                         600: brandPrimary,
-                        700: brandDarkAlt,
+                        700: brandPrimaryHover,
                         800: brandDark,
                         900: brandDark,
                         950: brandDark
                     },
 
                     chart: {
-                        purple: "#111827",
-                        teal: "#4B5563",
+                        purple: brandPrimary,
+                        teal: "#14B8A6",
                         green: "#10B981",
-                        neutral: "#E5E7EB"
+                        neutral: neutralBorder
                     },
 
                     background: neutralBg,          
@@ -308,6 +309,17 @@
                     "accent-foreground": "#FFFFFF",
 
                     border: neutralBorder,
+                },
+                borderRadius: {
+                    none: "0",
+                    sm: "0.375rem",
+                    DEFAULT: "0.5rem",
+                    md: "0.5rem",
+                    lg: "0.5rem",
+                    xl: "0.5rem",
+                    "2xl": "0.5rem",
+                    "3xl": "0.5rem",
+                    full: "9999px"
                 }
             }
         }
@@ -457,13 +469,13 @@
                         }
                     },
                     currentDateIndicator: {
-                        color: '#7c3aed',
+                        color: '#2563eb',
                         dashStyle: 'ShortDash',
                         width: 2,
                         label: {
                             format: 'Today',
                             style: {
-                                color: '#7c3aed',
+                                color: '#2563eb',
                                 fontWeight: 'bold'
                             }
                         }
