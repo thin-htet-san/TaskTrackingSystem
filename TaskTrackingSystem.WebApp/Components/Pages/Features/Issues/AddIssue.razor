@@ -112,6 +112,36 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Blocked Status</label>
+                    <label class="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700">
+                        <input type="checkbox" @bind="formIsBlocked" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                        <span>Blocked</span>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Escalation Level</label>
+                    <select @bind="formEscalationLevel" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                        <option value="0">None</option>
+                        <option value="1">Team Lead</option>
+                        <option value="2">PM</option>
+                        <option value="3">Manager</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Blocked By</label>
+                    <input @bind="formBlockedBy" type="text" placeholder="Dependency, person, or team"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Delay Reason</label>
+                    <input @bind="formDelayReason" type="text" placeholder="Why is this issue delayed?"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Project</label>
                     <input value="@SelectedProjectLabel" readonly
                            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none" />
@@ -251,6 +281,10 @@
     private DateTime formDueDate = DateTime.Today;
     private AppTaskStatus formStatusId = AppTaskStatus.Todo;
     private TaskPriority formPriorityId = TaskPriority.Medium;
+    private string? formDelayReason;
+    private bool formIsBlocked;
+    private string? formBlockedBy;
+    private int formEscalationLevel;
     private string assigneeSearchInput = "";
     private bool isAssigneeDropdownOpen;
     private bool isLoadingProjectMembers;
@@ -471,6 +505,10 @@
                 AssignedTo = formAssignedTo,
                 EstimatedHours = formEstimatedHours,
                 ActualHours = formActualHours,
+                DelayReason = formDelayReason,
+                IsBlocked = formIsBlocked,
+                BlockedBy = formBlockedBy,
+                EscalationLevel = formEscalationLevel,
                 StartDate = formStartDate,
                 DueDate = formDueDate,
                 StatusId = formStatusId,
@@ -512,6 +550,10 @@
         formDueDate = DateTime.Today;
         formStatusId = AppTaskStatus.Todo;
         formPriorityId = TaskPriority.Medium;
+        formDelayReason = null;
+        formIsBlocked = false;
+        formBlockedBy = null;
+        formEscalationLevel = 0;
         taskErrorMessage = "";
         titleErrorMessage = "";
         isTaskError = false;

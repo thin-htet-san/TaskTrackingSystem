@@ -22,6 +22,14 @@
             <p class="text-slate-500 mt-1">Review estimated hours, completion timelines, and resource effort distribution across issues.</p>
         </div>
         <div class="flex items-center space-x-3">
+            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                </button>
+                <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                </button>
+            </div>
             <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                 <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
             </button>
@@ -49,8 +57,8 @@
             <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500">Completed Effort</p>
-                        <p class="mt-1 text-3xl font-bold text-emerald-700">@completedHours.ToString("N1") hrs</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500">Actual Hours</p>
+                        <p class="mt-1 text-3xl font-bold text-emerald-700">@actualHours.ToString("N1") hrs</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
                         <i data-lucide="check-circle-2" class="h-6 w-6 text-emerald-600"></i>
@@ -60,8 +68,8 @@
             <div class="rounded-xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">Active Effort (In-Flight)</p>
-                        <p class="mt-1 text-3xl font-bold text-amber-700">@activeHours.ToString("N1") hrs</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">Variance</p>
+                        <p class="mt-1 text-3xl font-bold text-amber-700">@varianceHours.ToString("+0.0;-0.0;0.0") hrs</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
                         <i data-lucide="timer" class="h-6 w-6 text-amber-600"></i>
@@ -71,8 +79,8 @@
             <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">Overdue Effort</p>
-                        <p class="mt-1 text-3xl font-bold text-rose-700">@overdueHours.ToString("N1") hrs</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">Utilization</p>
+                        <p class="mt-1 text-3xl font-bold text-rose-700">@utilizationPercent.ToString("N0")%</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100">
                         <i data-lucide="alert-triangle" class="h-6 w-6 text-rose-600"></i>
@@ -137,6 +145,17 @@
     }
     else
     {
+        @if (isChartView)
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                @EffortChart("Estimated vs Actual", new[] { ("Estimated", (double)totalHours), ("Actual", (double)actualHours) })
+                @EffortChart("Effort by Project", FilteredIssues.GroupBy(i => i.ProjectName).OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0)).Take(5).Select(g => (g.Key, (double)g.Sum(i => i.ActualHours ?? 0))).ToArray())
+                @EffortChart("Effort by Employee", FilteredIssues.GroupBy(i => i.AssignedToName ?? "Unassigned").OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0)).Take(5).Select(g => (g.Key, (double)g.Sum(i => i.ActualHours ?? 0))).ToArray())
+                @EffortChart("Estimate Accuracy", new[] { ("On / Under", (double)FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0))), ("Over", (double)FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0))) })
+            </div>
+        }
+        else
+        {
         <!-- Table -->
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -151,7 +170,8 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task &amp; Project</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actual Hours</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                     </tr>
@@ -195,6 +215,9 @@
                                 <td class="px-6 py-4 text-sm font-semibold text-slate-800">
                                     @((issue.EstimatedHours ?? 0).ToString("N1")) hrs
                                 </td>
+                                <td class="px-6 py-4 text-sm font-semibold @(GetVariance(issue) > 0 ? "text-rose-600" : "text-emerald-600")">
+                                    @((issue.ActualHours ?? 0).ToString("N1")) hrs
+                                </td>
                                 <td class="px-6 py-4 text-sm text-slate-600">
                                     @DisplayFormats.Date(issue.DueDate)
                                 </td>
@@ -213,7 +236,7 @@
                     }
                     else
                     {
-                        <EmptyState ColSpan="7" Icon="clock" Title="No effort entries" Subtitle="No timesheet effort entries matched your filters." />
+                        <EmptyState ColSpan="8" Icon="clock" Title="No effort entries" Subtitle="No timesheet effort entries matched your filters." />
                     }
                 </tbody>
             </table>
@@ -226,11 +249,13 @@
                         OnPageChanged="HandlePageChanged"
                         OnPageSizeChanged="HandlePageSizeChanged" />
         </div>
+        }
     }
 </div>
 
 @code {
     private bool isLoading = true;
+    private bool isChartView = false;
     private List<IssueDto> allIssues = new();
     private List<ProjectDto> allProjects = new();
 
@@ -254,9 +279,9 @@
 
     // Metrics
     private decimal totalHours = 0;
-    private decimal completedHours = 0;
-    private decimal activeHours = 0;
-    private decimal overdueHours = 0;
+    private decimal actualHours = 0;
+    private decimal varianceHours = 0;
+    private double utilizationPercent = 0;
 
     private int TotalPages => (int)Math.Ceiling((double)FilteredIssues.Count() / pageSize);
 
@@ -353,15 +378,37 @@
         await JS.InvokeVoidAsync("initIcons");
     }
 
+    private void SetView(bool chartView)
+    {
+        isChartView = chartView;
+    }
+
     private void ComputeMetrics()
     {
         var today = DateTime.Today;
         var list = FilteredIssues.ToList();
         totalHours = list.Sum(i => i.EstimatedHours ?? 0);
-        completedHours = list.Where(i => i.StatusId == AppTaskStatus.Done).Sum(i => i.EstimatedHours ?? 0);
-        activeHours = list.Where(i => i.StatusId != AppTaskStatus.Done).Sum(i => i.EstimatedHours ?? 0);
-        overdueHours = list.Where(i => i.StatusId != AppTaskStatus.Done && i.DueDate < today).Sum(i => i.EstimatedHours ?? 0);
+        actualHours = list.Sum(i => i.ActualHours ?? 0);
+        varianceHours = actualHours - totalHours;
+        utilizationPercent = totalHours > 0 ? Math.Round((double)(actualHours / totalHours) * 100, 1) : 0;
     }
+
+    private static decimal GetVariance(IssueDto issue) => (issue.ActualHours ?? 0) - (issue.EstimatedHours ?? 0);
+
+    private RenderFragment EffortChart(string title, IReadOnlyList<(string Label, double Value)> rows) => builder =>
+    {
+        var max = Math.Max(1, rows.Select(r => r.Value).DefaultIfEmpty(0).Max());
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "rounded-xl border border-slate-200 bg-white p-6 shadow-sm");
+        builder.AddMarkupContent(2, $"<h3 class=\"mb-4 text-sm font-semibold text-slate-900\">{title}</h3>");
+        var seq = 3;
+        foreach (var row in rows)
+        {
+            var width = row.Value * 100 / max;
+            builder.AddMarkupContent(seq++, $"<div class=\"mb-4\"><div class=\"mb-1 flex justify-between text-xs font-semibold text-slate-600\"><span>{row.Label}</span><span>{row.Value:N1}</span></div><div class=\"h-3 rounded-full bg-slate-100\"><div class=\"h-full rounded-full bg-violet-600\" style=\"width:{width}%\"></div></div></div>");
+        }
+        builder.CloseElement();
+    };
 
     private Task ApplyFilters()
     {
@@ -455,7 +502,7 @@
             $"Assigned To Me: {(filterAssignToMe ? "Yes" : "No")}",
             $"Assigned To My Team: {(filterAssignToMyTeam ? "Yes" : "No")}",
             $"Total Effort: {totalHours.ToString("N1")} hrs",
-            $"Completed Effort: {completedHours.ToString("N1")} hrs",
+            $"Actual Hours: {actualHours.ToString("N1")} hrs",
             $"Generated: {DisplayFormats.Date(DateTime.Today)}"
         };
 

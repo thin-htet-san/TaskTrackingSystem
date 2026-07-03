@@ -108,8 +108,9 @@
                         <col class="w-[11%]" />
                         <col class="w-[11%]" />
                         <col class="w-[12%]" />
-                        <col class="w-[16%]" />
-                        <col class="w-[14%]" />
+                        <col class="w-[12%]" />
+                        <col class="w-[12%]" />
+                        <col class="w-[8%]" />
                         <col class="w-[10%]" />
                     </colgroup>
                     <thead>
@@ -121,6 +122,7 @@
                             <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
                             <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Dates</th>
                             <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Risk</th>
                             <th class="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -160,6 +162,20 @@
                                     <td class="px-5 py-4 text-sm text-slate-600 break-words">
                                         @(!string.IsNullOrWhiteSpace(issue.AssignedToName) ? issue.AssignedToName : "Unassigned")
                                     </td>
+                                    <td class="px-5 py-4">
+                                        @if (issue.IsBlocked)
+                                        {
+                                            <span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">Blocked</span>
+                                        }
+                                        else if (issue.EscalationLevel > 0)
+                                        {
+                                            <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">@GetEscalationLabel(issue.EscalationLevel)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-xs text-slate-400">Clear</span>
+                                        }
+                                    </td>
                                     <td class="px-5 py-4 text-center">
                                         <div class="flex items-center justify-center gap-1">
                                             @if (canEditIssue)
@@ -181,7 +197,7 @@
                     }
                     else
                     {
-                            <EmptyState ColSpan="8" Icon="file-pen-line" Title="No issues yet" Subtitle="Create your first issue to start tracking daily work." />
+                            <EmptyState ColSpan="9" Icon="file-pen-line" Title="No issues yet" Subtitle="Create your first issue to start tracking daily work." />
                     }
                     </tbody>
                 </table>
@@ -199,9 +215,9 @@
 
 @if (showModal)
 {
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-lg w-full max-w-2xl mx-4 overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:p-6">
+        <div class="flex max-h-[calc(100vh-2rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:max-h-[calc(100vh-3rem)]">
+            <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-900">Edit Issue</h3>
                     <p class="text-xs text-slate-500 mt-0.5">Issue #@editingId</p>
@@ -211,15 +227,47 @@
                 </button>
             </div>
 
-            <div class="p-6 space-y-4">
+            <div class="min-h-0 flex-1 overflow-y-auto p-6 space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Task</p>
                         <p class="mt-1 text-sm font-semibold text-slate-900">@SelectedTaskLabel</p>
                     </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Project</p>
                         <p class="mt-1 text-sm font-semibold text-slate-900">@SelectedProjectLabel</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Blocked Status</label>
+                        <label class="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700">
+                            <input type="checkbox" @bind="formIsBlocked" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                            <span>Blocked</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Escalation Level</label>
+                        <select @bind="formEscalationLevel" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                            <option value="0">None</option>
+                            <option value="1">Team Lead</option>
+                            <option value="2">PM</option>
+                            <option value="3">Manager</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Blocked By</label>
+                        <input @bind="formBlockedBy" type="text" placeholder="Dependency, person, or team"
+                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Delay Reason</label>
+                        <input @bind="formDelayReason" type="text" placeholder="Why is this issue delayed?"
+                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                     </div>
                 </div>
 
@@ -231,7 +279,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
-                    <textarea @bind="formDescription" rows="4" placeholder="Describe the work..."
+                    <textarea @bind="formDescription" rows="3" placeholder="Describe the work..."
                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
                 </div>
 
@@ -293,7 +341,7 @@
                 }
             </div>
 
-            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <div class="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-white px-6 py-4 shadow-[0_-12px_24px_rgba(15,23,42,0.06)]">
                 <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
                 <button @onclick="RequestSaveConfirmation" disabled="@isSaving" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
                     @(isSaving ? "Saving..." : "Update")
@@ -369,6 +417,10 @@
     private DateTime formDueDate = DateTime.Today;
     private AppTaskStatus formStatusId = AppTaskStatus.Todo;
     private TaskPriority formPriorityId = TaskPriority.Medium;
+    private string? formDelayReason;
+    private bool formIsBlocked;
+    private string? formBlockedBy;
+    private int formEscalationLevel;
 
     private string SelectedTaskLabel => tasks.FirstOrDefault(t => t.Id == formTaskId)?.Title ?? $"Task #{formTaskId}";
     private string SelectedProjectLabel => tasks.FirstOrDefault(t => t.Id == formTaskId) is { } task
@@ -539,6 +591,10 @@
         formDueDate = issue.DueDate;
         formStatusId = issue.StatusId;
         formPriorityId = issue.PriorityId;
+        formDelayReason = issue.DelayReason;
+        formIsBlocked = issue.IsBlocked;
+        formBlockedBy = issue.BlockedBy;
+        formEscalationLevel = issue.EscalationLevel;
         errorMessage = null;
         showModal = true;
 
@@ -612,6 +668,10 @@
                 Description = formDescription,
                 AssignedTo = formAssignedTo,
                 ActualHours = formActualHours,
+                DelayReason = formDelayReason,
+                IsBlocked = formIsBlocked,
+                BlockedBy = formBlockedBy,
+                EscalationLevel = formEscalationLevel,
                 StartDate = formStartDate,
                 DueDate = formDueDate,
                 StatusId = formStatusId,
@@ -734,5 +794,13 @@
         TaskPriority.Medium => "Medium",
         TaskPriority.High => "High",
         _ => "Unknown"
+    };
+
+    private static string GetEscalationLabel(int level) => level switch
+    {
+        1 => "Team Lead",
+        2 => "PM",
+        3 => "Manager",
+        _ => "None"
     };
 }

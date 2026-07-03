@@ -178,7 +178,11 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.DelayReason).HasMaxLength(300);
+            entity.Property(e => e.BlockedBy).HasMaxLength(200);
             entity.Property(e => e.DueDate).HasColumnType("datetime");
+            entity.Property(e => e.EscalationLevel).HasDefaultValue(0);
+            entity.Property(e => e.IsBlocked).HasDefaultValue(false);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
             entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
             entity.Property(e => e.StartDate).HasColumnType("datetime");

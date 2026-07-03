@@ -15,5 +15,10 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public DateTime DueDate { get; set; }
         public int DaysOverdue { get; set; }
         public DateTime CreatedAt { get; set; }
+        public int OverdueIssues { get; set; }
+        public string DelayReason { get; set; } = string.Empty;
+        public string BlockedBy { get; set; } = string.Empty;
+        public int EscalationLevel { get; set; }
+        public string RecordType { get; set; } = "Task";
     }
 }

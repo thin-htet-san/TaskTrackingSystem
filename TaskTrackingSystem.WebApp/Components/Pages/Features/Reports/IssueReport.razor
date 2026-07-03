@@ -1,0 +1,325 @@
+@page "/reports/issues"
+@using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared
+@using TaskTrackingSystem.Shared.Enums
+@using TaskTrackingSystem.Shared.Models.Issue
+@using TaskTrackingSystem.Shared.Models.Project
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@attribute [Authorize]
+@inject ApiClientService ApiClient
+@inject IJSRuntime JS
+
+<PageTitle>Issue Report</PageTitle>
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Issue Report</h2>
+            <p class="mt-1 text-slate-500">Track daily execution, backlog health, and issue-level effort.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900")">
+                    <i data-lucide="list" class="mr-1 h-3.5 w-3.5"></i> List View
+                </button>
+                <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900")">
+                    <i data-lucide="bar-chart-3" class="mr-1 h-3.5 w-3.5"></i> Chart View
+                </button>
+            </div>
+            <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                <i data-lucide="download" class="mr-2 h-4 w-4"></i> Export Excel
+            </button>
+            <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                <i data-lucide="file-text" class="mr-2 h-4 w-4"></i> Export PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-[220px] flex-1">
+                <label class="mb-1.5 block text-xs font-medium text-slate-500">Search</label>
+                <input @bind="searchInput" type="text" placeholder="Search issue, task, project, assignee..."
+                       class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+            </div>
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-slate-500">Project</label>
+                <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600">
+                    <option value="0">All Projects</option>
+                    @foreach (var project in projects)
+                    {
+                        <option value="@project.Id">@project.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-slate-500">Status</label>
+                <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600">
+                    <option value="0">All Statuses</option>
+                    <option value="1">To Do</option>
+                    <option value="2">In Progress</option>
+                    <option value="3">Done</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="blocked">Blocked</option>
+                </select>
+            </div>
+            <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700">
+                <i data-lucide="search" class="mr-2 h-4 w-4"></i> Search
+            </button>
+            <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                <i data-lucide="rotate-ccw" class="mr-2 h-4 w-4"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Loading issue report..." />
+    }
+    else
+    {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @MetricCard("Total Issues", FilteredIssues.Count().ToString(), "file-pen-line", "violet")
+            @MetricCard("Open Issues", OpenIssues.ToString(), "list-todo", "blue")
+            @MetricCard("Overdue Issues", OverdueIssues.ToString(), "alarm-clock", "rose")
+            @MetricCard("Blocked Issues", BlockedIssues.ToString(), "ban", "amber")
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="text-sm font-semibold text-slate-900">Key Insights</h3>
+            <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                @foreach (var insight in Insights)
+                {
+                    <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">@insight</div>
+                }
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                @if (isChartView)
+                {
+                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        @BarChart("Issues by Status", StatusChart)
+                        @BarChart("Issues by Priority", PriorityChart)
+                        @BarChart("Issues by Employee", EmployeeChart)
+                        @BarChart("Issues by Project", ProjectChart)
+                    </div>
+                }
+                else
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-slate-100 bg-slate-50/60">
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Issue</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Task / Project</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Assignee</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Hours</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Due</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Risk</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var issue in PagedIssues)
+                                {
+                                    <tr class="align-top hover:bg-slate-50/50">
+                                        <td class="px-4 py-3">
+                                            <button @onclick="() => ToggleExpanded(issue.Id)" class="text-left text-sm font-semibold text-slate-900 hover:text-violet-600">@issue.Title</button>
+                                            @if (expandedIssues.Contains(issue.Id))
+                                            {
+                                                <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                                                    <div>@(string.IsNullOrWhiteSpace(issue.Description) ? "No description" : issue.Description)</div>
+                                                    <div class="mt-1">Delay: @(string.IsNullOrWhiteSpace(issue.DelayReason) ? "None recorded" : issue.DelayReason)</div>
+                                                    <div>Blocked by: @(string.IsNullOrWhiteSpace(issue.BlockedBy) ? "None" : issue.BlockedBy)</div>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600"><div class="font-medium text-slate-800">@issue.TaskTitle</div><div class="text-xs text-slate-400">@issue.ProjectName</div></td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">@(issue.AssignedToName ?? "Unassigned")</td>
+                                        <td class="px-4 py-3"><span class="rounded-full px-2 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">@GetStatusLabel(issue.StatusId)</span></td>
+                                        <td class="px-4 py-3 text-sm text-slate-700">@((issue.EstimatedHours ?? 0).ToString("N1")) / @((issue.ActualHours ?? 0).ToString("N1"))</td>
+                                        <td class="px-4 py-3 text-sm @(IsOverdue(issue) ? "font-semibold text-rose-600" : "text-slate-600")">@DisplayFormats.Date(issue.DueDate)</td>
+                                        <td class="px-4 py-3">@RiskBadge(issue)</td>
+                                    </tr>
+                                }
+                                @if (!PagedIssues.Any())
+                                {
+                                    <EmptyState ColSpan="7" Icon="file-pen-line" Title="No issues found" Subtitle="No issues matched the current report filters." />
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <Pagination CurrentPage="currentPage" TotalPages="TotalPages" PageSize="pageSize" TotalCount="FilteredIssues.Count()" OnPageChanged="HandlePageChanged" OnPageSizeChanged="HandlePageSizeChanged" />
+                }
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private bool isChartView;
+    private List<IssueDto> issues = new();
+    private List<ProjectDto> projects = new();
+    private HashSet<long> expandedIssues = new();
+    private string searchInput = string.Empty;
+    private string appliedSearch = string.Empty;
+    private long filterProjectId;
+    private long appliedProjectId;
+    private string filterStatus = "0";
+    private string appliedStatus = "0";
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private const string StorageKey = "tts.report.issues.filters";
+
+    private IEnumerable<IssueDto> FilteredIssues => issues.Where(MatchesFilters).OrderBy(i => i.DueDate).ThenBy(i => i.Title);
+    private IEnumerable<IssueDto> PagedIssues => FilteredIssues.Skip((currentPage - 1) * pageSize).Take(pageSize);
+    private int TotalPages => (int)Math.Ceiling((double)FilteredIssues.Count() / pageSize);
+    private int OpenIssues => FilteredIssues.Count(i => i.StatusId != AppTaskStatus.Done);
+    private int OverdueIssues => FilteredIssues.Count(IsOverdue);
+    private int BlockedIssues => FilteredIssues.Count(i => i.IsBlocked);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var issuesTask = client.GetFromJsonAsync<Result<List<IssueDto>>>("Report/issues", Serialization.CaseInsensitive);
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
+            await Task.WhenAll(issuesTask, projectsTask);
+            issues = issuesTask.Result?.Value ?? new();
+            projects = projectsTask.Result ?? new();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+        if (firstRender)
+        {
+            await LoadSavedFilters();
+        }
+    }
+
+    private bool MatchesFilters(IssueDto issue)
+    {
+        if (appliedProjectId > 0 && issue.ProjectId != appliedProjectId) return false;
+        if (appliedStatus == "overdue" && !IsOverdue(issue)) return false;
+        if (appliedStatus == "blocked" && !issue.IsBlocked) return false;
+        if (int.TryParse(appliedStatus, out var statusValue) && statusValue > 0 && (int)issue.StatusId != statusValue) return false;
+        if (!string.IsNullOrWhiteSpace(appliedSearch))
+        {
+            var s = appliedSearch.Trim();
+            return issue.Title.Contains(s, StringComparison.OrdinalIgnoreCase)
+                || issue.TaskTitle.Contains(s, StringComparison.OrdinalIgnoreCase)
+                || issue.ProjectName.Contains(s, StringComparison.OrdinalIgnoreCase)
+                || (issue.AssignedToName?.Contains(s, StringComparison.OrdinalIgnoreCase) == true);
+        }
+        return true;
+    }
+
+    private async Task ApplyFilters()
+    {
+        appliedSearch = searchInput;
+        appliedProjectId = filterProjectId;
+        appliedStatus = filterStatus;
+        currentPage = 1;
+        await SaveFilters();
+    }
+
+    private async Task ResetFilters()
+    {
+        searchInput = appliedSearch = string.Empty;
+        filterProjectId = appliedProjectId = 0;
+        filterStatus = appliedStatus = "0";
+        currentPage = 1;
+        await SaveFilters();
+    }
+
+    private void SetView(bool chartView) => isChartView = chartView;
+    private void ToggleExpanded(long id) { if (!expandedIssues.Remove(id)) expandedIssues.Add(id); }
+    private Task HandlePageChanged(int page) { currentPage = page; return Task.CompletedTask; }
+    private Task HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; return Task.CompletedTask; }
+
+    private async Task SaveFilters()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, System.Text.Json.JsonSerializer.Serialize(new SavedFilter(appliedSearch, appliedProjectId, appliedStatus)));
+    }
+
+    private async Task LoadSavedFilters()
+    {
+        var json = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        if (string.IsNullOrWhiteSpace(json)) return;
+        var saved = System.Text.Json.JsonSerializer.Deserialize<SavedFilter>(json);
+        if (saved == null) return;
+        searchInput = appliedSearch = saved.Search;
+        filterProjectId = appliedProjectId = saved.ProjectId;
+        filterStatus = appliedStatus = saved.Status;
+        StateHasChanged();
+    }
+
+    private static bool IsOverdue(IssueDto issue) => issue.StatusId != AppTaskStatus.Done && issue.DueDate.Date < DateTime.Today;
+    private static string GetStatusLabel(AppTaskStatus status) => status == AppTaskStatus.InProgress ? "In Progress" : status == AppTaskStatus.Done ? "Done" : "To Do";
+    private static string GetStatusBadge(AppTaskStatus status) => status == AppTaskStatus.Done ? "bg-emerald-50 text-emerald-700" : status == AppTaskStatus.InProgress ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-700";
+    private static string GetPriorityLabel(TaskPriority priority) => priority == TaskPriority.High ? "High" : priority == TaskPriority.Medium ? "Medium" : "Low";
+    private static string EscalationLabel(int level) => level switch { 1 => "Team Lead", 2 => "PM", 3 => "Manager", _ => "None" };
+
+    private RenderFragment RiskBadge(IssueDto issue) => builder =>
+    {
+        var text = issue.IsBlocked ? "Blocked" : issue.EscalationLevel > 0 ? EscalationLabel(issue.EscalationLevel) : IsOverdue(issue) ? "Overdue" : "Clear";
+        var cls = issue.IsBlocked || IsOverdue(issue) ? "bg-rose-50 text-rose-700" : issue.EscalationLevel > 0 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700";
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", $"rounded-full px-2 py-0.5 text-xs font-semibold {cls}");
+        builder.AddContent(2, text);
+        builder.CloseElement();
+    };
+
+    private IReadOnlyList<(string Label, int Value)> StatusChart => new[] { ("To Do", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Todo)), ("In Progress", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress)), ("Done", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)), ("Overdue", OverdueIssues) };
+    private IReadOnlyList<(string Label, int Value)> PriorityChart => Enum.GetValues<TaskPriority>().Select(p => (GetPriorityLabel(p), FilteredIssues.Count(i => i.PriorityId == p))).ToList();
+    private IReadOnlyList<(string Label, int Value)> EmployeeChart => FilteredIssues.GroupBy(i => i.AssignedToName ?? "Unassigned").OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
+    private IReadOnlyList<(string Label, int Value)> ProjectChart => FilteredIssues.GroupBy(i => i.ProjectName).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
+    private IEnumerable<string> Insights => new[] { $"{OverdueIssues} overdue issues need attention.", $"{BlockedIssues} issues are blocked.", $"Actual hours are {FilteredIssues.Sum(i => i.ActualHours ?? 0):N1} against {FilteredIssues.Sum(i => i.EstimatedHours ?? 0):N1} estimated." };
+
+    private RenderFragment MetricCard(string label, string value, string icon, string color) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", $"rounded-xl border border-{color}-100 bg-{color}-50 p-5 shadow-sm");
+        builder.AddMarkupContent(2, $"<div class=\"flex items-center justify-between\"><div><p class=\"text-xs font-semibold uppercase tracking-wider text-{color}-600\">{label}</p><p class=\"mt-1 text-3xl font-bold text-{color}-700\">{value}</p></div><span class=\"flex h-11 w-11 items-center justify-center rounded-xl bg-white/70\"><i data-lucide=\"{icon}\" class=\"h-6 w-6 text-{color}-600\"></i></span></div>");
+        builder.CloseElement();
+    };
+
+    private RenderFragment BarChart(string title, IReadOnlyList<(string Label, int Value)> rows) => builder =>
+    {
+        var max = Math.Max(1, rows.Select(r => r.Value).DefaultIfEmpty(0).Max());
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "rounded-xl border border-slate-100 bg-slate-50 p-4");
+        builder.AddMarkupContent(2, $"<h3 class=\"mb-4 text-sm font-semibold text-slate-900\">{title}</h3>");
+        var seq = 3;
+        foreach (var row in rows)
+        {
+            var width = row.Value * 100 / max;
+            builder.AddMarkupContent(seq++, $"<div class=\"mb-3\"><div class=\"mb-1 flex justify-between text-xs font-semibold text-slate-600\"><span>{row.Label}</span><span>{row.Value}</span></div><div class=\"h-2.5 rounded-full bg-white\"><div class=\"h-full rounded-full bg-violet-600\" style=\"width:{width}%\"></div></div></div>");
+        }
+        builder.CloseElement();
+    };
+
+    private async Task DownloadExcel()
+    {
+        var rows = FilteredIssues.Select(i => new object?[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? "Unassigned", GetStatusLabel(i.StatusId), GetPriorityLabel(i.PriorityId), i.EstimatedHours ?? 0, i.ActualHours ?? 0, i.DueDate, i.IsBlocked ? "Blocked" : "Clear", EscalationLabel(i.EscalationLevel), i.DelayReason ?? "" });
+        var bytes = SpreadsheetReportBuilder.BuildTableWorkbook("Issue Report", "Issue Report", new[] { "Issue", "Task", "Project", "Assignee", "Status", "Priority", "Estimated", "Actual", "Due Date", "Blocked", "Escalation", "Delay Reason" }, rows, new[] { $"Generated: {DisplayFormats.Date(DateTime.Today)}" });
+        await JS.InvokeVoidAsync("downloadFileFromBase64", $"IssueReport_{DateTime.Today:yyyyMMdd}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Convert.ToBase64String(bytes));
+    }
+
+    private async Task DownloadPdf()
+    {
+        var rows = FilteredIssues.Select(i => new[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? "Unassigned", GetStatusLabel(i.StatusId), DisplayFormats.Date(i.DueDate), i.IsBlocked ? "Blocked" : "Clear" });
+        var bytes = SimplePdfReportBuilder.BuildTableReport("Issue Report", new[] { $"Generated: {DisplayFormats.Date(DateTime.Today)}" }, new[] { "Issue", "Task", "Project", "Assignee", "Status", "Due Date", "Risk" }, rows);
+        await JS.InvokeVoidAsync("downloadFileFromBase64", $"IssueReport_{DateTime.Today:yyyyMMdd}.pdf", "application/pdf", Convert.ToBase64String(bytes));
+    }
+
+    private sealed record SavedFilter(string Search, long ProjectId, string Status);
+}

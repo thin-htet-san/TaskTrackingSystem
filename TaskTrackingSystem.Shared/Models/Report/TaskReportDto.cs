@@ -20,5 +20,10 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public string? AssignedByUser { get; set; }
         public DateTime DueDate { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime LastActivity { get; set; }
+        public int OpenIssues { get; set; }
+        public int OverdueIssues { get; set; }
+        public string IssueSummary { get; set; } = string.Empty;
+        public string TaskHealth { get; set; } = "Healthy";
     }
 }
