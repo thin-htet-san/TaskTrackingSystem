@@ -180,7 +180,12 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.DelayReason).HasMaxLength(300);
             entity.Property(e => e.BlockedBy).HasMaxLength(200);
             entity.Property(e => e.DueDate).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.EscalationLevel).HasDefaultValue(0);
+            entity.Property(e => e.IsBlocked).HasDefaultValue(false);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
             entity.Property(e => e.StartDate).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.StatusId).HasDefaultValue(AppTaskStatus.Todo);
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
 
@@ -302,6 +307,9 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp with time zone");
             entity.Property(e => e.DueDate).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.IsArchived).HasDefaultValue(false);
+            entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
+            entity.Property(e => e.StatusId).HasDefaultValue(AppTaskStatus.Todo);
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
 

@@ -133,7 +133,6 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
     await db.Database.EnsureCreatedAsync();
-
     // In Supabase/Hugging Face, EnsureCreatedAsync() might skip table creation 
     // because other schemas (auth, storage, etc.) contain tables.
     // We check if the 'Menus' table exists in the public schema, and force creation of tables if it doesn't.
@@ -165,6 +164,8 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
             }
         }
     }
+
+    await EnsureReportUpgradeSchemaAsync(db);
 
     var dashboardMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "DASHBOARD");
     if (dashboardMenu == null)
@@ -367,6 +368,18 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     await db.SaveChangesAsync();
 }
 
+static async System.Threading.Tasks.Task EnsureReportUpgradeSchemaAsync(AppDbContext db)
+{
+    await db.Database.ExecuteSqlRawAsync(@"
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""DelayReason"" character varying(300);
+
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""IsBlocked"" boolean NOT NULL DEFAULT FALSE;
+
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""BlockedBy"" character varying(200);
+
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""EscalationLevel"" integer NOT NULL DEFAULT 0;
+");
+}
 static async System.Threading.Tasks.Task EnsureIssueReportMenuAsync(AppDbContext db)
 {
     var reportsMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "REPORTS" && !m.IsDeleted);
