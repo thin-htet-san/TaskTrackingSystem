@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using TaskTrackingSystem.Shared.Enums;
+using TaskTrackingSystem.Shared.Localization;
 using AppTaskStatus = TaskTrackingSystem.Shared.Enums.AppTaskStatus;
 
 namespace TaskTrackingSystem.Shared.Models.Issue
@@ -54,17 +55,17 @@ namespace TaskTrackingSystem.Shared.Models.Issue
         {
             if (StartDate == default)
             {
-                yield return new ValidationResult("Start date is required.", new[] { nameof(StartDate) });
+                yield return new ValidationResult(AppLocalization.Text("validation.startDateRequired", "Start date is required."), new[] { nameof(StartDate) });
             }
 
             if (DueDate == default)
             {
-                yield return new ValidationResult("Due date is required.", new[] { nameof(DueDate) });
+                yield return new ValidationResult(AppLocalization.Text("validation.dueDateRequired", "Due date is required."), new[] { nameof(DueDate) });
             }
 
             if (StartDate != default && DueDate != default && DueDate.Date < StartDate.Date)
             {
-                yield return new ValidationResult("Due date cannot be earlier than start date.", new[] { nameof(DueDate), nameof(StartDate) });
+                yield return new ValidationResult(AppLocalization.Text("validation.dueDateBeforeStart", "Due date cannot be earlier than start date."), new[] { nameof(DueDate), nameof(StartDate) });
             }
         }
     }

@@ -18,8 +18,8 @@
     [Parameter] public string Icon { get; set; } = "inbox";
 
     /// <summary>Primary empty-state message.</summary>
-    [Parameter] public string Title { get; set; } = "No data yet";
+    [Parameter] public string Title { get; set; } = AppLocalization.Text("common.noDataYet", "No data yet");
 
     /// <summary>Secondary hint text.</summary>
-    [Parameter] public string Subtitle { get; set; } = "Create your first entry to get started.";
+    [Parameter] public string Subtitle { get; set; } = AppLocalization.Text("common.createFirstEntry", "Create your first entry to get started.");
 }

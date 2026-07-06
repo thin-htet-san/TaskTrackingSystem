@@ -9,28 +9,28 @@
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
 
-<PageTitle>Issue Report</PageTitle>
+<PageTitle>@AppLocalization.PageTitle("issueReport", "Issue Report")</PageTitle>
 
 <div class="space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Issue Report</h2>
-            <p class="mt-1 text-slate-500">Track daily execution, backlog health, and issue-level effort.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.PageTitle("issueReport", "Issue Report")</h2>
+            <p class="mt-1 text-slate-500">@AppLocalization.PageDescription("issueReport", "Track daily execution, backlog health, and issue-level effort.")</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
                 <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900")">
-                    <i data-lucide="list" class="mr-1 h-3.5 w-3.5"></i> List View
+                    <i data-lucide="list" class="mr-1 h-3.5 w-3.5"></i> @AppLocalization.Text("common.listView", "List View")
                 </button>
                 <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900")">
-                    <i data-lucide="bar-chart-3" class="mr-1 h-3.5 w-3.5"></i> Chart View
+                    <i data-lucide="bar-chart-3" class="mr-1 h-3.5 w-3.5"></i> @AppLocalization.Text("common.chartView", "Chart View")
                 </button>
             </div>
             <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-                <i data-lucide="download" class="mr-2 h-4 w-4"></i> Export Excel
+                <i data-lucide="download" class="mr-2 h-4 w-4"></i> @AppLocalization.Text("common.exportExcel", "Export Excel")
             </button>
             <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-                <i data-lucide="file-text" class="mr-2 h-4 w-4"></i> Export PDF
+                <i data-lucide="file-text" class="mr-2 h-4 w-4"></i> @AppLocalization.Text("common.exportPdf", "Export PDF")
             </button>
         </div>
     </div>
@@ -38,14 +38,14 @@
     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div class="flex flex-wrap items-end gap-3">
             <div class="min-w-[220px] flex-1">
-                <label class="mb-1.5 block text-xs font-medium text-slate-500">Search</label>
-                <input @bind="searchInput" type="text" placeholder="Search issue, task, project, assignee..."
+                <label class="mb-1.5 block text-xs font-medium text-slate-500">@AppLocalization.Text("common.search", "Search")</label>
+                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue, task, project, assignee...")"
                        class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600" />
             </div>
             <div>
-                <label class="mb-1.5 block text-xs font-medium text-slate-500">Project</label>
+                <label class="mb-1.5 block text-xs font-medium text-slate-500">@AppLocalization.Text("common.project", "Project")</label>
                 <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600">
-                    <option value="0">All Projects</option>
+                    <option value="0">@AppLocalization.Text("common.all", "All Projects")</option>
                     @foreach (var project in projects)
                     {
                         <option value="@project.Id">@project.Name</option>
@@ -53,40 +53,40 @@
                 </select>
             </div>
             <div>
-                <label class="mb-1.5 block text-xs font-medium text-slate-500">Status</label>
+                <label class="mb-1.5 block text-xs font-medium text-slate-500">@AppLocalization.Text("common.status", "Status")</label>
                 <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600">
-                    <option value="0">All Statuses</option>
-                    <option value="1">To Do</option>
-                    <option value="2">In Progress</option>
-                    <option value="3">Done</option>
-                    <option value="overdue">Overdue</option>
-                    <option value="blocked">Blocked</option>
+                    <option value="0">@AppLocalization.Text("common.all", "All Statuses")</option>
+                    <option value="1">@AppLocalization.StatusLabel(AppTaskStatus.Todo)</option>
+                    <option value="2">@AppLocalization.StatusLabel(AppTaskStatus.InProgress)</option>
+                    <option value="3">@AppLocalization.StatusLabel(AppTaskStatus.Done)</option>
+                    <option value="overdue">@AppLocalization.Text("status.overdue", "Overdue")</option>
+                    <option value="blocked">@AppLocalization.Text("status.blocked", "Blocked")</option>
                 </select>
             </div>
             <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700">
-                <i data-lucide="search" class="mr-2 h-4 w-4"></i> Search
+                <i data-lucide="search" class="mr-2 h-4 w-4"></i> @AppLocalization.Text("action.search", "Search")
             </button>
             <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-                <i data-lucide="rotate-ccw" class="mr-2 h-4 w-4"></i> Reset
+                <i data-lucide="rotate-ccw" class="mr-2 h-4 w-4"></i> @AppLocalization.Text("action.reset", "Reset")
             </button>
         </div>
     </div>
 
     @if (isLoading)
     {
-        <LoadingSpinner Message="Loading issue report..." />
+        <LoadingSpinner Message="@AppLocalization.Text("report.loadingIssueReport", "Loading issue report...")" />
     }
     else
     {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @MetricCard("Total Issues", FilteredIssues.Count().ToString(), "file-pen-line", "violet")
-            @MetricCard("Open Issues", OpenIssues.ToString(), "list-todo", "blue")
-            @MetricCard("Overdue Issues", OverdueIssues.ToString(), "alarm-clock", "rose")
-            @MetricCard("Blocked Issues", BlockedIssues.ToString(), "ban", "amber")
+            @MetricCard(AppLocalization.Text("report.totalIssues", "Total Issues"), FilteredIssues.Count().ToString(), "file-pen-line", "violet")
+            @MetricCard(AppLocalization.Text("report.openIssues", "Open Issues"), OpenIssues.ToString(), "list-todo", "blue")
+            @MetricCard(AppLocalization.Text("report.overdueIssues", "Overdue Issues"), OverdueIssues.ToString(), "alarm-clock", "rose")
+            @MetricCard(AppLocalization.Text("report.blockedIssues", "Blocked Issues"), BlockedIssues.ToString(), "ban", "amber")
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 class="text-sm font-semibold text-slate-900">Key Insights</h3>
+            <h3 class="text-sm font-semibold text-slate-900">@AppLocalization.Text("report.keyInsights", "Key Insights")</h3>
             <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                 @foreach (var insight in Insights)
                 {
@@ -100,30 +100,30 @@
                 {
                     <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
                         <div class="xl:col-span-5">
-                            <ReportChartCard Title="Issue lifecycle funnel" Subtitle="How issues move from backlog to resolution." Insight="A large in-progress or blocked band is a daily execution signal.">
+                            <ReportChartCard Title="@AppLocalization.Text("report.issueLifecycleFunnel", "Issue lifecycle funnel")" Subtitle="@AppLocalization.Text("report.issueLifecycleFunnelDesc", "How issues move from backlog to resolution.")" Insight="@AppLocalization.Text("report.issueLifecycleInsight", "A large in-progress or blocked band is a daily execution signal.")">
                                 <FunnelChart Items="IssueFunnelItems" />
                             </ReportChartCard>
                         </div>
                         <div class="xl:col-span-4">
-                            <ReportChartCard Title="Issue status donut" Subtitle="Current status distribution, including overdue pressure." Insight="@IssueStatusInsight">
-                                <DonutStatusChart Items="IssueStatusItems" CenterLabel="issues" />
+                            <ReportChartCard Title="@AppLocalization.Text("report.issueStatusDonut", "Issue status donut")" Subtitle="@AppLocalization.Text("report.issueStatusDonutDesc", "Current status distribution, including overdue pressure.")" Insight="@IssueStatusInsight">
+                                <DonutStatusChart Items="IssueStatusItems" CenterLabel="@AppLocalization.Text("common.issue", "issues")" />
                             </ReportChartCard>
                         </div>
                         <div class="xl:col-span-3">
-                            <RadialMetricCard Title="Blocked / overdue" Subtitle="Execution risk in the filtered issue set." Percent="@BlockedOverduePercent" Value="@((BlockedIssues + OverdueIssues).ToString())" ValueLabel="risk issues" CenterLabel="risk" Color="#ef4444" Insight="Focus standup discussion here first." />
+                            <RadialMetricCard Title="@AppLocalization.Text("report.blockedOverdue", "Blocked / overdue")" Subtitle="@AppLocalization.Text("report.executionRisk", "Execution risk in the filtered issue set.")" Percent="@BlockedOverduePercent" Value="@((BlockedIssues + OverdueIssues).ToString())" ValueLabel="@AppLocalization.Text("report.riskIssues", "risk issues")" CenterLabel="@AppLocalization.Text("report.risk", "risk")" Color="#ef4444" Insight="@AppLocalization.Text("report.focusStandup", "Focus standup discussion here first.")" />
                         </div>
                         <div class="xl:col-span-4">
-                            <ReportChartCard Title="Issues by project" Subtitle="Where issue volume is concentrated." Insight="Useful for project-level triage and planning health.">
-                                <TopRiskList Items="IssueProjectItems" EmptyText="No project issues found." />
+                            <ReportChartCard Title="@AppLocalization.Text("report.issuesByProject", "Issues by project")" Subtitle="@AppLocalization.Text("report.issuesByProjectDesc", "Where issue volume is concentrated.")" Insight="@AppLocalization.Text("report.issuesByProjectInsight", "Useful for project-level triage and planning health.")">
+                                <TopRiskList Items="IssueProjectItems" EmptyText="@AppLocalization.Text("common.noResults", "No project issues found.")" />
                             </ReportChartCard>
                         </div>
                         <div class="xl:col-span-4">
-                            <ReportChartCard Title="Issues by assignee" Subtitle="Support needs by assignee." Insight="Use as a support signal, especially when overdue or blocked items cluster.">
-                                <TopRiskList Items="IssueAssigneeItems" EmptyText="No assignee issues found." />
+                            <ReportChartCard Title="@AppLocalization.Text("report.issuesByAssignee", "Issues by assignee")" Subtitle="@AppLocalization.Text("report.issuesByAssigneeDesc", "Support needs by assignee.")" Insight="@AppLocalization.Text("report.issuesByAssigneeInsight", "Use as a support signal, especially when overdue or blocked items cluster.")">
+                                <TopRiskList Items="IssueAssigneeItems" EmptyText="@AppLocalization.Text("common.noResults", "No assignee issues found.")" />
                             </ReportChartCard>
                         </div>
                         <div class="xl:col-span-4">
-                            <ReportChartCard Title="Resolution aging" Subtitle="How close issues are to or past due date." Insight="Older overdue buckets should be cleared before new scope expands.">
+                            <ReportChartCard Title="@AppLocalization.Text("report.resolutionAging", "Resolution aging")" Subtitle="@AppLocalization.Text("report.resolutionAgingDesc", "How close issues are to or past due date.")" Insight="@AppLocalization.Text("report.resolutionAgingInsight", "Older overdue buckets should be cleared before new scope expands.")">
                                 <AgingBucketChart Buckets="IssueAgingBuckets" />
                             </ReportChartCard>
                         </div>
@@ -144,13 +144,13 @@
                             </colgroup>
                             <thead>
                                 <tr class="border-b border-slate-100 bg-slate-50/60">
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Issue</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Task / Project</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Assignee</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Hours</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Due</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Risk</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">@AppLocalization.Text("common.issue", "Issue")</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">@AppLocalization.Text("common.taskProject", "Task / Project")</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">@AppLocalization.Text("common.assignee", "Assignee")</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">@AppLocalization.Text("common.status", "Status")</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">@AppLocalization.Text("common.hours", "Hours")</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">@AppLocalization.Text("common.dueDate", "Due")</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">@AppLocalization.Text("common.risk", "Risk")</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -162,9 +162,9 @@
                                             @if (expandedIssues.Contains(issue.Id))
                                             {
                                                 <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                                                    <div>@(string.IsNullOrWhiteSpace(issue.Description) ? "No description" : issue.Description)</div>
-                                                    <div class="mt-1">Delay: @(string.IsNullOrWhiteSpace(issue.DelayReason) ? "None recorded" : issue.DelayReason)</div>
-                                                    <div>Blocked by: @(string.IsNullOrWhiteSpace(issue.BlockedBy) ? "None" : issue.BlockedBy)</div>
+                                                    <div>@(string.IsNullOrWhiteSpace(issue.Description) ? AppLocalization.Text("common.noDescription", "No description") : issue.Description)</div>
+                                                    <div class="mt-1">@AppLocalization.Text("report.delay", "Delay"): @(string.IsNullOrWhiteSpace(issue.DelayReason) ? AppLocalization.Text("common.noneRecorded", "None recorded") : issue.DelayReason)</div>
+                                                    <div>@AppLocalization.Text("report.blockedBy", "Blocked by"): @(string.IsNullOrWhiteSpace(issue.BlockedBy) ? AppLocalization.Text("common.none", "None") : issue.BlockedBy)</div>
                                                 </div>
                                             }
                                         </td>
@@ -174,13 +174,13 @@
                                             </button>
                                             @if (expandedTaskDetails.Contains(issue.Id))
                                             {
-                                                <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                                                    <div class="font-medium text-slate-800 break-words">@issue.TaskTitle</div>
-                                                    <div class="mt-1 break-words">@issue.ProjectName</div>
-                                                </div>
+                                        <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                                            <div class="font-medium text-slate-800 break-words">@issue.TaskTitle</div>
+                                            <div class="mt-1 break-words">@issue.ProjectName</div>
+                                        </div>
                                             }
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600 break-words">@(issue.AssignedToName ?? "Unassigned")</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600 break-words">@(issue.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))</td>
                                         <td class="px-4 py-3"><span class="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">@GetStatusLabel(issue.StatusId)</span></td>
                                         <td class="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">@((issue.EstimatedHours ?? 0).ToString("N1")) / @((issue.ActualHours ?? 0).ToString("N1"))</td>
                                         <td class="px-4 py-3 text-sm whitespace-nowrap @(IsOverdue(issue) ? "font-semibold text-rose-600" : "text-slate-600")">@DisplayFormats.Date(issue.DueDate)</td>
@@ -189,7 +189,7 @@
                                 }
                                 @if (!PagedIssues.Any())
                                 {
-                                    <EmptyState ColSpan="7" Icon="file-pen-line" Title="No issues found" Subtitle="No issues matched the current report filters." />
+                                    <EmptyState ColSpan="7" Icon="file-pen-line" Title="@AppLocalization.Text("report.noIssuesFound", "No issues found")" Subtitle="@AppLocalization.Text("report.noIssuesFoundDesc", "No issues matched the current report filters.")" />
                                 }
                             </tbody>
                         </table>
@@ -310,14 +310,14 @@
 
     private static bool IsOverdue(IssueDto issue) => issue.StatusId != AppTaskStatus.Done && issue.DueDate.Date < DateTime.Today;
     private static string GetTaskCode(long taskId) => $"TSK-{taskId:D4}";
-    private static string GetStatusLabel(AppTaskStatus status) => status == AppTaskStatus.InProgress ? "In Progress" : status == AppTaskStatus.Done ? "Done" : "To Do";
+    private static string GetStatusLabel(AppTaskStatus status) => AppLocalization.StatusLabel(status);
     private static string GetStatusBadge(AppTaskStatus status) => status == AppTaskStatus.Done ? "bg-emerald-50 text-emerald-700" : status == AppTaskStatus.InProgress ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-700";
-    private static string GetPriorityLabel(TaskPriority priority) => priority == TaskPriority.High ? "High" : priority == TaskPriority.Medium ? "Medium" : "Low";
-    private static string EscalationLabel(int level) => level switch { 1 => "Team Lead", 2 => "PM", 3 => "Manager", _ => "None" };
+    private static string GetPriorityLabel(TaskPriority priority) => AppLocalization.PriorityLabel(priority);
+    private static string EscalationLabel(int level) => level switch { 1 => AppLocalization.Text("report.teamLead", "Team Lead"), 2 => AppLocalization.Text("report.pm", "PM"), 3 => AppLocalization.Text("report.manager", "Manager"), _ => AppLocalization.Text("common.none", "None") };
 
     private RenderFragment RiskBadge(IssueDto issue) => builder =>
     {
-        var text = issue.IsBlocked ? "Blocked" : issue.EscalationLevel > 0 ? EscalationLabel(issue.EscalationLevel) : IsOverdue(issue) ? "Overdue" : "Clear";
+        var text = issue.IsBlocked ? AppLocalization.Text("status.blocked", "Blocked") : issue.EscalationLevel > 0 ? EscalationLabel(issue.EscalationLevel) : IsOverdue(issue) ? AppLocalization.Text("status.overdue", "Overdue") : AppLocalization.Text("status.clear", "Clear");
         var cls = issue.IsBlocked || IsOverdue(issue) ? "bg-rose-50 text-rose-700" : issue.EscalationLevel > 0 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700";
         builder.OpenElement(0, "span");
         builder.AddAttribute(1, "class", $"rounded-full px-2 py-0.5 text-xs font-semibold {cls}");
@@ -325,31 +325,31 @@
         builder.CloseElement();
     };
 
-    private IReadOnlyList<(string Label, int Value)> StatusChart => new[] { ("To Do", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Todo)), ("In Progress", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress)), ("Done", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)), ("Overdue", OverdueIssues) };
+    private IReadOnlyList<(string Label, int Value)> StatusChart => new[] { (AppLocalization.StatusLabel(AppTaskStatus.Todo), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Todo)), (AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress)), (AppLocalization.StatusLabel(AppTaskStatus.Done), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)), (AppLocalization.Text("status.overdue", "Overdue"), OverdueIssues) };
     private IReadOnlyList<(string Label, int Value)> PriorityChart => Enum.GetValues<TaskPriority>().Select(p => (GetPriorityLabel(p), FilteredIssues.Count(i => i.PriorityId == p))).ToList();
-    private IReadOnlyList<(string Label, int Value)> EmployeeChart => FilteredIssues.GroupBy(i => i.AssignedToName ?? "Unassigned").OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
+    private IReadOnlyList<(string Label, int Value)> EmployeeChart => FilteredIssues.GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned")).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
     private IReadOnlyList<(string Label, int Value)> ProjectChart => FilteredIssues.GroupBy(i => i.ProjectName).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
-    private IEnumerable<string> Insights => new[] { $"{OverdueIssues} overdue issues need attention.", $"{BlockedIssues} issues are blocked.", $"Actual hours are {FilteredIssues.Sum(i => i.ActualHours ?? 0):N1} against {FilteredIssues.Sum(i => i.EstimatedHours ?? 0):N1} estimated." };
+    private IEnumerable<string> Insights => new[] { $"{OverdueIssues} {AppLocalization.Text("report.overdueIssuesNeedAttention", "overdue issues need attention.")}", $"{BlockedIssues} {AppLocalization.Text("report.issuesAreBlocked", "issues are blocked.")}", $"{AppLocalization.Text("report.actualHoursAre", "Actual hours are")} {FilteredIssues.Sum(i => i.ActualHours ?? 0):N1} {AppLocalization.Text("report.against", "against")} {FilteredIssues.Sum(i => i.EstimatedHours ?? 0):N1} {AppLocalization.Text("report.estimated", "estimated.")}" };
     private double BlockedOverduePercent => FilteredIssues.Any() ? (BlockedIssues + OverdueIssues) / (double)FilteredIssues.Count() * 100 : 0;
     private string IssueStatusInsight => OpenIssues > FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)
-        ? $"{OpenIssues} issues are still open across the selected scope."
-        : "Resolved issues are leading this filtered set.";
+        ? $"{OpenIssues} {AppLocalization.Text("report.issuesStillOpen", "issues are still open across the selected scope.")}"
+        : AppLocalization.Text("report.resolvedIssuesLeading", "Resolved issues are leading this filtered set.");
 
     private List<ReportChartItem> IssueFunnelItems => new()
     {
-        new("Created", FilteredIssues.Count(), "#7c3aed", "All reported issues"),
-        new("Open", OpenIssues, "#3b82f6", "Unresolved issues"),
-        new("In Progress", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress), "#06b6d4", "Currently being worked"),
-        new("Blocked", BlockedIssues, "#f59e0b", "Needs unblock review"),
-        new("Resolved", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done), "#10b981", "Completed issues")
+        new(AppLocalization.Text("report.created", "Created"), FilteredIssues.Count(), "#7c3aed", AppLocalization.Text("report.allReportedIssues", "All reported issues")),
+        new(AppLocalization.Text("report.open", "Open"), OpenIssues, "#3b82f6", AppLocalization.Text("report.unresolvedIssues", "Unresolved issues")),
+        new(AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress), "#06b6d4", AppLocalization.Text("report.currentlyBeingWorked", "Currently being worked")),
+        new(AppLocalization.Text("status.blocked", "Blocked"), BlockedIssues, "#f59e0b", AppLocalization.Text("report.needsUnblockReview", "Needs unblock review")),
+        new(AppLocalization.Text("status.resolved", "Resolved"), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done), "#10b981", AppLocalization.Text("report.completedIssues", "Completed issues"))
     };
 
     private List<ReportChartItem> IssueStatusItems => new()
     {
-        new("To Do", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Todo), "#94a3b8"),
-        new("In Progress", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress), "#3b82f6"),
-        new("Done", FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done), "#10b981"),
-        new("Overdue", OverdueIssues, "#ef4444")
+        new(AppLocalization.StatusLabel(AppTaskStatus.Todo), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Todo), "#94a3b8"),
+        new(AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress), "#3b82f6"),
+        new(AppLocalization.StatusLabel(AppTaskStatus.Done), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done), "#10b981"),
+        new(AppLocalization.Text("status.overdue", "Overdue"), OverdueIssues, "#ef4444")
     };
 
     private List<TopRiskItem> IssueProjectItems => FilteredIssues
@@ -359,20 +359,20 @@
             var blocked = g.Count(i => i.IsBlocked);
             var overdue = g.Count(IsOverdue);
             var score = Math.Min(100, (g.Count() * 10) + (blocked * 25) + (overdue * 20));
-            return new TopRiskItem(g.Key, $"{g.Count()} issues · {blocked} blocked", score, overdue > 0 ? $"{overdue} overdue" : $"{g.Count()} issues", overdue > 0 || blocked > 0 ? "rose" : "blue");
+            return new TopRiskItem(g.Key, $"{g.Count()} {AppLocalization.Text("common.issue", "issues")} · {blocked} {AppLocalization.Text("status.blocked", "blocked")}", score, overdue > 0 ? $"{overdue} {AppLocalization.Text("status.overdue", "overdue")}" : $"{g.Count()} {AppLocalization.Text("common.issue", "issues")}", overdue > 0 || blocked > 0 ? "rose" : "blue");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
         .ToList();
 
     private List<TopRiskItem> IssueAssigneeItems => FilteredIssues
-        .GroupBy(i => i.AssignedToName ?? "Unassigned")
+        .GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))
         .Select(g =>
         {
             var blocked = g.Count(i => i.IsBlocked);
             var overdue = g.Count(IsOverdue);
             var score = Math.Min(100, (g.Count() * 12) + (blocked * 22) + (overdue * 18));
-            return new TopRiskItem(g.Key, $"{g.Count()} assigned issues", score, blocked > 0 ? $"{blocked} blocked" : $"{overdue} overdue", blocked > 0 || overdue > 0 ? "amber" : "blue", "Support signal");
+            return new TopRiskItem(g.Key, $"{g.Count()} {AppLocalization.Text("report.assignedIssues", "assigned issues")}", score, blocked > 0 ? $"{blocked} {AppLocalization.Text("status.blocked", "blocked")}" : $"{overdue} {AppLocalization.Text("status.overdue", "overdue")}", blocked > 0 || overdue > 0 ? "amber" : "blue", AppLocalization.Text("report.supportSignal", "Support signal"));
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -380,10 +380,10 @@
 
     private List<ReportChartItem> IssueAgingBuckets => new()
     {
-        new("Due later", FilteredIssues.Count(i => !IsOverdue(i) && i.DueDate.Date > DateTime.Today.AddDays(3)), "#3b82f6"),
-        new("Due soon", FilteredIssues.Count(i => !IsOverdue(i) && i.DueDate.Date <= DateTime.Today.AddDays(3)), "#f59e0b"),
-        new("1-7d late", FilteredIssues.Count(i => IsOverdue(i) && (DateTime.Today - i.DueDate.Date).Days <= 7), "#fb7185"),
-        new("8d+ late", FilteredIssues.Count(i => IsOverdue(i) && (DateTime.Today - i.DueDate.Date).Days > 7), "#ef4444")
+        new(AppLocalization.Text("report.dueLater", "Due later"), FilteredIssues.Count(i => !IsOverdue(i) && i.DueDate.Date > DateTime.Today.AddDays(3)), "#3b82f6"),
+        new(AppLocalization.Text("report.dueSoon", "Due soon"), FilteredIssues.Count(i => !IsOverdue(i) && i.DueDate.Date <= DateTime.Today.AddDays(3)), "#f59e0b"),
+        new(AppLocalization.Text("report.1to7Late", "1-7d late"), FilteredIssues.Count(i => IsOverdue(i) && (DateTime.Today - i.DueDate.Date).Days <= 7), "#fb7185"),
+        new(AppLocalization.Text("report.8PlusLate", "8d+ late"), FilteredIssues.Count(i => IsOverdue(i) && (DateTime.Today - i.DueDate.Date).Days > 7), "#ef4444")
     };
 
     private RenderFragment MetricCard(string label, string value, string icon, string color) => builder =>
@@ -396,15 +396,15 @@
 
     private async Task DownloadExcel()
     {
-        var rows = FilteredIssues.Select(i => new object?[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? "Unassigned", GetStatusLabel(i.StatusId), GetPriorityLabel(i.PriorityId), i.EstimatedHours ?? 0, i.ActualHours ?? 0, i.DueDate, i.IsBlocked ? "Blocked" : "Clear", EscalationLabel(i.EscalationLevel), i.DelayReason ?? "" });
-        var bytes = SpreadsheetReportBuilder.BuildTableWorkbook("Issue Report", "Issue Report", new[] { "Issue", "Task", "Project", "Assignee", "Status", "Priority", "Estimated", "Actual", "Due Date", "Blocked", "Escalation", "Delay Reason" }, rows, new[] { $"Generated: {DisplayFormats.Date(DateTime.Today)}" });
+        var rows = FilteredIssues.Select(i => new object?[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"), GetStatusLabel(i.StatusId), GetPriorityLabel(i.PriorityId), i.EstimatedHours ?? 0, i.ActualHours ?? 0, i.DueDate, i.IsBlocked ? AppLocalization.Text("status.blocked", "Blocked") : AppLocalization.Text("status.clear", "Clear"), EscalationLabel(i.EscalationLevel), i.DelayReason ?? "" });
+        var bytes = SpreadsheetReportBuilder.BuildTableWorkbook(AppLocalization.PageTitle("issueReport", "Issue Report"), AppLocalization.PageTitle("issueReport", "Issue Report"), new[] { AppLocalization.Text("common.issue", "Issue"), AppLocalization.Text("common.task", "Task"), AppLocalization.Text("common.project", "Project"), AppLocalization.Text("common.assignee", "Assignee"), AppLocalization.Text("common.status", "Status"), AppLocalization.Text("common.priority", "Priority"), AppLocalization.Text("report.estimated", "Estimated"), AppLocalization.Text("report.actual", "Actual"), AppLocalization.Text("common.dueDate", "Due Date"), AppLocalization.Text("status.blocked", "Blocked"), AppLocalization.Text("report.escalation", "Escalation"), AppLocalization.Text("report.delayReason", "Delay Reason") }, rows, new[] { $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}" });
         await JS.InvokeVoidAsync("downloadFileFromBase64", $"IssueReport_{DateTime.Today:yyyyMMdd}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Convert.ToBase64String(bytes));
     }
 
     private async Task DownloadPdf()
     {
-        var rows = FilteredIssues.Select(i => new[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? "Unassigned", GetStatusLabel(i.StatusId), DisplayFormats.Date(i.DueDate), i.IsBlocked ? "Blocked" : "Clear" });
-        var bytes = SimplePdfReportBuilder.BuildTableReport("Issue Report", new[] { $"Generated: {DisplayFormats.Date(DateTime.Today)}" }, new[] { "Issue", "Task", "Project", "Assignee", "Status", "Due Date", "Risk" }, rows);
+        var rows = FilteredIssues.Select(i => new[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"), GetStatusLabel(i.StatusId), DisplayFormats.Date(i.DueDate), i.IsBlocked ? AppLocalization.Text("status.blocked", "Blocked") : AppLocalization.Text("status.clear", "Clear") });
+        var bytes = SimplePdfReportBuilder.BuildTableReport(AppLocalization.PageTitle("issueReport", "Issue Report"), new[] { $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}" }, new[] { AppLocalization.Text("common.issue", "Issue"), AppLocalization.Text("common.task", "Task"), AppLocalization.Text("common.project", "Project"), AppLocalization.Text("common.assignee", "Assignee"), AppLocalization.Text("common.status", "Status"), AppLocalization.Text("common.dueDate", "Due Date"), AppLocalization.Text("common.issue", "Risk") }, rows);
         await JS.InvokeVoidAsync("downloadFileFromBase64", $"IssueReport_{DateTime.Today:yyyyMMdd}.pdf", "application/pdf", Convert.ToBase64String(bytes));
     }
 

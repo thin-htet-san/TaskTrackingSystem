@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.JSInterop;
+using TaskTrackingSystem.Shared.Localization;
 
 namespace TaskTrackingSystem.WebApp.Localization;
 
@@ -39,9 +41,24 @@ public sealed class UiLanguageService
 
     public AppLanguage CurrentLanguage { get; private set; } = AppLanguage.English;
 
-    public UiTextBundle Texts => CurrentLanguage == AppLanguage.Burmese
-        ? BurmeseTexts
-        : EnglishTexts;
+    public UiTextBundle Texts => new()
+    {
+        Workspace = AppLocalization.Text("common.workspace", "Workspace"),
+        SignIn = AppLocalization.Text("common.signIn", "Sign In"),
+        SignOut = AppLocalization.Text("common.signOut", "Sign Out"),
+        SignOutTitle = AppLocalization.Text("common.signOutTitle", "Sign Out?"),
+        SignOutDescription = AppLocalization.Text("common.signOutDescription", "Are you sure you want to sign out of Taskify?"),
+        Cancel = AppLocalization.Text("common.cancel", "Cancel"),
+        ConfirmSignOut = AppLocalization.Text("common.confirmSignOut", "Yes, Sign Out"),
+        AccessDenied = AppLocalization.Text("common.accessDenied", "Access Denied"),
+        AccessDeniedDescription = AppLocalization.Text("common.accessDeniedDescription", "You do not have permission to access this page. Please contact your system administrator."),
+        BackToDashboard = AppLocalization.Text("common.backToDashboard", "Back to Dashboard"),
+        NoAccessItems = AppLocalization.Text("common.noAccessItems", "No access items are available for this role."),
+        AuditLogs = AppLocalization.Text("page.auditLogs", "Audit Logs"),
+        LanguageEnglish = AppLocalization.Text("common.languageEnglish", "English"),
+        LanguageBurmese = AppLocalization.Text("common.languageBurmese", "Burmese"),
+        LanguageTitle = AppLocalization.Text("common.currentLanguage", "Switch language")
+    };
 
     public event Action? Changed;
 
@@ -66,14 +83,27 @@ public sealed class UiLanguageService
 
     public string GetCode() => ToCode(CurrentLanguage);
 
-    public static string ToCode(AppLanguage language) => language == AppLanguage.Burmese ? "my" : "en";
+    public static string ToCode(AppLanguage language) => language == AppLanguage.Burmese ? "my-MM" : "en-US";
 
     public static AppLanguage FromCode(string? code) =>
-        string.Equals(code, "my", StringComparison.OrdinalIgnoreCase) ? AppLanguage.Burmese : AppLanguage.English;
+        string.Equals(code, "my", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(code, "my-MM", StringComparison.OrdinalIgnoreCase)
+            ? AppLanguage.Burmese
+            : AppLanguage.English;
+
+    public string T(string key, string fallback = "") => AppLocalization.Text(key, fallback);
+    public string Menu(string menuCode, string fallback = "") => AppLocalization.Menu(menuCode, fallback);
+    public string PageTitle(string key, string fallback = "") => AppLocalization.PageTitle(key, fallback);
+    public string PageDescription(string key, string fallback = "") => AppLocalization.PageDescription(key, fallback);
+    public string StatusLabel(TaskTrackingSystem.Shared.Enums.AppTaskStatus status) => AppLocalization.StatusLabel(status);
+    public string PriorityLabel(TaskTrackingSystem.Shared.Enums.TaskPriority priority) => AppLocalization.PriorityLabel(priority);
+    public string EscalationLabel(int level) => AppLocalization.EscalationLabel(level);
 
     private void SetLanguageFromCode(string? code)
     {
         var next = FromCode(code);
+        ApplyCulture(next);
+
         if (next == CurrentLanguage)
         {
             return;
@@ -83,41 +113,12 @@ public sealed class UiLanguageService
         Changed?.Invoke();
     }
 
-    private static readonly UiTextBundle EnglishTexts = new()
+    private static void ApplyCulture(AppLanguage language)
     {
-        Workspace = "Workspace",
-        SignIn = "Sign In",
-        SignOut = "Sign Out",
-        SignOutTitle = "Sign Out?",
-        SignOutDescription = "Are you sure you want to sign out of Taskify?",
-        Cancel = "Cancel",
-        ConfirmSignOut = "Yes, Sign Out",
-        AccessDenied = "Access Denied",
-        AccessDeniedDescription = "You do not have permission to access this page. Please contact your system administrator.",
-        BackToDashboard = "Back to Dashboard",
-        NoAccessItems = "No access items are available for this role.",
-        AuditLogs = "Audit Logs",
-        LanguageEnglish = "English",
-        LanguageBurmese = "Burmese",
-        LanguageTitle = "Switch language"
-    };
-
-    private static readonly UiTextBundle BurmeseTexts = new()
-    {
-        Workspace = "အလုပ်ခွင်",
-        SignIn = "အကောင့်ဝင်မည်",
-        SignOut = "အကောင့်ထွက်မည်",
-        SignOutTitle = "အကောင့်ထွက်မလား?",
-        SignOutDescription = "Taskify မှ အကောင့်ထွက်ရန် သေချာပါသလား?",
-        Cancel = "မလုပ်တော့ပါ",
-        ConfirmSignOut = "ဟုတ်ကဲ့၊ အကောင့်ထွက်မည်",
-        AccessDenied = "ဝင်ခွင့်မရှိပါ",
-        AccessDeniedDescription = "ဤစာမျက်နှာကို ဝင်ရောက်ခွင့် မရှိပါ။ စနစ်စီမံခန့်ခွဲသူကို ဆက်သွယ်ပါ။",
-        BackToDashboard = "ဒက်ရှ်ဘုတ်သို့ ပြန်သွားမည်",
-        NoAccessItems = "ဤအခန်းကဏ္ဍအတွက် ဝင်ခွင့်မရသည့် မီနူးမရှိပါ။",
-        AuditLogs = "မှတ်တမ်းများ",
-        LanguageEnglish = "အင်္ဂလိပ်",
-        LanguageBurmese = "မြန်မာ",
-        LanguageTitle = "ဘာသာစကားပြောင်းရန်"
-    };
+        var culture = language == AppLanguage.Burmese ? CultureInfo.GetCultureInfo("my-MM") : CultureInfo.GetCultureInfo("en-US");
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+    }
 }

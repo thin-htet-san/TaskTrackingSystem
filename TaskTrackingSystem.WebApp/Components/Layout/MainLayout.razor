@@ -7,7 +7,7 @@
     <button type="button"
             class="sidebar-scrim"
             onclick="document.body.classList.remove('tts-sidebar-open');"
-            aria-label="Close navigation"></button>
+            aria-label="@AppLocalization.Text("common.closeNavigation", "Close navigation")"></button>
 
     <aside class="app-sidebar fixed inset-y-0 left-0 z-[60] flex w-72 -translate-x-full flex-col overflow-hidden border-r border-slate-800 bg-slate-950 text-white transition-transform duration-200 lg:static lg:z-auto lg:min-h-screen lg:translate-x-0 lg:shrink-0">
         <div class="app-sidebar-brand flex min-h-20 items-center gap-3 px-5 py-4">
@@ -16,12 +16,12 @@
             </span>
             <span class="app-sidebar-title flex flex-col leading-tight">
                 <strong class="text-lg font-bold tracking-normal text-white">Taskify</strong>
-                <span class="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Workspace</span>
+                <span class="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">@AppLocalization.Text("common.workspace", "Workspace")</span>
             </span>
             <button type="button"
                     class="control-button mobile-sidebar-close ml-auto inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white hover:bg-white/15 hover:text-white lg:hidden"
                     onclick="document.body.classList.remove('tts-sidebar-open');"
-                    aria-label="Close navigation">
+                    aria-label="@AppLocalization.Text("common.closeNavigation", "Close navigation")">
                 <i data-lucide="x" class="h-4 w-4"></i>
             </button>
         </div>
@@ -64,7 +64,7 @@
                 <button type="button"
                         class="control-button mobile-sidebar-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white lg:hidden"
                         onclick="document.body.classList.add('tts-sidebar-open');"
-                        aria-label="Open navigation">
+                        aria-label="@AppLocalization.Text("common.openNavigation", "Open navigation")">
                     <i data-lucide="menu" class="h-4 w-4"></i>
                 </button>
                 <div class="app-topbar-title min-w-0">
@@ -151,56 +151,61 @@
             if (CurrentRoute.StartsWith("projects/", StringComparison.OrdinalIgnoreCase) &&
                 CurrentRoute.EndsWith("/tasks", StringComparison.OrdinalIgnoreCase))
             {
-                return "Kanban Board";
+                return AppLocalization.PageTitle("kanbanBoard", "Kanban Board");
             }
 
             if (CurrentRoute.StartsWith("tasks/", StringComparison.OrdinalIgnoreCase))
             {
-                return "Task Details";
+                return AppLocalization.PageTitle("taskDetails", "Task Details");
             }
 
             return CurrentRoute switch
             {
-                "" or "dashboard" or "Home" => "Dashboard",
-                "dashboard/manager" => "Manager Dashboard",
-                "dashboard/employee" => "Employee Dashboard",
-                "projects" or "projects/all" => "Projects",
-                "projects/assign" => "Project Assignment",
-                "tasks" or "tasks/all" => "Tasks",
-                "board" => "Kanban Board",
-                "tasks/assign" => "Task Assignment",
-                "issues" or "issues/all" => "Issues",
-                "issues/add" => "Add Issue",
-                "reports/tasks" => "Task Report",
-                "reports/time" => "Time Tracking",
-                "reports/projects" => "Project Progress",
-                "reports/overdue" => "Overdue Tasks",
-                "reports/employees" => "Employee Report",
-                "roles" => "Roles & Access",
-                "users" => "Users",
-                "audit-logs" => "Audit Logs",
-                _ => Language.Texts.Workspace
+                "" or "dashboard" or "Home" => AppLocalization.PageTitle("dashboard", "Dashboard"),
+                "dashboard/manager" => AppLocalization.PageTitle("managerDashboard", "Manager Dashboard"),
+                "dashboard/employee" => AppLocalization.PageTitle("employeeDashboard", "Employee Dashboard"),
+                "projects" or "projects/all" => AppLocalization.PageTitle("projects", "Projects"),
+                "projects/assign" => AppLocalization.PageTitle("projectAssignment", "Project Assignment"),
+                "tasks" or "tasks/all" => AppLocalization.PageTitle("tasks", "Tasks"),
+                "board" => AppLocalization.PageTitle("kanbanBoard", "Kanban Board"),
+                "tasks/assign" => AppLocalization.PageTitle("taskAssignment", "Task Assignment"),
+                "issues" or "issues/all" => AppLocalization.PageTitle("issues", "Issues"),
+                "issues/add" => AppLocalization.PageTitle("addIssue", "Add Issue"),
+                "reports/tasks" => AppLocalization.PageTitle("taskReport", "Task Report"),
+                "reports/time" => AppLocalization.PageTitle("timeTracking", "Time Tracking"),
+                "reports/projects" => AppLocalization.PageTitle("projectProgress", "Project Progress"),
+                "reports/overdue" => AppLocalization.PageTitle("overdueTasks", "Overdue Tasks"),
+                "reports/employees" => AppLocalization.PageTitle("employeeReport", "Employee Report"),
+                "roles" => AppLocalization.PageTitle("rolesAccess", "Roles & Access"),
+                "users" => AppLocalization.PageTitle("users", "Users"),
+                "audit-logs" => AppLocalization.PageTitle("auditLogs", "Audit Logs"),
+                _ => AppLocalization.Text("common.workspace", "Workspace")
             };
         }
     }
 
     private string CurrentPageDescription => CurrentPageTitle switch
     {
-        "Dashboard" => "A quick overview of work, risk, and progress.",
-        "Manager Dashboard" => "Track projects, people, and delivery health.",
-        "Employee Dashboard" => "Focus on your tasks, due dates, and progress.",
-        "Projects" => "Manage project plans, timelines, and assignments.",
-        "Project Assignment" => "Assign team members to the right projects.",
-        "Tasks" => "Review, filter, and update work items.",
-        "Kanban Board" => "Move work through status columns.",
-        "Task Assignment" => "Assign tasks to project members.",
-        "Issues" => "Track blockers, notes, and daily work progress.",
-        "Add Issue" => "Record a new issue against a task.",
-        "Roles & Access" => "Control user roles, menus, and permissions.",
-        "Users" => "Manage people, status, and account details.",
-        "Audit Logs" => "Review system activity and changes.",
-        _ when CurrentPageTitle.Contains("Report", StringComparison.OrdinalIgnoreCase) => "Analyze work data and export reports.",
-        _ => "Workspace"
+        var title when title == AppLocalization.PageTitle("dashboard", "Dashboard") => AppLocalization.PageDescription("dashboard", "A quick overview of work, risk, and progress."),
+        var title when title == AppLocalization.PageTitle("managerDashboard", "Manager Dashboard") => AppLocalization.PageDescription("managerDashboard", "Track projects, people, and delivery health."),
+        var title when title == AppLocalization.PageTitle("employeeDashboard", "Employee Dashboard") => AppLocalization.PageDescription("employeeDashboard", "Focus on your tasks, due dates, and progress."),
+        var title when title == AppLocalization.PageTitle("projects", "Projects") => AppLocalization.PageDescription("projects", "Manage project plans, timelines, and assignments."),
+        var title when title == AppLocalization.PageTitle("projectAssignment", "Project Assignment") => AppLocalization.PageDescription("projectAssignment", "Assign team members to the right projects."),
+        var title when title == AppLocalization.PageTitle("tasks", "Tasks") => AppLocalization.PageDescription("tasks", "Review, filter, and update work items."),
+        var title when title == AppLocalization.PageTitle("kanbanBoard", "Kanban Board") => AppLocalization.PageDescription("kanbanBoard", "Move work through status columns."),
+        var title when title == AppLocalization.PageTitle("taskAssignment", "Task Assignment") => AppLocalization.PageDescription("taskAssignment", "Assign tasks to project members."),
+        var title when title == AppLocalization.PageTitle("issues", "Issues") => AppLocalization.PageDescription("issues", "Track blockers, notes, and daily work progress."),
+        var title when title == AppLocalization.PageTitle("addIssue", "Add Issue") => AppLocalization.PageDescription("addIssue", "Record a new issue against a task."),
+        var title when title == AppLocalization.PageTitle("rolesAccess", "Roles & Access") => AppLocalization.PageDescription("rolesAccess", "Control user roles, menus, and permissions."),
+        var title when title == AppLocalization.PageTitle("users", "Users") => AppLocalization.PageDescription("users", "Manage people, status, and account details."),
+        var title when title == AppLocalization.PageTitle("auditLogs", "Audit Logs") => AppLocalization.PageDescription("auditLogs", "Review system activity and changes."),
+        var title when title.Contains(AppLocalization.Text("page.taskReport", "Task Report"), StringComparison.OrdinalIgnoreCase) => AppLocalization.Text("page.taskReport.desc", "Analyze work data and export reports."),
+        var title when title.Contains(AppLocalization.Text("page.timeTracking", "Time Tracking"), StringComparison.OrdinalIgnoreCase) => AppLocalization.Text("page.timeTracking.desc", "Review effort by task, project, and assignee."),
+        var title when title.Contains(AppLocalization.Text("page.projectProgress", "Project Progress"), StringComparison.OrdinalIgnoreCase) => AppLocalization.Text("page.projectProgress.desc", "Monitor delivery health across active projects."),
+        var title when title.Contains(AppLocalization.Text("page.overdueTasks", "Overdue Tasks"), StringComparison.OrdinalIgnoreCase) => AppLocalization.Text("page.overdueTasks.desc", "Focus on delayed work that needs attention."),
+        var title when title.Contains(AppLocalization.Text("page.employeeReport", "Employee Report"), StringComparison.OrdinalIgnoreCase) => AppLocalization.Text("page.employeeReport.desc", "See how work is distributed across people."),
+        var title when title.Contains(AppLocalization.Text("page.issueReport", "Issue Report"), StringComparison.OrdinalIgnoreCase) => AppLocalization.Text("page.issueReport.desc", "Track daily execution, backlog health, and issue-level effort."),
+        _ => AppLocalization.Text("common.workspace", "Workspace")
     };
 
     protected override async Task OnInitializedAsync()

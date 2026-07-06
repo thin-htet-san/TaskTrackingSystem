@@ -12,29 +12,29 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>Time &amp; Effort Tracking Report</PageTitle>
+<PageTitle>@AppLocalization.Text("report.timeTrackingTitle", "Time & Effort Tracking Report")</PageTitle>
 
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Time &amp; Effort Tracking</h2>
-            <p class="text-slate-500 mt-1">Review estimated hours, completion timelines, and resource effort distribution across issues.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.Text("report.timeTrackingHeading", "Time & Effort Tracking")</h2>
+            <p class="text-slate-500 mt-1">@AppLocalization.Text("report.timeTrackingDesc", "Review estimated hours, completion timelines, and resource effort distribution across issues.")</p>
         </div>
         <div class="flex items-center space-x-3">
             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
                 <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.listView", "List View")
                 </button>
                 <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.chartView", "Chart View")
                 </button>
             </div>
             <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportExcel", "Export Excel")
             </button>
             <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportPdf", "Export PDF")
             </button>
         </div>
     </div>
@@ -95,14 +95,14 @@
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap items-end gap-4">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Issues / Assignee</label>
-                    <input @bind="searchInput" type="text" placeholder="Search issue title, description or assignee..."
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.searchByIssueAssignee", "Search Issues / Assignee")</label>
+                    <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue title, description or assignee...")"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1.5">Project</label>
                     <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                        <option value="0">All Projects</option>
+                        <option value="0">@AppLocalization.Text("common.allProjects", "All Projects")</option>
                         @foreach (var proj in allProjects)
                         {
                             <option value="@proj.Id">@proj.Name</option>
@@ -110,12 +110,12 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Issue Status</label>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.status", "Issue Status")</label>
                     <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                        <option value="0">All Statuses</option>
-                        <option value="Todo">To Do</option>
-                        <option value="InProgress">In Progress</option>
-                        <option value="Done">Completed</option>
+                        <option value="0">@AppLocalization.Text("common.all", "All Statuses")</option>
+                        <option value="Todo">@AppLocalization.StatusLabel(AppTaskStatus.Todo)</option>
+                        <option value="InProgress">@AppLocalization.StatusLabel(AppTaskStatus.InProgress)</option>
+                        <option value="Done">@AppLocalization.StatusLabel(AppTaskStatus.Done)</option>
                     </select>
                 </div>
                 <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
@@ -129,11 +129,11 @@
             <div class="flex flex-wrap items-center gap-6 border-t border-slate-100 pt-3">
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMe" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to me</span>
+                    <span>@AppLocalization.Text("report.assignedToMe", "Assigned to me")</span>
                 </label>
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMyTeam" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to my team</span>
+                    <span>@AppLocalization.Text("report.assignedToMyTeam", "Assigned to my team")</span>
                 </label>
             </div>
         </div>
@@ -141,7 +141,7 @@
 
     @if (isLoading)
     {
-        <LoadingSpinner Message="Loading timesheet data..." />
+        <LoadingSpinner Message="@AppLocalization.Text("report.loadingTimesheet", "Loading timesheet data...")" />
     }
     else
     {

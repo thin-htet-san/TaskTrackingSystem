@@ -12,29 +12,29 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>Task Report</PageTitle>
+<PageTitle>@AppLocalization.PageTitle("taskReport", "Task Report")</PageTitle>
 
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Task Report</h2>
-            <p class="text-slate-500 mt-1">Detailed analysis and metrics of project tasks.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.PageTitle("taskReport", "Task Report")</h2>
+            <p class="text-slate-500 mt-1">@AppLocalization.PageDescription("taskReport", "Analyze task activity and export task reports.")</p>
         </div>
         <div class="flex items-center space-x-3">
             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
                 <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.listView", "List View")
                 </button>
                 <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.chartView", "Chart View")
                 </button>
             </div>
             <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportExcel", "Export Excel")
             </button>
             <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportPdf", "Export PDF")
             </button>
         </div>
     </div>
@@ -43,51 +43,51 @@
     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Task</label>
-                <input @bind="searchInput" type="text" placeholder="Search by title or project..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.searchTasks", "Search Task")</label>
+                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchByTitle", "Search by title or project...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Period Filter</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("report.periodFilter", "Period Filter")</label>
                 <select @bind="filterPeriod" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="all">All Time</option>
-                    <option value="daily">Daily (Today)</option>
-                    <option value="monthly">Monthly (This Month)</option>
-                    <option value="yearly">Yearly (This Year)</option>
-                    <option value="custom">Custom Range</option>
+                    <option value="all">@AppLocalization.Text("common.all", "All Time")</option>
+                    <option value="daily">@AppLocalization.Text("report.daily", "Daily (Today)")</option>
+                    <option value="monthly">@AppLocalization.Text("report.monthly", "Monthly (This Month)")</option>
+                    <option value="yearly">@AppLocalization.Text("report.yearly", "Yearly (This Year)")</option>
+                    <option value="custom">@AppLocalization.Text("report.customRange", "Custom Range")</option>
                 </select>
             </div>
 
             @if (filterPeriod == "custom")
             {
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Start Date</label>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.startDate", "Start Date")</label>
                     <input @bind="filterStartDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">End Date</label>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.endDate", "End Date")</label>
                     <input @bind="filterEndDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
             }
 
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.status", "Status")</label>
                 <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="uncompleted">Uncompleted</option>
-                    <option value="">All</option>
-                    <option value="1">To Do</option>
-                    <option value="2">In Progress</option>
-                    <option value="3">Done</option>
-                    <option value="overdue">Overdue</option>
+                    <option value="uncompleted">@AppLocalization.Text("status.uncompleted", "Uncompleted")</option>
+                    <option value="">@AppLocalization.Text("common.all", "All")</option>
+                    <option value="1">@AppLocalization.StatusLabel(AppTaskStatus.Todo)</option>
+                    <option value="2">@AppLocalization.StatusLabel(AppTaskStatus.InProgress)</option>
+                    <option value="3">@AppLocalization.StatusLabel(AppTaskStatus.Done)</option>
+                    <option value="overdue">@AppLocalization.Text("status.overdue", "Overdue")</option>
                 </select>
             </div>
             <div class="relative min-w-[240px]">
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Project</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.project", "Project")</label>
                 <div class="relative">
                     <input @bind="projectSearchInput"
                            @onfocus="ShowProjectSuggestions"
                            @onblur="HideProjectSuggestionsDelayed"
                            type="text"
-                           placeholder="Search projects..."
+                           placeholder="@AppLocalization.Text("common.searchProjects", "Search projects...")"
                            autocomplete="off"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                     @if (filterProjectId > 0 || !string.IsNullOrWhiteSpace(projectSearchInput))
@@ -95,7 +95,7 @@
                         <button type="button"
                                 @onmousedown="ClearProjectFilter"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                                title="Clear project filter">
+                                title="@AppLocalization.Text("common.clear", "Clear project filter")">
                             <i data-lucide="x" class="h-4 w-4"></i>
                         </button>
                     }
@@ -107,7 +107,7 @@
                             <button type="button"
                                     @onmousedown="ClearProjectFilter"
                                     class="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-                                All Projects
+                                @AppLocalization.Text("common.all", "All Projects")
                             </button>
                         </li>
                         @foreach (var p in FilteredProjects.Take(10))
@@ -124,20 +124,20 @@
                 }
             </div>
             <button @onclick="ApplyAllFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+                    <i data-lucide="search" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.search", "Search")
             </button>
             <button @onclick="ResetAllFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> Reset
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> @AppLocalization.Text("action.reset", "Reset")
             </button>
 
             <div class="flex flex-wrap items-center gap-6 w-full border-t border-slate-100 pt-3 mt-1">
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMe" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to me</span>
+                    <span>@AppLocalization.Text("report.assignedToMe", "Assigned to me")</span>
                 </label>
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMyTeam" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to my team</span>
+                    <span>@AppLocalization.Text("report.assignedToMyTeam", "Assigned to my team")</span>
                 </label>
             </div>
         </div>
@@ -148,7 +148,7 @@
         <div class="flex items-center justify-center py-20">
             <div class="flex items-center space-x-3 text-slate-500">
                 <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span class="text-sm font-medium">Loading data...</span>
+                <span class="text-sm font-medium">@AppLocalization.Text("common.loading", "Loading data...")</span>
             </div>
         </div>
     }
@@ -158,7 +158,7 @@
             <div class="flex items-start gap-3">
                 <i data-lucide="alert-triangle" class="mt-0.5 h-5 w-5 shrink-0"></i>
                 <div>
-                    <p class="font-semibold">Task report could not load.</p>
+                    <p class="font-semibold">@AppLocalization.Text("report.couldNotLoad", "Task report could not load.")</p>
                     <p class="mt-1">@errorMessage</p>
                 </div>
             </div>
@@ -167,10 +167,10 @@
     else
     {
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            @TaskMetricCard("Total", FilteredList.Count().ToString(), "file-text", "violet")
-            @TaskMetricCard("Completed", FilteredList.Count(t => t.StatusId == AppTaskStatus.Done).ToString(), "check-circle-2", "emerald")
-            @TaskMetricCard("In Progress", FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress).ToString(), "timer", "blue")
-            @TaskMetricCard("Overdue", FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done).ToString(), "alarm-clock", "rose")
+            @TaskMetricCard(AppLocalization.Text("report.total", "Total"), FilteredList.Count().ToString(), "file-text", "violet")
+            @TaskMetricCard(AppLocalization.Text("status.done", "Completed"), FilteredList.Count(t => t.StatusId == AppTaskStatus.Done).ToString(), "check-circle-2", "emerald")
+            @TaskMetricCard(AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress).ToString(), "timer", "blue")
+            @TaskMetricCard(AppLocalization.Text("status.overdue", "Overdue"), FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done).ToString(), "alarm-clock", "rose")
         </div>
 
         <InsightPanel Insights="TaskInsights.ToList()" />
@@ -179,26 +179,26 @@
         {
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
                 <div class="xl:col-span-5">
-                    <ReportChartCard Title="Task status mix" Subtitle="Where execution currently sits across the task lifecycle." Insight="@TaskStatusInsight">
-                        <DonutStatusChart Items="TaskStatusItems" CenterLabel="tasks" />
+                    <ReportChartCard Title="@AppLocalization.Text("report.taskStatusMix", "Task status mix")" Subtitle="@AppLocalization.Text("report.taskStatusMixDesc", "Where execution currently sits across the task lifecycle.")" Insight="@TaskStatusInsight">
+                        <DonutStatusChart Items="TaskStatusItems" CenterLabel="@AppLocalization.Text("common.task", "tasks")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-4">
-                    <ReportChartCard Title="Priority distribution" Subtitle="Planning pressure by task priority." Value="@HighPriorityCount.ToString()" ValueLabel="high priority" Insight="@PriorityInsight">
+                    <ReportChartCard Title="@AppLocalization.Text("report.priorityDistribution", "Priority distribution")" Subtitle="@AppLocalization.Text("report.priorityDistributionDesc", "Planning pressure by task priority.")" Value="@HighPriorityCount.ToString()" ValueLabel="@AppLocalization.Text("priority.high", "high priority")" Insight="@PriorityInsight">
                         <StackedProgressBar Segments="PrioritySegments" AriaLabel="Task priority distribution" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-3">
-                    <TrendSparklineCard Title="Completion movement" Subtitle="Recently completed tasks by creation month." Value="@($"{CompletionRate:0}%")" ValueLabel="completion" Points="CompletionSparkline" Color="#10b981" Insight="@CompletionInsight" />
+                    <TrendSparklineCard Title="@AppLocalization.Text("report.completionMovement", "Completion movement")" Subtitle="@AppLocalization.Text("report.completionMovementDesc", "Recently completed tasks by creation month.")" Value="@($"{CompletionRate:0}%")" ValueLabel="@AppLocalization.Text("report.completion", "completion")" Points="CompletionSparkline" Color="#10b981" Insight="@CompletionInsight" />
                 </div>
                 <div class="xl:col-span-6">
-                    <ReportChartCard Title="Top project risk" Subtitle="Projects with the highest task and issue pressure." Insight="Score combines task volume, open issues, overdue issues, and critical task health.">
-                        <TopRiskList Items="ProjectRiskItems" EmptyText="No project risk in this filtered set." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.topProjectRisk", "Top project risk")" Subtitle="@AppLocalization.Text("report.topProjectRiskDesc", "Projects with the highest task and issue pressure.")" Insight="@AppLocalization.Text("report.topProjectRiskInsight", "Score combines task volume, open issues, overdue issues, and critical task health.")">
+                        <TopRiskList Items="ProjectRiskItems" EmptyText="@AppLocalization.Text("common.noResults", "No project risk in this filtered set.")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-6">
-                    <ReportChartCard Title="Tasks with most open issues" Subtitle="Execution blockers that may need issue cleanup before progress moves." Insight="Use this to decide where issue triage creates the fastest task movement.">
-                        <TopRiskList Items="TaskIssueRiskItems" EmptyText="No open issue pressure in this filtered set." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.tasksWithMostIssues", "Tasks with most open issues")" Subtitle="@AppLocalization.Text("report.tasksWithMostIssuesDesc", "Execution blockers that may need issue cleanup before progress moves.")" Insight="@AppLocalization.Text("report.tasksWithMostIssuesInsight", "Use this to decide where issue triage creates the fastest task movement.")">
+                        <TopRiskList Items="TaskIssueRiskItems" EmptyText="@AppLocalization.Text("common.noResults", "No open issue pressure in this filtered set.")" />
                     </ReportChartCard>
                 </div>
             </div>
@@ -210,13 +210,13 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60">
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Health</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issues</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.index", "No.")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.task", "Task")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.project", "Project")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.status", "Status")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.priority", "Priority")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.health", "Health")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.issue", "Issues")</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -232,13 +232,13 @@
                                     </td>
                                     <td class="px-6 py-3 text-sm text-slate-500">@t.ProjectName</td>
                                     <td class="px-6 py-3">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(t.StatusId)">@t.StatusName</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(t.StatusId)">@AppLocalization.StatusLabel(t.StatusId)</span>
                                     </td>
                                     <td class="px-6 py-3">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(t.PriorityId)">@t.PriorityName</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(t.PriorityId)">@AppLocalization.PriorityLabel(t.PriorityId)</span>
                                     </td>
                                     <td class="px-6 py-3">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold @GetHealthBadge(t.TaskHealth)">@t.TaskHealth</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold @GetHealthBadge(t.TaskHealth)">@GetHealthLabel(t.TaskHealth)</span>
                                     </td>
                                     <td class="px-6 py-3 text-sm text-slate-600">@t.IssueSummary</td>
                                 </tr>
@@ -247,10 +247,10 @@
                                     <tr class="bg-slate-50/60">
                                         <td colspan="7" class="px-6 py-4">
                                             <div class="grid grid-cols-1 gap-3 text-sm text-slate-600 md:grid-cols-4">
-                                                <div><span class="font-semibold text-slate-800">Assignee:</span> @(t.AssignedToUser ?? "Unassigned")</div>
-                                                <div><span class="font-semibold text-slate-800">Due:</span> @DisplayFormats.Date(t.DueDate)</div>
-                                                <div><span class="font-semibold text-slate-800">Open issues:</span> @t.OpenIssues</div>
-                                                <div><span class="font-semibold text-slate-800">Last activity:</span> @DisplayFormats.Date(t.LastActivity)</div>
+                                                <div><span class="font-semibold text-slate-800">@AppLocalization.Text("common.assignee", "Assignee"):</span> @(t.AssignedToUser ?? AppLocalization.Text("common.unassigned", "Unassigned"))</div>
+                                                <div><span class="font-semibold text-slate-800">@AppLocalization.Text("common.due", "Due"):</span> @DisplayFormats.Date(t.DueDate)</div>
+                                                <div><span class="font-semibold text-slate-800">@AppLocalization.Text("report.openIssues", "Open issues"):</span> @t.OpenIssues</div>
+                                                <div><span class="font-semibold text-slate-800">@AppLocalization.Text("report.lastActivity", "Last activity"):</span> @DisplayFormats.Date(t.LastActivity)</div>
                                             </div>
                                         </td>
                                     </tr>
@@ -270,8 +270,8 @@
                                             <circle cx="85" cy="85" r="15" fill="white" stroke="#111827" stroke-width="3" />
                                             <path d="M80 85L90 85M85 80L85 90" stroke="#111827" stroke-width="3" stroke-linecap="round" />
                                         </svg>
-                                        <h3 class="text-lg font-semibold text-slate-700">No Tasks Found</h3>
-                                        <p class="text-sm text-slate-400 max-w-xs">There are no tasks matching your filters. Try adjusting your search query or filters.</p>
+                                        <h3 class="text-lg font-semibold text-slate-700">@AppLocalization.Text("report.noTasksFound", "No Tasks Found")</h3>
+                                        <p class="text-sm text-slate-400 max-w-xs">@AppLocalization.Text("report.noTasksFoundDesc", "There are no tasks matching your filters. Try adjusting your search query or filters.")</p>
                                     </div>
                                 </td>
                             </tr>
@@ -371,9 +371,9 @@
 
     private IEnumerable<string> TaskInsights => new[]
     {
-        $"{FilteredList.Count(t => t.TaskHealth == "Critical")} critical tasks need attention.",
-        $"{FilteredList.Sum(t => t.OpenIssues)} open issues are attached to reported tasks.",
-        $"{FilteredList.Count(t => t.OverdueIssues > 0)} tasks have overdue issues."
+        $"{FilteredList.Count(t => t.TaskHealth == "Critical")} {AppLocalization.Text("report.criticalTasksNeedAttention", "critical tasks need attention.")}",
+        $"{FilteredList.Sum(t => t.OpenIssues)} {AppLocalization.Text("report.openIssuesAttached", "open issues are attached to reported tasks.")}",
+        $"{FilteredList.Count(t => t.OverdueIssues > 0)} {AppLocalization.Text("report.tasksHaveOverdueIssues", "tasks have overdue issues.")}"
     };
 
     private int FilteredTaskCount => FilteredList.Count();
@@ -383,30 +383,30 @@
     private double CompletionRate => FilteredTaskCount > 0 ? CompletedTaskCount / (double)FilteredTaskCount * 100 : 0;
 
     private string TaskStatusInsight => OpenTaskCount > CompletedTaskCount
-        ? $"{OpenTaskCount} tasks are still moving through execution."
-        : "Completed work is leading the current filtered set.";
+        ? $"{OpenTaskCount} {AppLocalization.Text("report.tasksStillMoving", "tasks are still moving through execution.")}"
+        : AppLocalization.Text("report.completedWorkLeading", "Completed work is leading the current filtered set.");
 
     private string PriorityInsight => HighPriorityCount > 0
-        ? $"{HighPriorityCount} high-priority tasks should stay visible during planning review."
-        : "No high-priority tasks in the current filter.";
+        ? $"{HighPriorityCount} {AppLocalization.Text("report.highPriorityVisible", "high-priority tasks should stay visible during planning review.")}"
+        : AppLocalization.Text("report.noHighPriority", "No high-priority tasks in the current filter.");
 
     private string CompletionInsight => CompletionRate >= 70
-        ? "Completion is healthy for the current filter."
-        : "Completion has room to improve; inspect open issues and overdue work.";
+        ? AppLocalization.Text("report.completionHealthy", "Completion is healthy for the current filter.")
+        : AppLocalization.Text("report.completionImprove", "Completion has room to improve; inspect open issues and overdue work.");
 
     private List<ReportChartItem> TaskStatusItems => new()
     {
-        new("To Do", FilteredList.Count(t => t.StatusId == AppTaskStatus.Todo), "#94a3b8"),
-        new("In Progress", FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress), "#3b82f6"),
-        new("Done", CompletedTaskCount, "#10b981"),
-        new("Overdue", FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done), "#ef4444")
+        new(AppLocalization.StatusLabel(AppTaskStatus.Todo), FilteredList.Count(t => t.StatusId == AppTaskStatus.Todo), "#94a3b8"),
+        new(AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress), "#3b82f6"),
+        new(AppLocalization.StatusLabel(AppTaskStatus.Done), CompletedTaskCount, "#10b981"),
+        new(AppLocalization.Text("status.overdue", "Overdue"), FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done), "#ef4444")
     };
 
     private List<StackedSegment> PrioritySegments => new()
     {
-        new("High", HighPriorityCount, "#ef4444"),
-        new("Medium", FilteredList.Count(t => t.PriorityId == TaskPriority.Medium), "#f59e0b"),
-        new("Low", FilteredList.Count(t => t.PriorityId == TaskPriority.Low), "#3b82f6")
+        new(AppLocalization.PriorityLabel(TaskPriority.High), HighPriorityCount, "#ef4444"),
+        new(AppLocalization.PriorityLabel(TaskPriority.Medium), FilteredList.Count(t => t.PriorityId == TaskPriority.Medium), "#f59e0b"),
+        new(AppLocalization.PriorityLabel(TaskPriority.Low), FilteredList.Count(t => t.PriorityId == TaskPriority.Low), "#3b82f6")
     };
 
     private List<SparklinePoint> CompletionSparkline => FilteredList
@@ -427,11 +427,11 @@
 
             return new TopRiskItem(
                 g.Key,
-                $"{g.Count()} tasks · {g.Sum(t => t.OpenIssues)} open issues",
+                $"{g.Count()} {AppLocalization.Text("common.task", "tasks")} · {g.Sum(t => t.OpenIssues)} {AppLocalization.Text("common.issue", "open issues")}",
                 score,
-                overdue > 0 ? $"{overdue} overdue" : $"{score:0} risk",
+                overdue > 0 ? $"{overdue} {AppLocalization.Text("status.overdue", "overdue")}" : $"{score:0} {AppLocalization.Text("report.risk", "risk")}",
                 tone,
-                $"{g.Count(t => t.PriorityId == TaskPriority.High)} high-priority tasks");
+                $"{g.Count(t => t.PriorityId == TaskPriority.High)} {AppLocalization.Text("report.highPriorityTasks", "high-priority tasks")}");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -449,9 +449,9 @@
                 t.Title,
                 t.ProjectName,
                 score,
-                $"{t.OpenIssues + t.OverdueIssues} issues",
+                $"{t.OpenIssues + t.OverdueIssues} {AppLocalization.Text("common.issue", "issues")}",
                 tone,
-                $"{t.StatusName} · {t.PriorityName}");
+                $"{AppLocalization.StatusLabel(t.StatusId)} · {AppLocalization.PriorityLabel(t.PriorityId)}");
         })
         .ToList();
 
@@ -582,7 +582,7 @@
             }
             else if (fullTask.Result?.IsSuccess == false)
             {
-                errorMessage = fullTask.Result.ErrorMessage ?? "The server returned an error while loading task report data.";
+                errorMessage = fullTask.Result.ErrorMessage ?? AppLocalization.Text("report.loadError", "The server returned an error while loading task report data.");
             }
 
             if (pagedTask.Result != null)
@@ -625,28 +625,28 @@
 
     private async Task DownloadExcel()
     {
-        var rows = FilteredList.Select(t => new object?[]
-        {
-            t.Title,
-            t.ProjectName,
-            t.StatusName,
-            t.PriorityName,
-            t.AssignedToUser ?? "Unassigned",
-            t.DueDate
-        });
+            var rows = FilteredList.Select(t => new object?[]
+            {
+                t.Title,
+                t.ProjectName,
+                AppLocalization.StatusLabel(t.StatusId),
+                AppLocalization.PriorityLabel(t.PriorityId),
+                t.AssignedToUser ?? AppLocalization.Text("common.na", "Unassigned"),
+                t.DueDate
+            });
 
         var workbookBytes = SpreadsheetReportBuilder.BuildTableWorkbook(
-            "Task Report",
-            "Task Report",
-            new[] { "Task", "Project", "Status", "Priority", "Assigned To", "Due Date" },
+            AppLocalization.PageTitle("taskReport", "Task Report"),
+            AppLocalization.PageTitle("taskReport", "Task Report"),
+            new[] { AppLocalization.Text("common.task", "Task"), AppLocalization.Text("common.project", "Project"), AppLocalization.Text("common.status", "Status"), AppLocalization.Text("common.priority", "Priority"), AppLocalization.Text("common.assignee", "Assigned To"), AppLocalization.Text("common.dueDate", "Due Date") },
             rows,
             new[]
             {
-                $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All tasks" : searchQuery)}",
-                $"Period: {filterPeriod}",
-                $"Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", "uncompleted" => "Uncompleted", _ => filterStatus }}",
-                $"Project: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? "Selected project" : "All projects")}",
-                $"Generated: {DisplayFormats.Date(DateTime.Today)}"
+                $"{AppLocalization.Text("common.search", "Search")}: {(string.IsNullOrWhiteSpace(searchQuery) ? AppLocalization.Text("common.all", "All tasks") : searchQuery)}",
+                $"{AppLocalization.Text("report.periodFilter", "Period")}: {GetPeriodLabel(filterPeriod)}",
+                $"{AppLocalization.Text("common.status", "Status")}: {filterStatus switch { "0" => AppLocalization.Text("common.all", "All"), "1" => AppLocalization.StatusLabel(AppTaskStatus.Todo), "2" => AppLocalization.StatusLabel(AppTaskStatus.InProgress), "3" => AppLocalization.StatusLabel(AppTaskStatus.Done), "overdue" => AppLocalization.Text("status.overdue", "Overdue"), "uncompleted" => AppLocalization.Text("status.uncompleted", "Uncompleted"), _ => filterStatus }}",
+                $"{AppLocalization.Text("common.project", "Project")}: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? AppLocalization.Text("report.selectedProject", "Selected project") : AppLocalization.Text("common.all", "All projects"))}",
+                $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}"
             });
 
         await JS.InvokeVoidAsync(
@@ -658,29 +658,29 @@
 
     private async Task DownloadPdf()
     {
-        var summaryLines = new List<string>
-        {
-            $"Search: {(string.IsNullOrWhiteSpace(searchQuery) ? "All tasks" : searchQuery)}",
-            $"Period: {filterPeriod}",
-            $"Status: {filterStatus switch { "0" => "All", "1" => "To Do", "2" => "In Progress", "3" => "Done", "overdue" => "Overdue", "uncompleted" => "Uncompleted", _ => filterStatus }}",
-            $"Project: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? "Selected project" : "All projects")}",
-            $"Generated: {DisplayFormats.Date(DateTime.Today)}"
-        };
+            var summaryLines = new List<string>
+            {
+            $"{AppLocalization.Text("common.search", "Search")}: {(string.IsNullOrWhiteSpace(searchQuery) ? AppLocalization.Text("common.all", "All tasks") : searchQuery)}",
+            $"{AppLocalization.Text("report.periodFilter", "Period")}: {GetPeriodLabel(filterPeriod)}",
+            $"{AppLocalization.Text("common.status", "Status")}: {filterStatus switch { "0" => AppLocalization.Text("common.all", "All"), "1" => AppLocalization.StatusLabel(AppTaskStatus.Todo), "2" => AppLocalization.StatusLabel(AppTaskStatus.InProgress), "3" => AppLocalization.StatusLabel(AppTaskStatus.Done), "overdue" => AppLocalization.Text("status.overdue", "Overdue"), "uncompleted" => AppLocalization.Text("status.uncompleted", "Uncompleted"), _ => filterStatus }}",
+            $"{AppLocalization.Text("common.project", "Project")}: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? AppLocalization.Text("report.selectedProject", "Selected project") : AppLocalization.Text("common.all", "All projects"))}",
+            $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}"
+            };
 
-        var rows = FilteredList.Select(t => new[]
-        {
-            t.Title,
-            t.ProjectName,
-            t.StatusName,
-            t.PriorityName,
-            t.AssignedToUser ?? "Unassigned",
-            DisplayFormats.Date(t.DueDate)
-        });
+            var rows = FilteredList.Select(t => new[]
+            {
+                t.Title,
+                t.ProjectName,
+                AppLocalization.StatusLabel(t.StatusId),
+                AppLocalization.PriorityLabel(t.PriorityId),
+                t.AssignedToUser ?? AppLocalization.Text("common.na", "Unassigned"),
+                DisplayFormats.Date(t.DueDate)
+            });
 
-        var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
-            "Task Report",
+            var pdfBytes = SimplePdfReportBuilder.BuildTableReport(
+            AppLocalization.PageTitle("taskReport", "Task Report"),
             summaryLines,
-            new[] { "Task", "Project", "Status", "Priority", "Assigned To", "Due Date" },
+            new[] { AppLocalization.Text("common.task", "Task"), AppLocalization.Text("common.project", "Project"), AppLocalization.Text("common.status", "Status"), AppLocalization.Text("common.priority", "Priority"), AppLocalization.Text("common.assignee", "Assigned To"), AppLocalization.Text("common.dueDate", "Due Date") },
             rows);
 
         await JS.InvokeVoidAsync(
@@ -706,11 +706,27 @@
         _ => "bg-slate-100 text-slate-600"
     };
 
+    private static string GetHealthLabel(string health) => health switch
+    {
+        "Critical" => AppLocalization.Text("report.healthCritical", "Critical"),
+        "At Risk" => AppLocalization.Text("report.healthAtRisk", "At Risk"),
+        _ => AppLocalization.Text("report.healthGood", "Healthy")
+    };
+
     private static string GetHealthBadge(string health) => health switch
     {
         "Critical" => "bg-rose-50 text-rose-700",
         "At Risk" => "bg-amber-50 text-amber-700",
         _ => "bg-emerald-50 text-emerald-700"
+    };
+
+    private static string GetPeriodLabel(string period) => period switch
+    {
+        "daily" => AppLocalization.Text("report.daily", "Daily (Today)"),
+        "monthly" => AppLocalization.Text("report.monthly", "Monthly (This Month)"),
+        "yearly" => AppLocalization.Text("report.yearly", "Yearly (This Year)"),
+        "custom" => AppLocalization.Text("report.customRange", "Custom Range"),
+        _ => AppLocalization.Text("common.all", "All Time")
     };
 
     private RenderFragment TaskMetricCard(string label, string value, string icon, string color) => builder =>

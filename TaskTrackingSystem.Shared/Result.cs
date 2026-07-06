@@ -1,4 +1,5 @@
 using System;
+using TaskTrackingSystem.Shared.Localization;
 
 namespace TaskTrackingSystem.Shared
 {
@@ -66,7 +67,7 @@ namespace TaskTrackingSystem.Shared
         public const string ProjectNameRequired = "Project name is required.";
         public const string FailedToUpdateProject = "Failed to update project.";
         public const string FailedToCreateProject = "Failed to create project.";
-        public static string ProjectNotFound(long id) => $"Project with ID {id} not found.";
+        public static string ProjectNotFound(long id) => AppLocalization.Text("result.projectNotFound", $"Project with ID {id} not found.").Replace("{id}", id.ToString());
         public const string UserIdsCannotBeNull = "User IDs cannot be null.";
         public static string InvalidUserIds(string ids) => $"The following user IDs are invalid or deleted: {ids}";
         public static string UserNotProjectMember(long userId, long projectId) => $"User with ID {userId} is not a member of project with ID {projectId}.";
@@ -76,23 +77,23 @@ namespace TaskTrackingSystem.Shared
         public const string SelectProjectRequired = "Please select a project.";
         public const string FailedToUpdateTask = "Failed to update task.";
         public const string FailedToCreateTask = "Failed to create task.";
-        public static string TaskNotFound(long id) => $"Task with ID {id} not found.";
-        public static string TaskNotFoundOrDeleted(long id) => $"Task with ID {id} not found or already deleted.";
+        public static string TaskNotFound(long id) => AppLocalization.Text("result.taskNotFound", $"Task with ID {id} not found.").Replace("{id}", id.ToString());
+        public static string TaskNotFoundOrDeleted(long id) => AppLocalization.Text("result.taskNotFoundOrDeleted", $"Task with ID {id} not found or already deleted.").Replace("{id}", id.ToString());
 
         // Role/Permission
         public const string RoleNameRequired = "Role name is required.";
         public const string FailedToUpdateRole = "Failed to update role.";
         public const string FailedToCreateRole = "Failed to create role.";
-        public static string RoleNotFound(long id) => $"Role with ID {id} not found.";
-        public const string AccessCodesCannotBeNull = "Access codes cannot be null.";
-        public static string InvalidAccessCodes(string ids) => $"The following access codes are invalid or deleted: {ids}";
+        public static string RoleNotFound(long id) => AppLocalization.Text("result.roleNotFound", $"Role with ID {id} not found.").Replace("{id}", id.ToString());
+        public static string AccessCodesCannotBeNull => AppLocalization.Text("result.accessCodesCannotBeNull", "Access codes cannot be null.");
+        public static string InvalidAccessCodes(string ids) => AppLocalization.Text("result.invalidAccessCodes", $"The following access codes are invalid or deleted: {ids}").Replace("{ids}", ids);
 
         // User
         public const string FillAllFields = "Please fill in all required fields.";
         public const string FailedToUpdateUser = "Failed to update user.";
         public const string PasswordMinLength = "Password must be at least 6 characters.";
         public const string FailedToCreateUser = "Failed to create user.";
-        public static string UserNotFound(long id) => $"User with ID {id} not found.";
+        public static string UserNotFound(long id) => AppLocalization.Text("result.userNotFound", $"User with ID {id} not found.").Replace("{id}", id.ToString());
 
         // Register
         public const string ParseRegistrationResponseFailed = "Failed to parse registration response.";
