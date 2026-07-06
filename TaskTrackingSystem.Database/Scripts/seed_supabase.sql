@@ -1,5 +1,6 @@
-﻿-- Automatically generated PostgreSQL seed script converted from SQL Server dump
+-- Automatically generated PostgreSQL seed script converted from SQL Server dump
 BEGIN;
+SET session_replication_role = 'replica';
 INSERT INTO "AuditLogs" ("Id", "UserId", "Action", "Module", "Description", "IpAddress", "CreatedAt") VALUES (1, 1, 'AssignAccess', 'Role', 'Assigned access permissions to role ''Manager'' (ID: 2)', '127.0.0.1', '2026-06-17T06:57:54.897');
 INSERT INTO "AuditLogs" ("Id", "UserId", "Action", "Module", "Description", "IpAddress", "CreatedAt") VALUES (2, 1, 'AssignAccess', 'Role', 'Assigned access permissions to role ''Manager'' (ID: 2)', '127.0.0.1', '2026-06-17T06:59:13.933');
 INSERT INTO "AuditLogs" ("Id", "UserId", "Action", "Module", "Description", "IpAddress", "CreatedAt") VALUES (3, 2, 'AssignAccess', 'Role', 'Assigned access permissions to role ''Employee'' (ID: 3)', '127.0.0.1', '2026-06-17T06:59:40.470');
@@ -666,4 +667,5 @@ SELECT setval(pg_get_serial_sequence('"AuditLogs"', 'Id'), COALESCE(MAX("Id"), 1
 SELECT setval(pg_get_serial_sequence('"Issues"', 'Id'), COALESCE(MAX("Id"), 1)) FROM "Issues";
 SELECT setval(pg_get_serial_sequence('"Notifications"', 'Id'), COALESCE(MAX("Id"), 1)) FROM "Notifications";
 SELECT setval(pg_get_serial_sequence('"UserDevices"', 'Id'), COALESCE(MAX("Id"), 1)) FROM "UserDevices";
+SET session_replication_role = 'origin';
 COMMIT;
