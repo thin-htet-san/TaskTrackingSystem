@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using TaskTrackingSystem.Database.AppDbContextModels;
@@ -131,6 +133,38 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
     await db.Database.EnsureCreatedAsync();
+
+    // In Supabase/Hugging Face, EnsureCreatedAsync() might skip table creation 
+    // because other schemas (auth, storage, etc.) contain tables.
+    // We check if the 'Menus' table exists in the public schema, and force creation of tables if it doesn't.
+    var databaseCreator = db.Database.GetService<IDatabaseCreator>() as RelationalDatabaseCreator;
+    if (databaseCreator != null)
+    {
+        var connection = db.Database.GetDbConnection();
+        var connectionOpened = false;
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await db.Database.OpenConnectionAsync();
+            connectionOpened = true;
+        }
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'Menus');";
+            var tableExists = (bool)(await command.ExecuteScalarAsync() ?? false);
+            if (!tableExists)
+            {
+                await databaseCreator.CreateTablesAsync();
+            }
+        }
+        finally
+        {
+            if (connectionOpened)
+            {
+                await db.Database.CloseConnectionAsync();
+            }
+        }
+    }
 
     var dashboardMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "DASHBOARD");
     if (dashboardMenu == null)
