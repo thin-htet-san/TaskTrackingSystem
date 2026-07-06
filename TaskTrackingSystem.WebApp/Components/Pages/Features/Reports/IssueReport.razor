@@ -131,8 +131,17 @@
                 }
                 else
                 {
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
+                    <div class="overflow-x-hidden">
+                        <table class="w-full table-fixed">
+                            <colgroup>
+                                <col class="w-[27%]" />
+                                <col class="w-[17%]" />
+                                <col class="w-[18%]" />
+                                <col class="w-[11%]" />
+                                <col class="w-[10%]" />
+                                <col class="w-[9%]" />
+                                <col class="w-[8%]" />
+                            </colgroup>
                             <thead>
                                 <tr class="border-b border-slate-100 bg-slate-50/60">
                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Issue</th>
@@ -149,7 +158,7 @@
                                 {
                                     <tr class="align-top hover:bg-slate-50/50">
                                         <td class="px-4 py-3">
-                                            <button @onclick="() => ToggleExpanded(issue.Id)" class="text-left text-sm font-semibold text-slate-900 hover:text-violet-600">@issue.Title</button>
+                                            <button @onclick="() => ToggleExpanded(issue.Id)" class="block w-full text-left text-sm font-semibold text-slate-900 hover:text-violet-600 break-words">@issue.Title</button>
                                             @if (expandedIssues.Contains(issue.Id))
                                             {
                                                 <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
@@ -159,12 +168,23 @@
                                                 </div>
                                             }
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600"><div class="font-medium text-slate-800">@issue.TaskTitle</div><div class="text-xs text-slate-400">@issue.ProjectName</div></td>
-                                        <td class="px-4 py-3 text-sm text-slate-600">@(issue.AssignedToName ?? "Unassigned")</td>
-                                        <td class="px-4 py-3"><span class="rounded-full px-2 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">@GetStatusLabel(issue.StatusId)</span></td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">@((issue.EstimatedHours ?? 0).ToString("N1")) / @((issue.ActualHours ?? 0).ToString("N1"))</td>
-                                        <td class="px-4 py-3 text-sm @(IsOverdue(issue) ? "font-semibold text-rose-600" : "text-slate-600")">@DisplayFormats.Date(issue.DueDate)</td>
-                                        <td class="px-4 py-3">@RiskBadge(issue)</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600">
+                                            <button @onclick="() => ToggleTaskDetails(issue.Id)" class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold tracking-wide text-indigo-700 hover:border-indigo-200 hover:bg-indigo-50">
+                                                @GetTaskCode(issue.TaskId)
+                                            </button>
+                                            @if (expandedTaskDetails.Contains(issue.Id))
+                                            {
+                                                <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                                                    <div class="font-medium text-slate-800 break-words">@issue.TaskTitle</div>
+                                                    <div class="mt-1 break-words">@issue.ProjectName</div>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-600 break-words">@(issue.AssignedToName ?? "Unassigned")</td>
+                                        <td class="px-4 py-3"><span class="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">@GetStatusLabel(issue.StatusId)</span></td>
+                                        <td class="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">@((issue.EstimatedHours ?? 0).ToString("N1")) / @((issue.ActualHours ?? 0).ToString("N1"))</td>
+                                        <td class="px-4 py-3 text-sm whitespace-nowrap @(IsOverdue(issue) ? "font-semibold text-rose-600" : "text-slate-600")">@DisplayFormats.Date(issue.DueDate)</td>
+                                        <td class="px-4 py-3 whitespace-nowrap">@RiskBadge(issue)</td>
                                     </tr>
                                 }
                                 @if (!PagedIssues.Any())
@@ -186,6 +206,7 @@
     private List<IssueDto> issues = new();
     private List<ProjectDto> projects = new();
     private HashSet<long> expandedIssues = new();
+    private HashSet<long> expandedTaskDetails = new();
     private string searchInput = string.Empty;
     private string appliedSearch = string.Empty;
     private long filterProjectId;
@@ -266,6 +287,7 @@
 
     private void SetView(bool chartView) => isChartView = chartView;
     private void ToggleExpanded(long id) { if (!expandedIssues.Remove(id)) expandedIssues.Add(id); }
+    private void ToggleTaskDetails(long id) { if (!expandedTaskDetails.Remove(id)) expandedTaskDetails.Add(id); }
     private Task HandlePageChanged(int page) { currentPage = page; return Task.CompletedTask; }
     private Task HandlePageSizeChanged(int size) { pageSize = size; currentPage = 1; return Task.CompletedTask; }
 
@@ -287,6 +309,7 @@
     }
 
     private static bool IsOverdue(IssueDto issue) => issue.StatusId != AppTaskStatus.Done && issue.DueDate.Date < DateTime.Today;
+    private static string GetTaskCode(long taskId) => $"TSK-{taskId:D4}";
     private static string GetStatusLabel(AppTaskStatus status) => status == AppTaskStatus.InProgress ? "In Progress" : status == AppTaskStatus.Done ? "Done" : "To Do";
     private static string GetStatusBadge(AppTaskStatus status) => status == AppTaskStatus.Done ? "bg-emerald-50 text-emerald-700" : status == AppTaskStatus.InProgress ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-700";
     private static string GetPriorityLabel(TaskPriority priority) => priority == TaskPriority.High ? "High" : priority == TaskPriority.Medium ? "Medium" : "Low";
