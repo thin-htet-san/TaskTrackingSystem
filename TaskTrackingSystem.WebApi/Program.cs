@@ -96,7 +96,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 var app = builder.Build();
@@ -114,16 +114,12 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
-
 app.UseCors("AllowWebApp");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
 app.MapHub<TaskTrackingSystem.WebApi.Features.Notification.NotificationHub>("/hubs/notifications");
 
@@ -134,6 +130,7 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    await db.Database.EnsureCreatedAsync();
     await EnsureReportUpgradeSchemaAsync(db);
 
     var dashboardMenu = await db.Menus.FirstOrDefaultAsync(m => m.MenuCode == "DASHBOARD");
@@ -340,17 +337,13 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
 static async System.Threading.Tasks.Task EnsureReportUpgradeSchemaAsync(AppDbContext db)
 {
     await db.Database.ExecuteSqlRawAsync(@"
-IF COL_LENGTH('dbo.Issues', 'DelayReason') IS NULL
-    ALTER TABLE [dbo].[Issues] ADD [DelayReason] NVARCHAR(300) NULL;
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""DelayReason"" character varying(300);
 
-IF COL_LENGTH('dbo.Issues', 'IsBlocked') IS NULL
-    ALTER TABLE [dbo].[Issues] ADD [IsBlocked] BIT NOT NULL CONSTRAINT [DF_Issues_IsBlocked] DEFAULT ((0));
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""IsBlocked"" boolean NOT NULL DEFAULT FALSE;
 
-IF COL_LENGTH('dbo.Issues', 'BlockedBy') IS NULL
-    ALTER TABLE [dbo].[Issues] ADD [BlockedBy] NVARCHAR(200) NULL;
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""BlockedBy"" character varying(200);
 
-IF COL_LENGTH('dbo.Issues', 'EscalationLevel') IS NULL
-    ALTER TABLE [dbo].[Issues] ADD [EscalationLevel] INT NOT NULL CONSTRAINT [DF_Issues_EscalationLevel] DEFAULT ((0));
+ALTER TABLE ""Issues"" ADD COLUMN IF NOT EXISTS ""EscalationLevel"" integer NOT NULL DEFAULT 0;
 ");
 }
 

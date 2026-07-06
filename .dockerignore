@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.git/
+**/.github/
+**/.agents/
+**/.nuget-scratch/
+**/_codex_build/
+**/_codex_obj/
+.DS_Store
+Thumbs.db

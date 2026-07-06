@@ -29,7 +29,7 @@ public class ApiClientService
         _httpContextAccessor = httpContextAccessor;
 
         // Strip trailing /api/ so components can build their own paths
-        var rawUrl = configuration["WebApi:BaseUrl"] ?? "http://127.0.0.1:5018/api/";
+        var rawUrl = configuration["WebApi:BaseUrl"] ?? "http://127.0.0.1:5001/api/";
         BaseUrl = rawUrl.TrimEnd('/').EndsWith("/api", StringComparison.OrdinalIgnoreCase)
             ? rawUrl.TrimEnd('/')[..^4]   // remove trailing /api
             : rawUrl.TrimEnd('/');

@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(options => options.DetailedErrors = true);
 
 // Register HttpClient for WebApi calls
-var webApiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://127.0.0.1:5018/api/";
+var webApiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://127.0.0.1:5001/api/";
 
 var webApiBuilder = builder.Services.AddHttpClient("WebApi", client =>
 {
@@ -66,7 +66,6 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-    app.UseHttpsRedirection();
 }
 
 app.UseStaticFiles();
@@ -74,6 +73,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAccountEndpoints();
 
 app.MapRazorComponents<App>()
