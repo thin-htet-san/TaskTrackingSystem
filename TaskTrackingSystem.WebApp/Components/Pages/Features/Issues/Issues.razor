@@ -16,40 +16,40 @@
 @inject MenuAuthorizationService MenuAuthorization
 @inject NavigationManager Navigation
 
-<PageTitle>Issues</PageTitle>
+<PageTitle>@AppLocalization.PageTitle("issues", "Issues")</PageTitle>
 
 <SuccessAlert Message="@successMessage" />
 
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Issues</h2>
-            <p class="text-slate-500 mt-1">Track daily work items, update progress, and review what was done.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.PageTitle("issues", "Issues")</h2>
+            <p class="text-slate-500 mt-1">@AppLocalization.Text("page.issues.desc", "Track daily work items, update progress, and review what was done.")</p>
         </div>
         @if (canCreateIssue)
         {
             <button @onclick="GoToAddIssue" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
                 <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
-                New Issue
+                @AppLocalization.Text("common.addIssue", "Add Issue")
             </button>
         }
     </div>
 
     @if (isLoading)
     {
-        <LoadingSpinner Message="Loading issues..." />
+        <LoadingSpinner Message="@AppLocalization.Text("common.loadingIssues", "Loading issues...")" />
     }
     else
     {
         <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div class="grid grid-cols-1 lg:grid-cols-6 gap-3">
                 <div class="lg:col-span-2">
-                    <input @bind="searchInput" type="text" placeholder="Search issues..."
+                    <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue title, description or assignee...")"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
                 <div>
                     <select @bind="taskIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                        <option value="0">All Tasks</option>
+                        <option value="0">@AppLocalization.Text("common.allTasks", "All tasks")</option>
                         @foreach (var task in tasks)
                         {
                             <option value="@task.Id">@task.Title</option>
@@ -58,7 +58,7 @@
                 </div>
                 <div>
                     <select @bind="projectIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                        <option value="0">All Projects</option>
+                        <option value="0">@AppLocalization.Text("common.allProjects", "All projects")</option>
                         @foreach (var project in projects)
                         {
                             <option value="@project.Id">@project.Name</option>
@@ -67,18 +67,18 @@
                 </div>
                 <div>
                     <select @bind="statusIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                        <option value="">All Statuses</option>
-                        <option value="@AppTaskStatus.Todo">To Do</option>
-                        <option value="@AppTaskStatus.InProgress">In Progress</option>
-                        <option value="@AppTaskStatus.Done">Done</option>
+                        <option value="">@AppLocalization.Text("common.all", "All")</option>
+                        <option value="@AppTaskStatus.Todo">@AppLocalization.StatusLabel(AppTaskStatus.Todo)</option>
+                        <option value="@AppTaskStatus.InProgress">@AppLocalization.StatusLabel(AppTaskStatus.InProgress)</option>
+                        <option value="@AppTaskStatus.Done">@AppLocalization.StatusLabel(AppTaskStatus.Done)</option>
                     </select>
                 </div>
                 <div>
                     <select @bind="priorityIdInput" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                        <option value="">All Priorities</option>
-                        <option value="@TaskPriority.Low">Low</option>
-                        <option value="@TaskPriority.Medium">Medium</option>
-                        <option value="@TaskPriority.High">High</option>
+                        <option value="">@AppLocalization.Text("common.all", "All")</option>
+                        <option value="@TaskPriority.Low">@AppLocalization.PriorityLabel(TaskPriority.Low)</option>
+                        <option value="@TaskPriority.Medium">@AppLocalization.PriorityLabel(TaskPriority.Medium)</option>
+                        <option value="@TaskPriority.High">@AppLocalization.PriorityLabel(TaskPriority.High)</option>
                     </select>
                 </div>
             </div>
@@ -86,15 +86,15 @@
             <div class="mt-3 flex flex-wrap items-center gap-3">
                 <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                     <input type="checkbox" @bind="assignedOnly" class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                    Assigned to me only
+                    @AppLocalization.Text("common.assignedToMeOnly", "Assigned to me only")
                 </label>
                 <button @onclick="ApplySearch" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
                     <i data-lucide="search" class="h-4 w-4 mr-2"></i>
-                    Search
+                    @AppLocalization.Text("action.search", "Search")
                 </button>
                 <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                     <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
-                    Reset
+                    @AppLocalization.Text("action.reset", "Reset")
                 </button>
             </div>
         </div>
@@ -115,15 +115,15 @@
                     </colgroup>
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60">
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task Code</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Hours</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Dates</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Risk</th>
-                            <th class="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.taskCode", "Task Code")</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.issue", "Issue")</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.hours", "Hours")</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.status", "Status")</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.priority", "Priority")</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.date", "Date")</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.assignee", "Assignee")</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.risk", "Risk")</th>
+                            <th class="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.actions", "Actions")</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-[13px]">
@@ -134,7 +134,7 @@
                                 var issue = entry.issue;
                                 <tr class="hover:bg-slate-50/50 transition-colors align-top">
                                     <td class="px-5 py-4 text-left whitespace-nowrap">
-                                        <span class="font-mono text-[11px] font-semibold tracking-wide text-indigo-700">
+                                            <span class="font-mono text-[11px] font-semibold tracking-wide text-indigo-700">
                                             @GetTaskCode(issue.TaskId)
                                         </span>
                                     </td>
@@ -144,7 +144,7 @@
                                         </button>
                                     </td>
                                     <td class="px-5 py-4 text-slate-600 whitespace-nowrap">
-                                        <span class="font-medium text-slate-700">@(issue.ActualHours?.ToString("0.##") ?? "-") hr</span>
+                                        <span class="font-medium text-slate-700">@(issue.ActualHours?.ToString("0.##") ?? "-") @AppLocalization.Text("common.hoursAbbrev", "hr")</span>
                                     </td>
                                     <td class="px-5 py-4">
                                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">
@@ -157,15 +157,15 @@
                                         </span>
                                     </td>
                                     <td class="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">
-                                        <span class="font-medium text-slate-700">Due: @issue.DueDate.ToString("MMM d, yyyy")</span>
+                                        <span class="font-medium text-slate-700">@AppLocalization.Text("common.due", "Due"): @issue.DueDate.ToString("MMM d, yyyy")</span>
                                     </td>
                                     <td class="px-5 py-4 text-sm text-slate-600 break-words">
-                                        @(!string.IsNullOrWhiteSpace(issue.AssignedToName) ? issue.AssignedToName : "Unassigned")
+                                        @(!string.IsNullOrWhiteSpace(issue.AssignedToName) ? issue.AssignedToName : AppLocalization.Text("common.unassigned", "Unassigned"))
                                     </td>
                                     <td class="px-5 py-4">
                                         @if (issue.IsBlocked)
                                         {
-                                            <span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">Blocked</span>
+                                            <span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">@AppLocalization.Text("status.blocked", "Blocked")</span>
                                         }
                                         else if (issue.EscalationLevel > 0)
                                         {
@@ -173,20 +173,20 @@
                                         }
                                         else
                                         {
-                                            <span class="text-xs text-slate-400">Clear</span>
+                                            <span class="text-xs text-slate-400">@AppLocalization.Text("status.clear", "Clear")</span>
                                         }
                                     </td>
                                     <td class="px-5 py-4 text-center">
                                         <div class="flex items-center justify-center gap-1">
                                             @if (canEditIssue)
                                             {
-                                                <button @onclick="() => OpenEditModal(issue)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                                <button @onclick="() => OpenEditModal(issue)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="@AppLocalization.Text("action.edit", "Edit")">
                                                     <i data-lucide="pencil" class="h-4 w-4"></i>
                                                 </button>
                                             }
                                             @if (canDeleteIssue)
                                             {
-                                                <button @onclick="() => RequestDeleteConfirmation(issue.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                                <button @onclick="() => RequestDeleteConfirmation(issue.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="@AppLocalization.Text("action.delete", "Delete")">
                                                     <i data-lucide="trash-2" class="h-4 w-4"></i>
                                                 </button>
                                             }
@@ -197,7 +197,7 @@
                     }
                     else
                     {
-                            <EmptyState ColSpan="9" Icon="file-pen-line" Title="No issues yet" Subtitle="Create your first issue to start tracking daily work." />
+                            <EmptyState ColSpan="9" Icon="file-pen-line" Title="@AppLocalization.Text("common.noResults", "No results found.")" Subtitle="@AppLocalization.Text("common.createFirstEntry", "Create your first entry to get started.")" />
                     }
                     </tbody>
                 </table>
@@ -219,8 +219,8 @@
         <div class="flex max-h-[calc(100vh-2rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:max-h-[calc(100vh-3rem)]">
             <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <div>
-                    <h3 class="text-lg font-semibold text-slate-900">Edit Issue</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Issue #@editingId</p>
+                    <h3 class="text-lg font-semibold text-slate-900">@AppLocalization.Text("common.editIssue", "Edit Issue")</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">#@editingId</p>
                 </div>
                 <button @onclick="CloseModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
                     <i data-lucide="x" class="h-5 w-5"></i>
@@ -230,64 +230,64 @@
             <div class="min-h-0 flex-1 overflow-y-auto p-6 space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Task</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">@AppLocalization.Text("common.task", "Task")</p>
                         <p class="mt-1 text-sm font-semibold text-slate-900">@SelectedTaskLabel</p>
                     </div>
                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Project</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">@AppLocalization.Text("common.project", "Project")</p>
                         <p class="mt-1 text-sm font-semibold text-slate-900">@SelectedProjectLabel</p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Blocked Status</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.blockedStatus", "Blocked Status")</label>
                         <label class="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700">
                             <input type="checkbox" @bind="formIsBlocked" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                            <span>Blocked</span>
+                            <span>@AppLocalization.Text("status.blocked", "Blocked")</span>
                         </label>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Escalation Level</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.escalationLevel", "Escalation Level")</label>
                         <select @bind="formEscalationLevel" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                            <option value="0">None</option>
-                            <option value="1">Team Lead</option>
-                            <option value="2">PM</option>
-                            <option value="3">Manager</option>
+                            <option value="0">@AppLocalization.Text("common.none", "None")</option>
+                            <option value="1">@AppLocalization.Text("issue.teamLead", "Team Lead")</option>
+                            <option value="2">@AppLocalization.Text("issue.pm", "PM")</option>
+                            <option value="3">@AppLocalization.Text("issue.manager", "Manager")</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Blocked By</label>
-                        <input @bind="formBlockedBy" type="text" placeholder="Dependency, person, or team"
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.blockedBy", "Blocked By")</label>
+                        <input @bind="formBlockedBy" type="text" placeholder="@AppLocalization.Text("issue.blockedByPlaceholder", "Dependency, person, or team")"
                                class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Delay Reason</label>
-                        <input @bind="formDelayReason" type="text" placeholder="Why is this issue delayed?"
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.delayReason", "Delay Reason")</label>
+                        <input @bind="formDelayReason" type="text" placeholder="@AppLocalization.Text("issue.delayReasonPlaceholder", "Why is this issue delayed?")"
                                class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Title <span class="text-red-500">*</span></label>
-                    <input @bind="formTitle" type="text" placeholder="Issue title"
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.issueTitle", "Issue Title") <span class="text-red-500">*</span></label>
+                    <input @bind="formTitle" type="text" placeholder="@AppLocalization.Text("common.issueTitle", "Issue Title")"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
-                    <textarea @bind="formDescription" rows="3" placeholder="Describe the work..."
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.issueDescription", "Description")</label>
+                    <textarea @bind="formDescription" rows="3" placeholder="@AppLocalization.Text("issue.describeWork", "Describe the work...")"
                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Assignee</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.assignee", "Assignee")</label>
                         <select @bind="formAssignedTo" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                            <option value="">Unassigned</option>
+                            <option value="">@AppLocalization.Text("common.unassigned", "Unassigned")</option>
                             @foreach (var user in filteredProjectMembers)
                             {
                                 <option value="@user.Id">@user.FirstName @user.LastName</option>
@@ -295,7 +295,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Actual Hours</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.actualHours", "Actual Hours")</label>
                         <input @bind="formActualHours" type="number" step="0.25" min="0" max="7"
                                class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                     </div>
@@ -303,12 +303,12 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Start Date</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.startDate", "Start Date")</label>
                         <input @bind="formStartDate" type="date"
                                class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Due Date</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.dueDate", "Due Date")</label>
                         <input @bind="formDueDate" type="date"
                                class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                     </div>
@@ -316,19 +316,19 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.status", "Status")</label>
                         <select @bind="formStatusId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                            <option value="@AppTaskStatus.Todo">To Do</option>
-                            <option value="@AppTaskStatus.InProgress">In Progress</option>
-                            <option value="@AppTaskStatus.Done">Done</option>
+                            <option value="@AppTaskStatus.Todo">@AppLocalization.StatusLabel(AppTaskStatus.Todo)</option>
+                            <option value="@AppTaskStatus.InProgress">@AppLocalization.StatusLabel(AppTaskStatus.InProgress)</option>
+                            <option value="@AppTaskStatus.Done">@AppLocalization.StatusLabel(AppTaskStatus.Done)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.priority", "Priority")</label>
                         <select @bind="formPriorityId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                            <option value="@TaskPriority.Low">Low</option>
-                            <option value="@TaskPriority.Medium">Medium</option>
-                            <option value="@TaskPriority.High">High</option>
+                            <option value="@TaskPriority.Low">@AppLocalization.PriorityLabel(TaskPriority.Low)</option>
+                            <option value="@TaskPriority.Medium">@AppLocalization.PriorityLabel(TaskPriority.Medium)</option>
+                            <option value="@TaskPriority.High">@AppLocalization.PriorityLabel(TaskPriority.High)</option>
                         </select>
                     </div>
                 </div>
@@ -342,9 +342,9 @@
             </div>
 
             <div class="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-white px-6 py-4 shadow-[0_-12px_24px_rgba(15,23,42,0.06)]">
-                <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">@AppLocalization.Text("common.cancel", "Cancel")</button>
                 <button @onclick="RequestSaveConfirmation" disabled="@isSaving" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
-                    @(isSaving ? "Saving..." : "Update")
+                    @(isSaving ? AppLocalization.Text("common.loadingSpinner", "Loading...") : AppLocalization.Text("common.update", "Update"))
                 </button>
             </div>
         </div>
@@ -352,9 +352,9 @@
 }
 
 <ConfirmDialog IsVisible="showDeleteConfirm"
-               Title="Delete Issue?"
+               Title="@AppLocalization.Text("issue.deleteIssue", "Delete Issue?")"
                Message="@deleteConfirmMessage"
-               ConfirmText="Yes, Delete"
+               ConfirmText="@AppLocalization.Text("issue.yesDelete", "Yes, Delete")"
                Icon="trash-2"
                IconBgClass="bg-rose-50"
                IconTextClass="text-rose-600"
@@ -363,9 +363,9 @@
                OnCancel="CloseDeleteConfirm" />
 
 <ConfirmDialog IsVisible="showSaveConfirm"
-               Title="Save Changes?"
-               Message="Are you sure you want to save these issue changes?"
-               ConfirmText="Yes, Save"
+               Title="@AppLocalization.Text("common.saveChanges", "Save Changes?")"
+               Message="@AppLocalization.Text("issue.saveConfirmMessage", "Are you sure you want to save these issue changes?")"
+               ConfirmText="@AppLocalization.Text("issue.yesSave", "Yes, Save")"
                Icon="save"
                IconBgClass="bg-violet-50"
                IconTextClass="text-violet-600"

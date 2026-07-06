@@ -8,7 +8,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>Users</PageTitle>
+<PageTitle>@AppLocalization.PageTitle("users", "Users")</PageTitle>
 
 <SuccessAlert Message="@successMessage" />
 
@@ -16,14 +16,14 @@
     <!-- Page Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Users</h2>
-            <p class="text-slate-500 mt-1">Manage system users and their roles.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.PageTitle("users", "Users")</h2>
+            <p class="text-slate-500 mt-1">@AppLocalization.PageDescription("users", "Manage people, status, and account details.")</p>
         </div>
         @if (canCreateUser)
         {
             <button @onclick="OpenCreateModal" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
                 <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
-                New User
+                @AppLocalization.Text("common.newUser", "New User")
             </button>
         }
     </div>
@@ -32,13 +32,13 @@
     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm mb-4">
         <div class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[240px]">
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Users</label>
-                <input @bind="searchInput" type="text" placeholder="Search by name, email, username..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.searchUsers", "Search Users")</label>
+                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchPlaceholder", "Search by name, email, username...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Role</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.role", "Role")</label>
                 <select @bind="filterRoleIdInput" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="0">All Roles</option>
+                    <option value="0">@AppLocalization.Text("common.all", "All Roles")</option>
                     @foreach (var r in roles)
                     {
                         <option value="@r.Id">@r.Name</option>
@@ -46,27 +46,27 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.status", "Status")</label>
                 <select @bind="filterStatusInput" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="all">All</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="all">@AppLocalization.Text("common.all", "All")</option>
+                    <option value="active">@AppLocalization.Text("status.active", "Active")</option>
+                    <option value="inactive">@AppLocalization.Text("status.inactive", "Inactive")</option>
                 </select>
             </div>
             <button @onclick="ApplySearch" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
                 <i data-lucide="search" class="h-4 w-4 mr-2"></i>
-                Search
+                @AppLocalization.Text("action.search", "Search")
             </button>
             <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                 <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
-                Reset
+                @AppLocalization.Text("action.reset", "Reset")
             </button>
         </div>
     </div>
 
     @if (isLoading)
     {
-        <LoadingSpinner Message="Loading users..." />
+        <LoadingSpinner Message="@AppLocalization.Text("common.loadingUsers", "Loading users...")" />
     }
     else
     {
@@ -76,12 +76,12 @@
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/60">
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.user", "User")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.role", "Role")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.status", "Status")</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.actions", "Actions")</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -113,20 +113,20 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(user.IsActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")">
-                                        @(user.IsActive ? "Active" : "Inactive")
+                                        @(user.IsActive ? AppLocalization.Text("status.active", "Active") : AppLocalization.Text("status.inactive", "Inactive"))
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end space-x-2">
                                         @if (canEditUser)
                                         {
-                                            <button @onclick="() => OpenEditModal(user)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="Edit">
+                                            <button @onclick="() => OpenEditModal(user)" class="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-all" title="@AppLocalization.Text("action.edit", "Edit")">
                                                 <i data-lucide="pencil" class="h-4 w-4"></i>
                                             </button>
                                         }
                                         @if (canDeleteUser)
                                         {
-                                            <button @onclick="() => RequestDeleteConfirmation(user.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Delete">
+                                            <button @onclick="() => RequestDeleteConfirmation(user.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="@AppLocalization.Text("action.delete", "Delete")">
                                                 <i data-lucide="trash-2" class="h-4 w-4"></i>
                                             </button>
                                         }
@@ -137,7 +137,7 @@
                     }
                     else
                     {
-                        <EmptyState ColSpan="7" Icon="users" Title="No users found" Subtitle="Try adjusting your search or create a new user." />
+                        <EmptyState ColSpan="7" Icon="users" Title="@AppLocalization.Text("common.noResults", "No users found")" Subtitle="@AppLocalization.Text("common.createFirstEntry", "Try adjusting your search or create a new user.")" />
                     }
                 </tbody>
             </table>
@@ -159,7 +159,7 @@
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg mx-4 overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <h3 class="text-lg font-semibold text-slate-900">@(isEditing ? "Edit User" : "New User")</h3>
+                <h3 class="text-lg font-semibold text-slate-900">@(isEditing ? AppLocalization.Text("user.editUser", "Edit User") : AppLocalization.Text("common.newUser", "New User"))</h3>
                 <button @onclick="CloseModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
@@ -167,26 +167,26 @@
             <div class="p-6 space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">First Name <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("user.firstName", "First Name") <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <input @bind="formFirstName" type="text" placeholder="First name" class="w-full rounded-lg border @(isFirstNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                            <input @bind="formFirstName" type="text" placeholder="@AppLocalization.Text("user.firstName", "First name")" class="w-full rounded-lg border @(isFirstNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
                             @if (isFirstNameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
                         </div>
                         @if (isFirstNameError) { <p class="mt-1 text-xs text-red-500">@firstNameErrorMsg</p> }
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Last Name <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("user.lastName", "Last Name") <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <input @bind="formLastName" type="text" placeholder="Last name" class="w-full rounded-lg border @(isLastNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                            <input @bind="formLastName" type="text" placeholder="@AppLocalization.Text("user.lastName", "Last name")" class="w-full rounded-lg border @(isLastNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
                             @if (isLastNameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
                         </div>
                         @if (isLastNameError) { <p class="mt-1 text-xs text-red-500">@lastNameErrorMsg</p> }
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Username <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.username", "Username") <span class="text-red-500">*</span></label>
                     <div class="relative">
-                        <input @bind="formUsername" type="text" placeholder="username" class="w-full rounded-lg border @(isUsernameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                        <input @bind="formUsername" type="text" placeholder="@AppLocalization.Text("common.username", "username")" class="w-full rounded-lg border @(isUsernameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
                         @if (isUsernameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
                     </div>
                     @if (isUsernameError) { <p class="mt-1 text-xs text-red-500">@usernameErrorMsg</p> }
@@ -203,7 +203,7 @@
                 {
                     <div class="relative">
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Password <span class="text-red-500">*</span></label>
-                        <input @bind="formPassword" type="@(showPassword ? "text" : "password")" placeholder="Min 8 characters (A-Z, a-z, 0-9, special)" class="w-full rounded-lg border @(isPasswordError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                        <input @bind="formPassword" type="@(showPassword ? "text" : "password")" placeholder="@AppLocalization.Text("validation.passwordMinLengthRule", "Min 8 characters (A-Z, a-z, 0-9, special)")" class="w-full rounded-lg border @(isPasswordError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
                         <button type="button" @onclick="TogglePassword" class="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none">
                             @if (showPassword)
                             {
@@ -219,11 +219,11 @@
                 }
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
-                        <input @bind="formPhone" type="text" placeholder="Phone number" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.phone", "Phone")</label>
+                        <input @bind="formPhone" type="text" placeholder="@AppLocalization.Text("common.phoneNumber", "Phone number")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.role", "Role")</label>
                         <select @bind="formRoleId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
                             @foreach (var r in roles)
                             {
@@ -236,7 +236,7 @@
                 {
                     <div class="flex items-center space-x-3">
                         <input @bind="formIsActive" type="checkbox" id="isActiveToggle" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900" />
-                        <label for="isActiveToggle" class="text-sm font-medium text-slate-700">Active</label>
+                        <label for="isActiveToggle" class="text-sm font-medium text-slate-700">@AppLocalization.Text("status.active", "Active")</label>
                     </div>
                 }
 
@@ -251,9 +251,9 @@
                 }
             </div>
             <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">@AppLocalization.Text("common.cancel", "Cancel")</button>
                 <button @onclick="RequestSaveConfirmation" disabled="@isSaving" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
-                    @(isSaving ? "Saving..." : (isEditing ? "Update" : "Create"))
+                    @(isSaving ? AppLocalization.Text("common.saving", "Saving...") : (isEditing ? AppLocalization.Text("action.update", "Update") : AppLocalization.Text("action.create", "Create")))
                 </button>
             </div>
         </div>
@@ -497,21 +497,21 @@
         isPasswordError = false;  passwordErrorMsg = "";
         bool hasError = false;
 
-        if (string.IsNullOrWhiteSpace(formFirstName)) { isFirstNameError = true; firstNameErrorMsg = "First name is required."; hasError = true; }
-        if (string.IsNullOrWhiteSpace(formLastName))  { isLastNameError = true;  lastNameErrorMsg = "Last name is required.";  hasError = true; }
-        
-        if (string.IsNullOrWhiteSpace(formUsername))  { isUsernameError = true;  usernameErrorMsg = "Username is required.";   hasError = true; }
+        if (string.IsNullOrWhiteSpace(formFirstName)) { isFirstNameError = true; firstNameErrorMsg = AppLocalization.Text("validation.firstNameRequired", "First name is required."); hasError = true; }
+        if (string.IsNullOrWhiteSpace(formLastName))  { isLastNameError = true;  lastNameErrorMsg = AppLocalization.Text("validation.lastNameRequired", "Last name is required.");  hasError = true; }
+
+        if (string.IsNullOrWhiteSpace(formUsername))  { isUsernameError = true;  usernameErrorMsg = AppLocalization.Text("validation.usernameRequired", "Username is required.");   hasError = true; }
         else if (formUsername.Length < 3) { isUsernameError = true; usernameErrorMsg = ResultMessages.UsernameMinLength; hasError = true; }
         else if (!System.Text.RegularExpressions.Regex.IsMatch(formUsername, @"^[a-zA-Z0-9._]+$")) { isUsernameError = true; usernameErrorMsg = ResultMessages.UsernameInvalidCharacters; hasError = true; }
 
-        if (string.IsNullOrWhiteSpace(formEmail))     { isEmailError = true;     emailErrorMsg = "Email is required.";         hasError = true; }
+        if (string.IsNullOrWhiteSpace(formEmail))     { isEmailError = true;     emailErrorMsg = AppLocalization.Text("validation.emailRequired", "Email is required.");         hasError = true; }
         
         if (!isEditing)
         {
             if (string.IsNullOrWhiteSpace(formPassword))
             {
                 isPasswordError = true;
-                passwordErrorMsg = "Password is required.";
+                passwordErrorMsg = AppLocalization.Text("validation.passwordRequired", "Password is required.");
                 hasError = true;
             }
             else if (formPassword.Length < 8)
@@ -531,9 +531,9 @@
 
         if (isEditing)
         {
-            confirmTitle = "Update User?";
-            confirmMessage = "Are you sure you want to update this user?";
-            confirmButtonText = "Update";
+            confirmTitle = AppLocalization.Text("user.updateUser", "Update User?");
+            confirmMessage = AppLocalization.Text("user.updateUserConfirm", "Are you sure you want to update this user?");
+            confirmButtonText = AppLocalization.Text("action.update", "Update");
             confirmIcon = "pencil";
             confirmIconBg = "bg-amber-50";
             confirmIconText = "text-amber-500";
@@ -541,9 +541,9 @@
         }
         else
         {
-            confirmTitle = "Create User?";
-            confirmMessage = "Are you sure you want to create this user?";
-            confirmButtonText = "Create";
+            confirmTitle = AppLocalization.Text("user.createUser", "Create User?");
+            confirmMessage = AppLocalization.Text("user.createUserConfirm", "Are you sure you want to create this user?");
+            confirmButtonText = AppLocalization.Text("action.create", "Create");
             confirmIcon = "plus-circle";
             confirmIconBg = "bg-emerald-50";
             confirmIconText = "text-emerald-500";
@@ -555,9 +555,9 @@
 
     private void RequestDeleteConfirmation(long id)
     {
-        confirmTitle = "Delete User?";
-        confirmMessage = "Are you sure you want to delete this user? This action cannot be undone.";
-        confirmButtonText = "Delete";
+        confirmTitle = AppLocalization.Text("user.deleteUser", "Delete User?");
+        confirmMessage = AppLocalization.Text("user.deleteUserConfirm", "Are you sure you want to delete this user? This action cannot be undone.");
+        confirmButtonText = AppLocalization.Text("action.delete", "Delete");
         confirmIcon = "trash-2";
         confirmIconBg = "bg-rose-50";
         confirmIconText = "text-rose-500";
@@ -615,7 +615,7 @@
             {
                 if (string.IsNullOrWhiteSpace(formPassword))
                 {
-                    errorMessage = "Password is required.";
+                    errorMessage = AppLocalization.Text("validation.passwordRequired", "Password is required.");
                     isSaving = false;
                     return;
                 }
@@ -652,7 +652,7 @@
 
             CloseModal();
             await LoadUsers();
-            successMessage = isEditing ? "User updated successfully!" : "User created successfully!";
+            successMessage = isEditing ? AppLocalization.Text("result.userUpdated", "User updated successfully!") : AppLocalization.Text("result.userCreated", "User created successfully!");
         }
         catch (Exception ex)
         {
@@ -670,7 +670,7 @@
         var currentUserIdStr = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (currentUserIdStr != null && long.TryParse(currentUserIdStr, out var currentUserId) && currentUserId == id)
         {
-            await JS.InvokeVoidAsync("alert", "You cannot delete your own account.");
+            await JS.InvokeVoidAsync("alert", AppLocalization.Text("user.cannotDeleteSelf", "You cannot delete your own account."));
             return;
         }
 
@@ -681,13 +681,13 @@
             var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
             if (res == null || !res.IsSuccess)
             {
-                await JS.InvokeVoidAsync("alert", res?.ErrorMessage ?? "Failed to delete user.");
+                await JS.InvokeVoidAsync("alert", res?.ErrorMessage ?? AppLocalization.Text("result.failedToDeleteUser", "Failed to delete user."));
                 return;
             }
             await LoadUsers();
             if (currentPage > TotalPages && TotalPages > 0)
                 currentPage = TotalPages;
-            successMessage = "User deleted successfully!";
+            successMessage = AppLocalization.Text("result.userDeleted", "User deleted successfully!");
         }
         catch (Exception ex)
         {

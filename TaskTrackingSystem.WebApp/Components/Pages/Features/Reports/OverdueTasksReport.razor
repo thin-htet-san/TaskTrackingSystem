@@ -14,29 +14,29 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>Overdue &amp; Delayed Tasks Report</PageTitle>
+<PageTitle>@AppLocalization.Text("report.overdueTasksPageTitle", "Overdue & Delayed Tasks Report")</PageTitle>
 
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Overdue &amp; Delayed Tasks</h2>
-            <p class="text-slate-500 mt-1">Track tasks that have passed their due date or are at risk of delay.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.Text("report.overdueTasksHeading", "Overdue & Delayed Tasks")</h2>
+            <p class="text-slate-500 mt-1">@AppLocalization.Text("report.overdueTasksDesc", "Track tasks that have passed their due date or are at risk of delay.")</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
                 <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.listView", "List View")
                 </button>
                 <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.chartView", "Chart View")
                 </button>
             </div>
             <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportExcel", "Export Excel")
             </button>
             <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportPdf", "Export PDF")
             </button>
         </div>
     </div>
@@ -59,7 +59,7 @@
             <div class="rounded-xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">High Priority Overdue</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">@AppLocalization.Text("report.highPriorityOverdue", "High Priority Overdue")</p>
                         <p class="mt-1 text-3xl font-bold text-amber-700">@criticalCount</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
@@ -70,7 +70,7 @@
             <div class="rounded-xl border border-orange-100 bg-orange-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-orange-500">Due Within 3 Days</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-orange-500">@AppLocalization.Text("report.dueWithin3Days", "Due Within 3 Days")</p>
                         <p class="mt-1 text-3xl font-bold text-orange-700">@dueSoonCount</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
@@ -81,7 +81,7 @@
             <div class="rounded-xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">Avg Days Overdue</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">@AppLocalization.Text("report.avgDaysOverdue", "Avg Days Overdue")</p>
                         <p class="mt-1 text-3xl font-bold text-violet-700">@avgDaysOverdue</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
@@ -96,8 +96,8 @@
     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Tasks</label>
-                <input @bind="searchInput" type="text" placeholder="Search by title, assignee, or project..."
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.searchTasks", "Search Tasks")</label>
+                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchByTaskAssigneeProject", "Search by title, assignee, or project...")"
                        class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
             </div>
             <div>
@@ -112,26 +112,26 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">Delay Type</label>
                 <select @bind="filterDelayType" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="all">All Delayed</option>
-                    <option value="overdue">Overdue (Past Due)</option>
-                    <option value="soon">Due Within 3 Days</option>
+                    <option value="all">@AppLocalization.Text("report.allDelayed", "All Delayed")</option>
+                    <option value="overdue">@AppLocalization.Text("report.overduePastDue", "Overdue (Past Due)")</option>
+                    <option value="soon">@AppLocalization.Text("report.dueWithin3Days", "Due Within 3 Days")</option>
                 </select>
             </div>
             <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+                <i data-lucide="search" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.search", "Search")
             </button>
             <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> Reset
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.reset", "Reset")
             </button>
 
             <div class="flex flex-wrap items-center gap-6 w-full border-t border-slate-100 pt-3 mt-1">
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMe" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to me</span>
+                    <span>@AppLocalization.Text("report.assignedToMe", "Assigned to me")</span>
                 </label>
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMyTeam" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to my team</span>
+                    <span>@AppLocalization.Text("report.assignedToMyTeam", "Assigned to my team")</span>
                 </label>
             </div>
         </div>
@@ -139,7 +139,7 @@
 
     @if (isLoading)
     {
-        <LoadingSpinner Message="Loading overdue tasks..." />
+        <LoadingSpinner Message="@AppLocalization.Text("report.loadingOverdueTasks", "Loading overdue tasks...")" />
     }
     else
     {
@@ -147,25 +147,25 @@
         {
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
                 <div class="xl:col-span-7">
-                    <ReportChartCard Title="Aging buckets" Subtitle="How long delayed work has been waiting." Insight="@AgingInsight">
+                    <ReportChartCard Title="@AppLocalization.Text("report.agingBuckets", "Aging buckets")" Subtitle="@AppLocalization.Text("report.agingBucketsDesc", "How long delayed work has been waiting.")" Insight="@AgingInsight">
                         <AgingBucketChart Buckets="AgingBuckets" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-5">
-                    <RadialMetricCard Title="High-priority overdue" Subtitle="Critical work that needs immediate support." Percent="@HighPriorityOverduePercent" Value="@criticalCount.ToString()" ValueLabel="high priority" CenterLabel="critical" Color="#ef4444" Insight="Phrase these as capacity risks so teams can unblock work, not assign blame." />
+                    <RadialMetricCard Title="@AppLocalization.Text("report.highPriorityOverdue", "High-priority overdue")" Subtitle="@AppLocalization.Text("report.highPriorityOverdueDesc", "Critical work that needs immediate support.")" Percent="@HighPriorityOverduePercent" Value="@criticalCount.ToString()" ValueLabel="@AppLocalization.Text("priority.high", "high priority")" CenterLabel="@AppLocalization.Text("report.critical", "critical")" Color="#ef4444" Insight="@AppLocalization.Text("report.overdueInsight", "Phrase these as capacity risks so teams can unblock work, not assign blame.")" />
                 </div>
                 <div class="xl:col-span-6">
-                    <ReportChartCard Title="Delays by project" Subtitle="Project areas where delay concentration is highest." Insight="Use this to rebalance planning pressure across projects.">
-                        <TopRiskList Items="DelayProjectItems" EmptyText="No project delay concentration found." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.delaysByProject", "Delays by project")" Subtitle="@AppLocalization.Text("report.delaysByProjectDesc", "Project areas where delay concentration is highest.")" Insight="@AppLocalization.Text("report.delaysByProjectInsight", "Use this to rebalance planning pressure across projects.")">
+                        <TopRiskList Items="DelayProjectItems" EmptyText="@AppLocalization.Text("report.noProjectDelay", "No project delay concentration found.")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-6">
-                    <ReportChartCard Title="Delays by assignee" Subtitle="People who may need support or scope adjustment." Insight="Support signal only: high counts should trigger help, not blame.">
-                        <TopRiskList Items="DelayAssigneeItems" EmptyText="No assignee delay concentration found." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.delaysByAssignee", "Delays by assignee")" Subtitle="@AppLocalization.Text("report.delaysByAssigneeDesc", "People who may need support or scope adjustment.")" Insight="@AppLocalization.Text("report.delaysByAssigneeInsight", "Support signal only: high counts should trigger help, not blame.")">
+                        <TopRiskList Items="DelayAssigneeItems" EmptyText="@AppLocalization.Text("report.noAssigneeDelay", "No assignee delay concentration found.")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-12">
-                    <RiskMatrixCard Title="Severity vs days overdue" Subtitle="High priority and older delays sit in the upper-right risk zone." Points="OverdueRiskMatrix" Insight="The matrix combines priority severity with age of delay to show triage order." />
+                    <RiskMatrixCard Title="@AppLocalization.Text("report.severityVsDaysOverdue", "Severity vs days overdue")" Subtitle="@AppLocalization.Text("report.severityVsDaysOverdueDesc", "High priority and older delays sit in the upper-right risk zone.")" Points="OverdueRiskMatrix" Insight="@AppLocalization.Text("report.severityMatrixInsight", "The matrix combines priority severity with age of delay to show triage order.")" />
                 </div>
             </div>
         }
@@ -173,21 +173,21 @@
         {
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-700">
-                    Showing <span class="text-rose-600 font-bold">@(overdueReportPage?.TotalCount ?? 0)</span> delayed / overdue task(s)
+                    <h3 class="text-sm font-semibold text-slate-700">
+                    @AppLocalization.Text("report.showingDelayedTasks", "Showing") <span class="text-rose-600 font-bold">@(overdueReportPage?.TotalCount ?? 0)</span> @AppLocalization.Text("report.delayedOrOverdueTasks", "delayed / overdue task(s)")
                 </h3>
             </div>
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/60">
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Days Overdue</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issues</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Delay / Escalation</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.index", "No.")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.task", "Task")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.project", "Project")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.assignee", "Assignee")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.dueDate", "Due Date")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.daysOverdue", "Days Overdue")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.issue", "Issues")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.delayEscalation", "Delay / Escalation")</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">

@@ -10,29 +10,29 @@
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
 
-<PageTitle>Employee Workload &amp; Performance</PageTitle>
+<PageTitle>@AppLocalization.Text("report.employeeWorkloadTitle", "Employee Workload & Performance")</PageTitle>
 
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Employee Workload &amp; Performance</h2>
-            <p class="text-slate-500 mt-1">Monitor issue workload, execution health, and actual effort.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.Text("report.employeeWorkloadHeading", "Employee Workload & Performance")</h2>
+            <p class="text-slate-500 mt-1">@AppLocalization.Text("report.employeeWorkloadDesc", "Monitor issue workload, execution health, and actual effort.")</p>
         </div>
         <div class="flex items-center space-x-3">
             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
                 <button @onclick="() => SetView(false)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(!isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> List View
+                    <i data-lucide="list" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.listView", "List View")
                 </button>
                 <button @onclick="() => SetView(true)" class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold @(isChartView ? "bg-violet-600 text-white" : "text-slate-600 hover:text-slate-900") transition-colors">
-                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> Chart View
+                    <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 mr-1"></i> @AppLocalization.Text("common.chartView", "Chart View")
                 </button>
             </div>
             <button @onclick="DownloadExcel" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="download" class="h-4 w-4 mr-2"></i> Export Excel
+                <i data-lucide="download" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportExcel", "Export Excel")
             </button>
             <button @onclick="DownloadPdf" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> Export PDF
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("common.exportPdf", "Export PDF")
             </button>
         </div>
     </div>
@@ -41,13 +41,13 @@
     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Employee</label>
-                <input @bind="searchInput" type="text" placeholder="Search by name..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("report.searchEmployee", "Search Employee")</label>
+                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchByName", "Search by name...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Period Filter</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("report.periodFilter", "Period Filter")</label>
                 <select @bind="filterPeriod" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="all">All Time</option>
+                    <option value="all">@AppLocalization.Text("common.all", "All Time")</option>
                     <option value="daily">Daily (Today)</option>
                     <option value="monthly">Monthly (This Month)</option>
                     <option value="yearly">Yearly (This Year)</option>
@@ -68,13 +68,13 @@
             }
 
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Task Status</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.status", "Task Status")</label>
                 <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="0">All Tasks</option>
-                    <option value="1">To Do</option>
-                    <option value="2">In Progress</option>
-                    <option value="3">Done</option>
-                    <option value="overdue">Overdue</option>
+                    <option value="0">@AppLocalization.Text("common.allTasks", "All Tasks")</option>
+                    <option value="1">@AppLocalization.StatusLabel(AppTaskStatus.Todo)</option>
+                    <option value="2">@AppLocalization.StatusLabel(AppTaskStatus.InProgress)</option>
+                    <option value="3">@AppLocalization.StatusLabel(AppTaskStatus.Done)</option>
+                    <option value="overdue">@AppLocalization.Text("status.overdue", "Overdue")</option>
                 </select>
             </div>
             <button @onclick="ApplyAllFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
@@ -87,11 +87,11 @@
             <div class="flex flex-wrap items-center gap-6 w-full border-t border-slate-100 pt-3 mt-1">
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMe" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to me</span>
+                    <span>@AppLocalization.Text("report.assignedToMe", "Assigned to me")</span>
                 </label>
                 <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
                     <input type="checkbox" @bind="filterAssignToMyTeam" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
-                    <span>Assigned to my team</span>
+                    <span>@AppLocalization.Text("report.assignedToMyTeam", "Assigned to my team")</span>
                 </label>
             </div>
         </div>
@@ -103,7 +103,7 @@
         <div class="flex items-center justify-center py-20">
             <div class="flex items-center space-x-3 text-slate-500">
                 <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span class="text-sm font-medium">Loading data...</span>
+                <span class="text-sm font-medium">@AppLocalization.Text("common.loading", "Loading data...")</span>
             </div>
         </div>
     }
@@ -113,25 +113,25 @@
         {
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
                 <div class="xl:col-span-7">
-                    <WorkloadHeatmap Title="Workload heatmap" Subtitle="Capacity signals across assigned work, open issues, overdue issues, and hours." Rows="EmployeeHeatmapRows" Columns="EmployeeHeatmapColumns" Cells="EmployeeHeatmapCells" Insight="Darker cells mean someone may need support or scope adjustment." />
+                    <WorkloadHeatmap Title="@AppLocalization.Text("report.workloadHeatmap", "Workload heatmap")" Subtitle="@AppLocalization.Text("report.workloadHeatmapDesc", "Capacity signals across assigned work, open issues, overdue issues, and hours.")" Rows="EmployeeHeatmapRows" Columns="EmployeeHeatmapColumns" Cells="EmployeeHeatmapCells" Insight="@AppLocalization.Text("report.workloadHeatmapInsight", "Darker cells mean someone may need support or scope adjustment.")" />
                 </div>
                 <div class="xl:col-span-5">
-                    <ReportChartCard Title="Capacity support list" Subtitle="Highest support signals, phrased as capacity risk." Insight="Use this to route help and remove blockers, not to rank people negatively.">
-                        <TopRiskList Items="EmployeeCapacityRiskItems" EmptyText="No capacity risks in the current filter." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.capacitySupportList", "Capacity support list")" Subtitle="@AppLocalization.Text("report.capacitySupportDesc", "Highest support signals, phrased as capacity risk.")" Insight="@AppLocalization.Text("report.capacitySupportInsight", "Use this to route help and remove blockers, not to rank people negatively.")">
+                        <TopRiskList Items="EmployeeCapacityRiskItems" EmptyText="@AppLocalization.Text("report.noCapacityRisks", "No capacity risks in the current filter.")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-5">
-                    <ReportChartCard Title="Completed vs open issues" Subtitle="Team execution balance by issue state." Value="@CompletedIssueTotal.ToString()" ValueLabel="completed tasks">
+                    <ReportChartCard Title="@AppLocalization.Text("report.completedVsOpenIssues", "Completed vs open issues")" Subtitle="@AppLocalization.Text("report.teamExecutionBalance", "Team execution balance by issue state.")" Value="@CompletedIssueTotal.ToString()" ValueLabel="@AppLocalization.Text("report.completedTasks", "completed tasks")">
                         <StackedProgressBar Segments="EmployeeCompletionSegments" AriaLabel="Completed versus open employee workload" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-4">
-                    <ReportChartCard Title="Overdue support" Subtitle="Employees with overdue issue load." Insight="Treat overdue counts as support requests.">
-                        <TopRiskList Items="EmployeeOverdueItems" EmptyText="No overdue support needs found." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.overdueSupport", "Overdue support")" Subtitle="@AppLocalization.Text("report.employeesWithOverdueLoad", "Employees with overdue issue load.")" Insight="@AppLocalization.Text("report.overdueSupportInsight", "Treat overdue counts as support requests.")">
+                        <TopRiskList Items="EmployeeOverdueItems" EmptyText="@AppLocalization.Text("report.noOverdueSupport", "No overdue support needs found.")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-3">
-                    <TrendSparklineCard Title="Completion pattern" Subtitle="Completion rate across visible employees." Value="@($"{AverageCompletionRate:0}%")" ValueLabel="avg rate" Points="EmployeeCompletionSparkline" Color="#3b82f6" Insight="A quick view of whether completion is clustered or balanced." />
+                    <TrendSparklineCard Title="@AppLocalization.Text("report.completionPattern", "Completion pattern")" Subtitle="@AppLocalization.Text("report.completionPatternDesc", "Completion rate across visible employees.")" Value="@($"{AverageCompletionRate:0}%")" ValueLabel="@AppLocalization.Text("report.avgRate", "avg rate")" Points="EmployeeCompletionSparkline" Color="#3b82f6" Insight="@AppLocalization.Text("report.completionPatternInsight", "A quick view of whether completion is clustered or balanced.")" />
                 </div>
             </div>
         }

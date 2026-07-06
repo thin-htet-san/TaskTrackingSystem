@@ -7,7 +7,7 @@
 @inject MenuAuthorizationService MenuAuthorization
 @inject IJSRuntime JS
 
-<PageTitle>Sign In - Taskify</PageTitle>
+<PageTitle>@AppLocalization.Text("common.signIn", "Sign In") - Taskify</PageTitle>
 
 <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
     <div class="w-full max-w-md space-y-7 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -17,8 +17,8 @@
                     <i data-lucide="flame" class="h-6 w-6 fill-current"></i>
                 </span>
             </div>
-            <h2 class="mt-5 text-center text-2xl font-bold text-slate-900">Sign in to Taskify</h2>
-            <p class="mt-2 text-center text-sm text-slate-500">Continue to your work dashboard.</p>
+            <h2 class="mt-5 text-center text-2xl font-bold text-slate-900">@AppLocalization.Text("common.signIn", "Sign In") - Taskify</h2>
+            <p class="mt-2 text-center text-sm text-slate-500">@AppLocalization.PageDescription("dashboard", "Continue to your work dashboard.")</p>
         </div>
 
         <form method="post" action="/account/login" class="space-y-5">
@@ -27,8 +27,8 @@
 
             <div class="space-y-4">
                 <div>
-                    <label for="usernameOrEmail" class="block text-sm font-medium text-slate-700 mb-1">Username or Email</label>
-                    <input id="usernameOrEmail" name="UsernameOrEmail" required placeholder="Enter username or email"
+                    <label for="usernameOrEmail" class="block text-sm font-medium text-slate-700 mb-1">@AppLocalization.Text("common.user", "Username or Email")</label>
+                    <input id="usernameOrEmail" name="UsernameOrEmail" required placeholder="@AppLocalization.Text("common.searchPlaceholder", "Enter username or email")"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
                 </div>
                 <div class="relative">
@@ -45,49 +45,49 @@
                 <div class="flex items-center">
                     <input id="rememberMe" name="RememberMe" type="checkbox" value="true"
                            class="h-4 w-4 rounded border-slate-350 text-slate-900 focus:ring-slate-900 focus:outline-none" />
-                    <label for="rememberMe" class="ml-2 block text-sm text-slate-600 font-medium">Remember me</label>
+                    <label for="rememberMe" class="ml-2 block text-sm text-slate-600 font-medium">@AppLocalization.Text("common.rememberMe", "Remember me")</label>
                 </div>
             </div>
 
             @if (ShowUnavailableError)
             {
                 <div class="p-3 rounded-lg bg-amber-50 border border-amber-100">
-                    <p class="text-sm text-amber-800 text-center">Unable to reach the API server. Start <strong>TaskTrackingSystem.WebApi</strong> and try again.</p>
+                    <p class="text-sm text-amber-800 text-center">@AppLocalization.Text("result.apiUnavailable", "Unable to reach the API server. Start TaskTrackingSystem.WebApi and try again.")</p>
                 </div>
             }
             else if (ShowError)
             {
                 <div class="p-3 rounded-lg bg-red-50 border border-red-100">
-                    <p class="text-sm text-red-600 text-center">Invalid login credentials.</p>
+                    <p class="text-sm text-red-600 text-center">@ResultMessages.InvalidCredentials</p>
                 </div>
             }
 
             @if (ShowLoggedOutMessage)
             {
                 <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                    <p class="text-sm text-emerald-700 text-center">You have been signed out successfully.</p>
+                    <p class="text-sm text-emerald-700 text-center">@AppLocalization.Text("result.signedOut", "You have been signed out successfully.")</p>
                 </div>
             }
             else if (ShowResetMessage)
             {
                 <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                    <p class="text-sm text-emerald-700 text-center">Password updated successfully. Please sign in with your new password.</p>
+                    <p class="text-sm text-emerald-700 text-center">@AppLocalization.Text("result.passwordUpdated", "Password updated successfully. Please sign in with your new password.")</p>
                 </div>
             }
 
             <p class="text-center text-sm text-slate-600">
-                Need an account?
-                <a href="/register" class="font-medium text-slate-900 hover:underline">Register</a>
+                @AppLocalization.Text("auth.needAccount", "Need an account?")
+                <a href="/register" class="font-medium text-slate-900 hover:underline">@AppLocalization.Text("auth.register", "Register")</a>
             </p>
 
             <div>
                 <button type="submit" class="group relative flex w-full justify-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-700">
-                    Sign In
+                    @AppLocalization.Text("common.signIn", "Sign In")
                 </button>
             </div>
 
             <p class="text-center text-sm text-slate-600">
-                <a href="/reset-password" class="font-medium text-slate-900 hover:underline">Reset password</a>
+                <a href="/reset-password" class="font-medium text-slate-900 hover:underline">@AppLocalization.Text("auth.resetPassword", "Reset password")</a>
             </p>
         </form>
     </div>

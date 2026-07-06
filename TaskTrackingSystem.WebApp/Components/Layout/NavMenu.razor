@@ -21,7 +21,7 @@
                 <button class="nav-dropdown-toggle flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/10 hover:text-white @(IsMenuGroupExpanded(menu.MenuCode) ? "expanded bg-white/10 text-white" : "")"
                         @onclick="() => ToggleMenuGroup(menu.MenuCode)">
                     @RenderIcon(menu.Icon)
-                    <span class="flex-1 text-left">@menu.MenuName</span>
+                    <span class="flex-1 text-left">@AppLocalization.Menu(menu.MenuCode, menu.MenuName)</span>
                     <i data-lucide="chevron-down" class="nav-chevron h-4 w-4 text-slate-400 shrink-0"></i>
                 </button>
                 @if (IsMenuGroupExpanded(menu.MenuCode))
@@ -33,7 +33,7 @@
                                      href="@MenuAuthorizationService.NormalizeMenuHref(sub.MenuUrl)"
                                      Match="@GetNavLinkMatch(sub.MenuUrl)">
                                 @RenderSmallIcon(sub.Icon)
-                                <span>@sub.MenuName</span>
+                                <span>@AppLocalization.Menu(sub.MenuCode, sub.MenuName)</span>
                             </NavLink>
                         }
                     </div>
@@ -45,7 +45,7 @@
                          href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
                          Match="@(string.IsNullOrWhiteSpace(menu.MenuUrl) || menu.MenuUrl.Trim('/') is "dashboard" or "" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
                     @RenderIcon(menu.Icon)
-                    <span>@menu.MenuName</span>
+                    <span>@AppLocalization.Menu(menu.MenuCode, menu.MenuName)</span>
                 </NavLink>
             }
         }
@@ -76,9 +76,9 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                var rawMenus = await MenuAuthorization.GetUserMenusAsync(user);
-                menus = ProcessMenus(rawMenus);
-                BuildUrlHierarchy(menus);
+            var rawMenus = await MenuAuthorization.GetUserMenusAsync(user);
+            menus = ProcessMenus(rawMenus);
+            BuildUrlHierarchy(menus);
 
                 foreach (var menu in menus)
                 {
@@ -110,10 +110,10 @@
     {
         return rawMenus
             .Where(menu => !string.Equals(menu.MenuCode, "ROLE_LAYOUTS", StringComparison.OrdinalIgnoreCase) &&
-                           !string.Equals(menu.MenuName, "Role Layouts", StringComparison.OrdinalIgnoreCase))
+                           !string.Equals(menu.MenuCode, "DASHBOARD_WIDGETS", StringComparison.OrdinalIgnoreCase))
             .OrderBy(menu => string.Equals(menu.MenuCode, "DASHBOARD", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
             .ThenBy(menu => menu.OrderNo)
-            .ThenBy(menu => menu.MenuName)
+            .ThenBy(menu => AppLocalization.Menu(menu.MenuCode, menu.MenuName))
             .ToList();
     }
 

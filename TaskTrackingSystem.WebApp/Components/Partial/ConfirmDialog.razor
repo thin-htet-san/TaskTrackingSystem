@@ -13,7 +13,7 @@
                 @if (!HideCancel)
                 {
                     <button @onclick="OnCancel" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-slate-200 bg-white hover:bg-slate-50" style="color: var(--text-muted);">
-                        Cancel
+                        @AppLocalization.Text("common.cancel", "Cancel")
                     </button>
                 }
                 <button @onclick="OnConfirm" class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors @ButtonClass" style="@ConfirmButtonStyle">
@@ -26,9 +26,9 @@
 
 @code {
     [Parameter] public bool IsVisible { get; set; }
-    [Parameter] public string Title { get; set; } = "Are you sure?";
-    [Parameter] public string Message { get; set; } = "This action cannot be undone.";
-    [Parameter] public string ConfirmText { get; set; } = "Confirm";
+    [Parameter] public string Title { get; set; } = AppLocalization.Text("common.areYouSure", "Are you sure?");
+    [Parameter] public string Message { get; set; } = AppLocalization.Text("common.cannotUndo", "This action cannot be undone.");
+    [Parameter] public string ConfirmText { get; set; } = AppLocalization.Text("common.confirmAction", "Confirm");
     [Parameter] public string Icon { get; set; } = "alert-triangle";
     [Parameter] public string IconBgClass { get; set; } = "";
     [Parameter] public string IconTextClass { get; set; } = "";

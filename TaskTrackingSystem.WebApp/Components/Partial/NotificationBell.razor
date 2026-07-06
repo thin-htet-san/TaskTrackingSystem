@@ -23,21 +23,21 @@
         <div class="absolute right-0 z-50 mt-3 w-[380px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
             <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/80">
                 <div>
-                    <p class="text-sm font-semibold text-slate-900">Notifications</p>
-                    <p class="text-xs text-slate-500">@UnreadCount unread</p>
+                    <p class="text-sm font-semibold text-slate-900">@AppLocalization.Text("notification.notifications", "Notifications")</p>
+                    <p class="text-xs text-slate-500">@UnreadCount @AppLocalization.Text("notification.unread", "unread")</p>
                 </div>
                 <div class="flex items-center gap-2">
                     @if (Notifications.Any(item => item.IsRead))
                     {
                         <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-700" @onclick="RequestCleanupConfirmation">
-                            Clear read
+                            @AppLocalization.Text("notification.clearRead", "Clear read")
                         </button>
                     }
                     <button type="button" class="text-xs font-semibold text-violet-600 hover:text-violet-700" @onclick="RefreshAsync">
-                        Refresh
+                        @AppLocalization.Text("common.refresh", "Refresh")
                     </button>
                     <button type="button" class="text-xs font-semibold text-slate-500 hover:text-slate-700" @onclick="Close">
-                        Close
+                        @AppLocalization.Text("common.close", "Close")
                     </button>
                 </div>
             </div>
@@ -45,7 +45,7 @@
             <div class="max-h-[26rem] overflow-y-auto">
                 @if (IsLoading)
                 {
-                    <div class="p-4 text-sm text-slate-500">Loading notifications...</div>
+                    <div class="p-4 text-sm text-slate-500">@AppLocalization.Text("notification.loading", "Loading notifications...")</div>
                 }
                 else if (Notifications.Count == 0)
                 {
@@ -53,8 +53,8 @@
                         <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                             <i data-lucide="inbox" class="h-5 w-5"></i>
                         </div>
-                        <p class="text-sm font-medium text-slate-700">No notifications yet</p>
-                        <p class="text-xs text-slate-500 mt-1">Your task alerts will show up here.</p>
+                        <p class="text-sm font-medium text-slate-700">@AppLocalization.Text("notification.noneYet", "No notifications yet")</p>
+                        <p class="text-xs text-slate-500 mt-1">@AppLocalization.Text("notification.emptyState", "Your task alerts will show up here.")</p>
                     </div>
                 }
                 else
@@ -92,16 +92,14 @@
 </div>
 
 <ConfirmDialog IsVisible="showCleanupConfirmDialog"
-               Title="Clear read notifications?"
-               Message="This will permanently remove all read notifications from your list."
-               ConfirmText="Clear"
+               Title='@AppLocalization.Text("notification.clearReadTitle", "Clear read notifications?")'
+               Message='@AppLocalization.Text("notification.clearReadMessage", "This will permanently remove all read notifications from your list.")'
+               ConfirmText='@AppLocalization.Text("common.clear", "Clear")'
                Icon="trash-2"
                OnConfirm="ConfirmCleanupAsync"
                OnCancel="CloseCleanupConfirmDialog" />
 
 @code {
-    private HubConnection? _hubConnection;
-    private bool _hubHandlersRegistered;
     private bool IsOpen;
     private bool IsLoading;
     private bool showCleanupConfirmDialog;
@@ -115,97 +113,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await EnsureHubConnectionAsync();
-        }
         await JS.InvokeVoidAsync("initIcons");
-    }
-
-    private async Task EnsureHubConnectionAsync()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated != true)
-        {
-            return;
-        }
-
-        if (_hubConnection != null)
-        {
-            return;
-        }
-
-        var token = ApiClient.GetCurrentToken(authState.User);
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return;
-        }
-
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{ApiClient.BaseUrl}/hubs/notifications", options =>
-            {
-                options.AccessTokenProvider = () => Task.FromResult<string?>(ApiClient.GetCurrentToken() ?? token);
-            })
-            .WithAutomaticReconnect()
-            .Build();
-
-        RegisterHubHandlers();
-
-        try
-        {
-            await _hubConnection.StartAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[DEBUG NotificationBell] Hub connection failed: {ex.Message}");
-            await _hubConnection.DisposeAsync();
-            _hubConnection = null;
-            _hubHandlersRegistered = false;
-        }
-    }
-
-    private void RegisterHubHandlers()
-    {
-        if (_hubConnection == null || _hubHandlersRegistered)
-        {
-            return;
-        }
-
-        _hubConnection.On<NotificationDto>("NotificationCreated", async notification =>
-        {
-            await InvokeAsync(() =>
-            {
-                Notifications.Insert(0, notification);
-                UnreadCount++;
-                StateHasChanged();
-            });
-        });
-
-        _hubConnection.On<int>("UnreadCountChanged", async unreadCount =>
-        {
-            await InvokeAsync(() =>
-            {
-                UnreadCount = unreadCount;
-                StateHasChanged();
-            });
-        });
-
-        _hubConnection.On<long, int>("NotificationRead", async (notificationId, unreadCount) =>
-        {
-            await InvokeAsync(() =>
-            {
-                var item = Notifications.FirstOrDefault(n => n.Id == notificationId);
-                if (item != null)
-                {
-                    item.IsRead = true;
-                }
-
-                UnreadCount = unreadCount;
-                StateHasChanged();
-            });
-        });
-
-        _hubHandlersRegistered = true;
     }
 
     private async Task ToggleOpenAsync()
@@ -227,7 +135,6 @@
         IsLoading = true;
         try
         {
-            await EnsureHubConnectionAsync();
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated != true)
             {
@@ -372,17 +279,5 @@
         return value.ToString("dd MMM, HH:mm");
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        if (_hubConnection != null)
-        {
-            try
-            {
-                await _hubConnection.DisposeAsync();
-            }
-            catch
-            {
-            }
-        }
-    }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
