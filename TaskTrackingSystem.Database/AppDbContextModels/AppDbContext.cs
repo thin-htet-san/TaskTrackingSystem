@@ -49,7 +49,7 @@ public partial class AppDbContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseSqlServer("Server=.;Database=TTS;Trusted_Connection=True;TrustServerCertificate=True;Connect Timeout=5;");
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=tts;Username=postgres;Password=postgres");
         }
     }
 
@@ -61,8 +61,8 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.Action).HasMaxLength(100);
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
             entity.Property(e => e.IpAddress)
                 .HasMaxLength(45)
                 .IsUnicode(false);
@@ -80,9 +80,9 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.UserId, "IX_Comments_UserId");
 
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
 
             entity.HasOne(d => d.Task).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.TaskId)
@@ -102,7 +102,7 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Icon).HasMaxLength(50);
             entity.Property(e => e.MenuCode).HasMaxLength(50);
             entity.Property(e => e.MenuName).HasMaxLength(100);
@@ -122,12 +122,11 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.CreatedAt, "IX_notifications_CreatedAt");
             entity.HasIndex(e => new { e.RecipientId, e.IsRead }, "IX_notifications_Recipient_IsRead");
 
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone");
             entity.Property(e => e.IsRead).HasColumnName("is_read").HasDefaultValue(false);
             entity.Property(e => e.NotificationType).HasColumnName("notification_type");
             entity.Property(e => e.Title).HasMaxLength(255);
-            entity.Property(e => e.Body).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.ReadAt).HasColumnName("read_at").HasColumnType("datetime2");
+            entity.Property(e => e.ReadAt).HasColumnName("read_at").HasColumnType("timestamp with time zone");
             entity.Property(e => e.RecipientId).HasColumnName("recipient_id");
             entity.Property(e => e.SenderId).HasColumnName("sender_id");
             entity.Property(e => e.SourceId).HasColumnName("source_id");
@@ -154,7 +153,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ApiName).HasMaxLength(100);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.HttpMethod).HasMaxLength(20);
             entity.Property(e => e.PermissionCode).HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
@@ -175,20 +174,20 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.ActualHours).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.DelayReason).HasMaxLength(300);
             entity.Property(e => e.BlockedBy).HasMaxLength(200);
-            entity.Property(e => e.DueDate).HasColumnType("datetime");
+            entity.Property(e => e.DueDate).HasColumnType("timestamp with time zone");
             entity.Property(e => e.EscalationLevel).HasDefaultValue(0);
             entity.Property(e => e.IsBlocked).HasDefaultValue(false);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
             entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
-            entity.Property(e => e.StartDate).HasColumnType("datetime");
+            entity.Property(e => e.StartDate).HasColumnType("timestamp with time zone");
             entity.Property(e => e.StatusId).HasDefaultValue(AppTaskStatus.Todo);
             entity.Property(e => e.Title).HasMaxLength(200);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
 
             entity.HasOne(d => d.AssignedToNavigation).WithMany()
                 .HasForeignKey(d => d.AssignedTo)
@@ -204,15 +203,15 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.CreatedById, "IX_Projects_CreatedById");
 
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
             entity.Property(e => e.CreatedDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.EndDate).HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
+            entity.Property(e => e.EndDate).HasColumnType("timestamp with time zone");
             entity.Property(e => e.Name).HasMaxLength(150);
-            entity.Property(e => e.StartDate).HasColumnType("datetime");
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.StartDate).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Projects)
                 .HasForeignKey(d => d.CreatedById)
@@ -226,8 +225,8 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.UserId, "IX_ProjectMembers_UserId");
 
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
 
             entity.HasOne(d => d.Project).WithMany(p => p.ProjectMembers)
                 .HasForeignKey(d => d.ProjectId)
@@ -243,11 +242,11 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.Name, "UQ_Roles_Name").IsUnique();
 
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
             entity.Property(e => e.Description).HasMaxLength(200);
             entity.Property(e => e.Name).HasMaxLength(50);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
         });
 
         modelBuilder.Entity<RoleMenu>(entity =>
@@ -258,7 +257,7 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
             entity.HasOne(d => d.Menu).WithMany(p => p.RoleMenus)
@@ -282,7 +281,7 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
             entity.HasOne(d => d.Permission).WithMany(p => p.RolePermissions)
@@ -305,14 +304,14 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.ProjectId, "IX_Tasks_ProjectId");
 
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.DueDate).HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
+            entity.Property(e => e.DueDate).HasColumnType("timestamp with time zone");
             entity.Property(e => e.IsArchived).HasDefaultValue(false);
             entity.Property(e => e.PriorityId).HasDefaultValue(TaskPriority.Medium);
             entity.Property(e => e.StatusId).HasDefaultValue(AppTaskStatus.Todo);
             entity.Property(e => e.Title).HasMaxLength(200);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
 
             entity.HasOne(d => d.AssignedByNavigation).WithMany(p => p.TaskAssignedByNavigations).HasForeignKey(d => d.AssignedBy);
 
@@ -332,14 +331,14 @@ public partial class AppDbContext : DbContext
             entity.HasIndex(e => e.Username, "UQ_Users_Username").IsUnique();
 
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
             entity.Property(e => e.Email).HasMaxLength(256);
             entity.Property(e => e.FirstName).HasMaxLength(50);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.LastName).HasMaxLength(50);
             entity.Property(e => e.Phone).HasMaxLength(20);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp with time zone");
             entity.Property(e => e.Username).HasMaxLength(50);
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
@@ -358,8 +357,8 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.FcmToken).HasColumnName("fcm_token").HasMaxLength(255);
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime2");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("timestamp with time zone");
 
             entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)

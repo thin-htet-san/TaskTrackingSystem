@@ -1,13 +1,29 @@
-dotnet tool install --global dotnet-ef
+---
+title: TaskTrackingSystem
+colorFrom: blue
+colorTo: teal
+sdk: docker
+app_port: 7860
+---
 
-dotnet ef dbcontext scaffold "Server=.;Database=TTS;User Id=sa;Password=sasa@123;TrustServerCertificate=True;" Microsoft.EntityFrameworkCore.SqlServer --output-dir AppDbContextModels --context AppDbContext --force
+# TaskTrackingSystem
 
+This repo runs the Web API and Web App together inside one Docker container for Hugging Face Spaces.
 
-admin
-P@ssw0rd123!
+## Hosting Setup
 
-mgr01
-P@ssw0rd123!
+- Database: Supabase PostgreSQL
+- Public app: Hugging Face Space
+- API and Web App: same container, routed through Nginx
 
-emp01
-P@ssw0rd123!
+## Local Notes
+
+- The app now expects PostgreSQL instead of SQL Server.
+- The API creates the schema on first startup with `EnsureCreatedAsync()`.
+- The Web App talks to the API at `http://127.0.0.1:5001/api/` by default inside the container.
+
+## Default Demo Accounts
+
+- `admin` / `P@ssw0rd123!`
+- `mgr01` / `P@ssw0rd123!`
+- `emp01` / `P@ssw0rd123!`
