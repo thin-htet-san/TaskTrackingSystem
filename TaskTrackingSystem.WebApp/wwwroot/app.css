@@ -1463,3 +1463,229 @@ html.dark .form-select {
     color: var(--text-primary) !important;
     border-color: var(--border) !important;
 }
+
+/* ==========================================
+   SHELL + DASHBOARD QUALITY GUARD
+   Loaded after Tailwind so layout-critical rules always win.
+   ========================================== */
+:root {
+    --app-sidebar-width: 16.25rem;
+    --chart-primary: #0F766E;
+    --chart-secondary: #38BDF8;
+    --chart-success: #10B981;
+    --chart-warning: #B45309;
+    --chart-danger: #DC2626;
+}
+
+html,
+body {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+body.tts-sidebar-open {
+    overflow: auto;
+}
+
+.app-shell {
+    display: flex !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    background:
+        linear-gradient(180deg, rgba(15, 118, 110, 0.035), transparent 14rem),
+        var(--app-bg) !important;
+}
+
+.app-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    z-index: 60 !important;
+    width: var(--app-sidebar-width) !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-width: min(var(--app-sidebar-width), calc(100vw - 3.25rem)) !important;
+    transform: translateX(0) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 36%),
+        var(--sidebar-bg) !important;
+}
+
+.app-main {
+    min-width: 0 !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+}
+
+.app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    min-height: 4.1rem !important;
+    background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
+}
+
+.app-content {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: clamp(1rem, 1.7vw, 1.75rem) !important;
+}
+
+.mobile-sidebar-toggle,
+.mobile-sidebar-close,
+.sidebar-scrim {
+    display: none !important;
+}
+
+main > .space-y-8,
+main > .space-y-6 {
+    max-width: 96rem;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+main :is(.grid) {
+    min-width: 0;
+}
+
+main :is(.rounded-xl.border, .rounded-lg.border, .surface-panel) {
+    border-color: var(--border) !important;
+}
+
+main :is(.rounded-xl.border.border-slate-200.bg-white, .rounded-lg.border.border-slate-200.bg-white) {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
+        var(--surface) !important;
+}
+
+main :is(h2, h3) {
+    letter-spacing: 0 !important;
+}
+
+main .page-kicker,
+main .uppercase.tracking-\[0\.08em\],
+main .uppercase.tracking-wider {
+    color: var(--brand-primary) !important;
+}
+
+main a,
+main button {
+    touch-action: manipulation;
+}
+
+main button,
+main a[class*="inline-flex"] {
+    min-height: 2.75rem;
+}
+
+main svg [stroke="#2563eb"],
+main svg [stroke="#3b82f6"],
+main svg [stroke="#06b6d4"] {
+    stroke: var(--chart-primary) !important;
+}
+
+main svg [fill="#2563eb"],
+main svg [fill="#3b82f6"],
+main svg [fill="#06b6d4"] {
+    fill: var(--chart-primary) !important;
+}
+
+main svg stop[stop-color="#2563eb"],
+main svg stop[stop-color="#3b82f6"] {
+    stop-color: var(--chart-primary) !important;
+}
+
+main svg [stroke="#ef4444"],
+main svg [fill="#ef4444"] {
+    stroke: var(--chart-danger) !important;
+    fill: var(--chart-danger) !important;
+}
+
+@media (min-width: 960px) {
+    body.tts-sidebar-open {
+        overflow: auto !important;
+    }
+
+    .app-shell {
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        padding-left: var(--app-sidebar-width) !important;
+        overflow: hidden !important;
+    }
+
+    .app-main {
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+    }
+
+    .app-content {
+        overflow-y: auto !important;
+    }
+}
+
+@media (min-width: 1366px) and (max-width: 1536px) {
+    :root {
+        --app-sidebar-width: 15rem;
+    }
+}
+
+@media (min-width: 1150px) and (max-width: 1365px) {
+    :root {
+        --app-sidebar-width: 14.25rem;
+    }
+}
+
+@media (min-width: 960px) and (max-width: 1149px) {
+    :root {
+        --app-sidebar-width: 13.25rem;
+    }
+}
+
+@media (max-width: 959px) {
+    body.tts-sidebar-open {
+        overflow: hidden !important;
+    }
+
+    .app-shell {
+        display: block !important;
+        min-height: 100dvh !important;
+        padding-left: 0 !important;
+        overflow: auto !important;
+    }
+
+    .app-sidebar {
+        width: min(18rem, calc(100vw - 3rem)) !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.22s ease !important;
+    }
+
+    body.tts-sidebar-open .app-sidebar {
+        transform: translateX(0) !important;
+    }
+
+    .sidebar-scrim {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 50 !important;
+        display: none !important;
+        border: 0 !important;
+        background: rgba(16, 22, 20, 0.54) !important;
+    }
+
+    body.tts-sidebar-open .sidebar-scrim {
+        display: block !important;
+    }
+
+    .mobile-sidebar-toggle,
+    .mobile-sidebar-close {
+        display: inline-flex !important;
+    }
+
+    .app-main {
+        min-height: 100dvh !important;
+    }
+
+    .app-topbar {
+        min-height: 3.6rem !important;
+    }
+}

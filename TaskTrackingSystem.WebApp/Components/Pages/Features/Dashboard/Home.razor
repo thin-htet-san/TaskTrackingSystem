@@ -61,8 +61,8 @@
                     <svg viewBox="0 0 760 340" class="h-[340px] w-full">
                         <defs>
                             <linearGradient id="activityFill" x1="0" x2="0" y1="0" y2="1">
-                                <stop offset="0%" stop-color="#2563eb" stop-opacity="0.18" />
-                                <stop offset="100%" stop-color="#2563eb" stop-opacity="0" />
+                                <stop offset="0%" stop-color="#0f766e" stop-opacity="0.18" />
+                                <stop offset="100%" stop-color="#0f766e" stop-opacity="0" />
                             </linearGradient>
                         </defs>
 
@@ -79,15 +79,15 @@
                         }
 
                         <path d="@ActivityAreaPath" fill="url(#activityFill)" />
-                        <path d="@ActivityLinePath" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="@ActivityLinePath" fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
 
                         @for (var i = 0; i < ActivityMonths.Count; i++)
                         {
                             var index = i;
                             var point = ActivityPoints[i];
                             <circle cx="@point.X" cy="@point.Y" r="5"
-                                    fill="#2563eb"
-                                    stroke="#ddd6fe"
+                                    fill="#0f766e"
+                                    stroke="#ccfbf1"
                                     stroke-width="3"
                                     @onmouseenter="() => SetHoveredActivity(index)"
                                     @onmouseleave="ClearHoveredActivity" />
@@ -559,7 +559,7 @@
             overdueCount
         };
 
-        var colors = new[] { "#10b981", "#3b82f6", "#06b6d4", "#ef4444" };
+        var colors = new[] { "#0f766e", "#38bdf8", "#94a3b8", "#dc2626" };
 
         // 2. Adjust total so it maps 100% cleanly to the math displayed
         var total = Math.Max(TotalTasksCount, 1);
@@ -842,11 +842,11 @@
     {
         var palette = new[]
         {
-            "#2563eb",
-            "#0ea5e9",
+            "#0f766e",
+            "#38bdf8",
             "#10b981",
-            "#f59e0b",
-            "#f97316"
+            "#b45309",
+            "#64748b"
         };
 
         var index = (int)(projectId % palette.Length);
