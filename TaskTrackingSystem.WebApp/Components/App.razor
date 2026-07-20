@@ -569,20 +569,31 @@
                 return this.apply(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
             }
         };
-        window.toggleTaskifyThemeButton = function (button) {
-            const isDark = window.themePreference.toggle();
+        window.updateTaskifyThemeControls = function () {
+            const isDark = document.documentElement.classList.contains('dark');
             const title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
             const iconName = isDark ? 'sun' : 'moon';
-            button.setAttribute('aria-pressed', String(isDark));
-            button.setAttribute('aria-label', title);
-            button.setAttribute('title', title);
-            const icon = button.querySelector('[data-lucide]');
-            if (icon) {
-                icon.setAttribute('data-lucide', iconName);
-            }
+            document.querySelectorAll('[data-theme-toggle]').forEach(button => {
+                button.setAttribute('aria-pressed', String(isDark));
+                button.setAttribute('aria-label', title);
+                button.setAttribute('title', title);
+                const icon = button.querySelector('[data-lucide]');
+                if (icon) {
+                    icon.setAttribute('data-lucide', iconName);
+                }
+            });
             initIcons();
-            return false;
         };
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-theme-toggle]');
+            if (!button) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            window.themePreference.toggle();
+            window.updateTaskifyThemeControls();
+        }, true);
         function downloadFile(filename, contentType, content) {
             const file = new Blob([content], {type: contentType});
             const exportUrl = URL.createObjectURL(file);
@@ -624,6 +635,9 @@
         function refreshClientEnhancements() {
             if (window.themePreference && typeof window.themePreference.init === 'function') {
                 window.themePreference.init();
+            }
+            if (window.updateTaskifyThemeControls) {
+                window.updateTaskifyThemeControls();
             }
             initIcons();
             initFlatpickr();

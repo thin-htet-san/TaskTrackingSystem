@@ -1,35 +1,8 @@
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
-@inject IJSRuntime JS
-
 <button type="button"
-        @onclick="ToggleThemeAsync"
         class="control-button"
-        title="@ButtonTitle"
-        aria-label="@ButtonTitle"
-        aria-pressed="@isDarkMode.ToString().ToLowerInvariant()">
-    <i data-lucide="@(isDarkMode ? "sun" : "moon")" class="h-4 w-4"></i>
+        data-theme-toggle
+        title="Switch to dark mode"
+        aria-label="Switch to dark mode"
+        aria-pressed="false">
+    <i data-lucide="moon" class="h-4 w-4"></i>
 </button>
-
-@code {
-    private bool isDarkMode;
-
-    private string ButtonTitle => isDarkMode ? "Switch to light mode" : "Switch to dark mode";
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            isDarkMode = await JS.InvokeAsync<bool>("themePreference.init");
-            StateHasChanged();
-        }
-
-        await JS.InvokeVoidAsync("initIcons");
-    }
-
-    private async Task ToggleThemeAsync()
-    {
-        isDarkMode = await JS.InvokeAsync<bool>("themePreference.toggle");
-        await JS.InvokeVoidAsync("initIcons");
-    }
-
-}
