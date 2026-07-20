@@ -1087,7 +1087,7 @@ body {
         var(--app-bg);
 }
 
-.app-sidebar {
+.app-shell .app-sidebar {
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 36%),
         var(--sidebar-bg);
@@ -1497,14 +1497,14 @@ body.tts-sidebar-open {
         var(--app-bg) !important;
 }
 
-.app-sidebar {
-    position: fixed !important;
-    inset: 0 auto 0 0 !important;
-    z-index: 60 !important;
+.app-shell .app-sidebar {
+    position: sticky !important;
+    inset: 0 auto auto 0 !important;
+    z-index: 40 !important;
     width: var(--app-sidebar-width) !important;
     height: 100dvh !important;
     min-height: 100dvh !important;
-    max-width: min(var(--app-sidebar-width), calc(100vw - 3.25rem)) !important;
+    max-width: var(--app-sidebar-width) !important;
     transform: translateX(0) !important;
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 36%),
@@ -1609,7 +1609,7 @@ main svg [fill="#ef4444"] {
     .app-shell {
         height: 100dvh !important;
         min-height: 100dvh !important;
-        padding-left: var(--app-sidebar-width) !important;
+        padding-left: 0 !important;
         overflow: hidden !important;
     }
 

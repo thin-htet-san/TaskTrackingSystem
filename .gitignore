@@ -26,6 +26,8 @@ x86/
 [Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
+_codex_build/
+_codex_obj/
 bld/
 [Bb]in/
 [Oo]bj/
