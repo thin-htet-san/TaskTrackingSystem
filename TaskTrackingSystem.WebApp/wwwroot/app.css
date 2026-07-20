@@ -1527,6 +1527,20 @@ body.tts-sidebar-open {
     background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
 }
 
+.app-topbar > div:last-child {
+    position: relative;
+    z-index: 45;
+    pointer-events: auto;
+}
+
+.app-topbar .control-button,
+.app-topbar [data-theme-toggle] {
+    position: relative;
+    z-index: 46;
+    cursor: pointer;
+    pointer-events: auto !important;
+}
+
 .app-content {
     width: 100% !important;
     min-width: 0 !important;
