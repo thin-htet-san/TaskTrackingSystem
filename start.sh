@@ -4,10 +4,10 @@ set -euo pipefail
 : "${WebApi__BaseUrl:=http://127.0.0.1:5001/api/}"
 export WebApi__BaseUrl
 
-dotnet /app/api/TaskTrackingSystem.WebApi.dll --urls http://127.0.0.1:5001 &
+dotnet /app/api/TaskTrackingSystem.WebApi.dll --contentRoot /app/api --urls http://127.0.0.1:5001 &
 api_pid=$!
 
-dotnet /app/webapp/TaskTrackingSystem.WebApp.dll --urls http://127.0.0.1:5000 &
+dotnet /app/webapp/TaskTrackingSystem.WebApp.dll --contentRoot /app/webapp --urls http://127.0.0.1:5000 &
 webapp_pid=$!
 
 term_handler() {
