@@ -11,6 +11,7 @@
 @inject IJSRuntime JS
 
 <nav class="flex-1 space-y-1 overflow-y-auto px-3 pb-5 pt-2 text-slate-300"
+     data-enhance-nav="false"
      onclick="if (event.target.closest('a')) document.body.classList.remove('tts-sidebar-open');">
     @if (menus.Any())
     {
