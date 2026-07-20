@@ -98,7 +98,8 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentPath = Navigation.ToBaseRelativePath(e.Location).Trim('/');
-        InvokeAsync(RefreshMenusAsync);
+        RefreshExpandedMenuGroups();
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void OnLanguageChanged()
@@ -163,6 +164,17 @@
         }
 
         StateHasChanged();
+    }
+
+    private void RefreshExpandedMenuGroups()
+    {
+        foreach (var menu in menus)
+        {
+            if (menu.SubMenus != null && menu.SubMenus.Count > 0 && IsMenuExpanded(menu.MenuCode, menu.SubMenus))
+            {
+                expandedMenuGroups.Add(menu.MenuCode);
+            }
+        }
     }
 
     private void ToggleMenuGroup(string menuCode)
