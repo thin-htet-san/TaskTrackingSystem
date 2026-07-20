@@ -1516,6 +1516,7 @@ body.tts-sidebar-open {
     min-width: 0 !important;
     width: 100% !important;
     flex: 1 1 auto !important;
+    margin-left: 1rem !important;
 }
 
 .app-topbar {
@@ -1529,7 +1530,7 @@ body.tts-sidebar-open {
 .app-content {
     width: 100% !important;
     min-width: 0 !important;
-    padding: clamp(1rem, 1.7vw, 1.75rem) !important;
+    padding: clamp(1.25rem, 1.8vw, 1.75rem) !important;
 }
 
 .mobile-sidebar-toggle,
@@ -1686,6 +1687,7 @@ main svg [fill="#ef4444"] {
 
     .app-main {
         min-height: 100dvh !important;
+        margin-left: 0 !important;
     }
 
     .app-topbar {
