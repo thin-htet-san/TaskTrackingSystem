@@ -1,60 +1,60 @@
 :root {
-    --brand-primary: #2563EB;
-    --brand-primary-hover: #1D4ED8;
-    --brand-accent: #0F766E;
-    --app-bg: #F6F8FB;
+    --brand-primary: #0F766E;
+    --brand-primary-hover: #115E59;
+    --brand-accent: #B45309;
+    --app-bg: #F7F8F7;
     --surface: #FFFFFF;
-    --surface-muted: #F8FAFC;
+    --surface-muted: #F1F5F4;
     --surface-raised: #FFFFFF;
-    --border: #E2E8F0;
-    --border-strong: #CBD5E1;
-    --text-primary: #0F172A;
-    --text-muted: #64748B;
-    --text-soft: #94A3B8;
-    --focus-ring: rgba(37, 99, 235, 0.24);
-    --status-success-bg: #CCFBF1;
+    --border: #DDE5E2;
+    --border-strong: #B9C8C3;
+    --text-primary: #17211F;
+    --text-muted: #64706D;
+    --text-soft: #8B9894;
+    --focus-ring: rgba(15, 118, 110, 0.24);
+    --status-success-bg: #DFF6EE;
     --status-success-text: #0F766E;
-    --status-warning-bg: #FEF3C7;
-    --status-warning-text: #B45309;
-    --status-danger-bg: #FFE4E6;
-    --status-danger-text: #BE123C;
-    --sidebar-bg: #0B1220;
-    --sidebar-muted: #9AA6B8;
-    --sidebar-active: rgba(37, 99, 235, 0.18);
-    --sidebar-border: rgba(148, 163, 184, 0.16);
+    --status-warning-bg: #FEF3D2;
+    --status-warning-text: #9A5B00;
+    --status-danger-bg: #FCE4E1;
+    --status-danger-text: #B42318;
+    --sidebar-bg: #19211F;
+    --sidebar-muted: #A5B2AE;
+    --sidebar-active: rgba(15, 118, 110, 0.22);
+    --sidebar-border: rgba(221, 229, 226, 0.12);
     --radius-sm: 0.375rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.5rem;
-    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
-    --shadow-popover: 0 18px 40px rgba(15, 23, 42, 0.16);
+    --shadow-card: 0 1px 2px rgba(23, 33, 31, 0.06), 0 12px 28px rgba(23, 33, 31, 0.045);
+    --shadow-popover: 0 18px 44px rgba(23, 33, 31, 0.18);
 }
 
 html.dark {
-    --brand-primary: #60A5FA;
-    --brand-primary-hover: #93C5FD;
-    --brand-accent: #2DD4BF;
-    --app-bg: #0B1120;
-    --surface: #111827;
-    --surface-muted: #182235;
-    --surface-raised: #0F172A;
-    --border: #263449;
-    --border-strong: #334155;
-    --text-primary: #F8FAFC;
-    --text-muted: #CBD5E1;
-    --text-soft: #94A3B8;
-    --focus-ring: rgba(96, 165, 250, 0.30);
-    --status-success-bg: rgba(20, 184, 166, 0.18);
-    --status-success-text: #5EEAD4;
-    --status-warning-bg: rgba(245, 158, 11, 0.18);
-    --status-warning-text: #FCD34D;
-    --status-danger-bg: rgba(244, 63, 94, 0.18);
-    --status-danger-text: #FDA4AF;
-    --sidebar-bg: #060B16;
-    --sidebar-muted: #94A3B8;
-    --sidebar-active: rgba(96, 165, 250, 0.18);
-    --sidebar-border: rgba(148, 163, 184, 0.18);
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28);
-    --shadow-popover: 0 18px 50px rgba(0, 0, 0, 0.35);
+    --brand-primary: #5EEAD4;
+    --brand-primary-hover: #2DD4BF;
+    --brand-accent: #FCD34D;
+    --app-bg: #101614;
+    --surface: #18201E;
+    --surface-muted: #202A27;
+    --surface-raised: #1B2522;
+    --border: #2E3B37;
+    --border-strong: #43524D;
+    --text-primary: #F4F7F6;
+    --text-muted: #B4C0BC;
+    --text-soft: #889692;
+    --focus-ring: rgba(94, 234, 212, 0.28);
+    --status-success-bg: rgba(45, 212, 191, 0.16);
+    --status-success-text: #99F6E4;
+    --status-warning-bg: rgba(252, 211, 77, 0.16);
+    --status-warning-text: #FDE68A;
+    --status-danger-bg: rgba(248, 113, 113, 0.16);
+    --status-danger-text: #FCA5A5;
+    --sidebar-bg: #111816;
+    --sidebar-muted: #9DACA7;
+    --sidebar-active: rgba(94, 234, 212, 0.15);
+    --sidebar-border: rgba(221, 229, 226, 0.12);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.34);
+    --shadow-popover: 0 18px 50px rgba(0, 0, 0, 0.42);
     color-scheme: dark;
 }
 
@@ -1064,4 +1064,402 @@ html.dark .form-select {
     background-color: #111827 !important;
     color: #F8FAFC !important;
     border-color: #263449 !important;
+}
+
+/* ==========================================
+   PROFESSIONAL UI REFRESH
+   ========================================== */
+body {
+    background:
+        linear-gradient(180deg, rgba(15, 118, 110, 0.035), transparent 22rem),
+        var(--app-bg);
+}
+
+::selection {
+    background: rgba(15, 118, 110, 0.18);
+    color: var(--text-primary);
+}
+
+.app-shell {
+    background:
+        linear-gradient(180deg, rgba(15, 118, 110, 0.045), transparent 19rem),
+        radial-gradient(circle at 100% 0, rgba(180, 83, 9, 0.05), transparent 18rem),
+        var(--app-bg);
+}
+
+.app-sidebar {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 36%),
+        var(--sidebar-bg);
+}
+
+.app-sidebar::before {
+    background:
+        linear-gradient(90deg, rgba(94, 234, 212, 0.14), transparent 0.45rem),
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.20), transparent 17rem);
+}
+
+.app-sidebar-logo {
+    background: linear-gradient(135deg, #0F766E, #B45309);
+    box-shadow: 0 12px 28px rgba(15, 118, 110, 0.24);
+}
+
+.app-topbar {
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+
+.app-content {
+    background: transparent;
+}
+
+.control-button,
+main button,
+main a[class*="inline-flex"],
+main .btn {
+    border-radius: var(--radius-lg) !important;
+}
+
+.control-button {
+    background: color-mix(in srgb, var(--surface) 96%, var(--brand-primary) 4%);
+}
+
+.btn-primary,
+main .bg-violet-500,
+main .bg-violet-600,
+main .bg-violet-700,
+main .bg-purple-500,
+main .bg-purple-600,
+main .bg-indigo-500,
+main .bg-indigo-600,
+main .bg-blue-600 {
+    background-color: #0F766E !important;
+    border-color: #0F766E !important;
+    color: #FFFFFF !important;
+}
+
+.btn-primary:hover,
+main .hover\:bg-violet-500:hover,
+main .hover\:bg-violet-600:hover,
+main .hover\:bg-violet-700:hover,
+main .hover\:bg-purple-700:hover,
+main .hover\:bg-blue-600:hover,
+main .hover\:bg-blue-700:hover {
+    background-color: #115E59 !important;
+    border-color: #115E59 !important;
+    color: #FFFFFF !important;
+}
+
+main .text-violet-500,
+main .text-violet-600,
+main .text-violet-700,
+main .text-purple-600,
+main .text-purple-700,
+main .text-indigo-600,
+main .text-indigo-700,
+main .text-blue-600,
+main .text-blue-700 {
+    color: #0F766E !important;
+}
+
+main .hover\:text-violet-500:hover,
+main .hover\:text-violet-600:hover,
+main .hover\:text-violet-700:hover,
+main .hover\:text-violet-800:hover,
+main .hover\:text-blue-600:hover,
+main .hover\:text-blue-700:hover {
+    color: #115E59 !important;
+}
+
+main .bg-violet-50,
+main .bg-violet-50\/10,
+main .bg-violet-50\/40,
+main .bg-violet-50\/60,
+main .bg-violet-50\/70,
+main .bg-violet-100,
+main .bg-purple-50,
+main .bg-purple-100,
+main .bg-indigo-50,
+main .bg-indigo-100,
+main .bg-blue-50,
+main .bg-blue-100 {
+    background-color: #E6F4F1 !important;
+}
+
+main .border-violet-100,
+main .border-violet-200,
+main .border-violet-300,
+main .border-indigo-100,
+main .border-indigo-200,
+main .border-blue-100,
+main .border-blue-200 {
+    border-color: #B7DAD4 !important;
+}
+
+main .focus\:ring-violet-100:focus,
+main .focus\:ring-violet-500:focus,
+main .focus\:ring-violet-600:focus,
+main .focus\:ring-slate-900:focus {
+    --tw-ring-color: var(--focus-ring) !important;
+}
+
+main .focus\:border-violet-400:focus,
+main .focus\:border-violet-600:focus {
+    border-color: var(--brand-primary) !important;
+}
+
+main .accent-violet-600,
+html.dark main .accent-violet-600 {
+    accent-color: #0F766E !important;
+}
+
+main .bg-white,
+main .bg-card,
+main .bg-popover {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+}
+
+main .bg-slate-50,
+main .bg-slate-50\/40,
+main .bg-slate-50\/50,
+main .bg-slate-50\/60,
+main .bg-slate-50\/70,
+main .bg-slate-50\/95,
+main .bg-muted {
+    background-color: var(--surface-muted) !important;
+}
+
+main .border-slate-100,
+main .border-slate-200,
+main .border-slate-300,
+main .border-border,
+main .divide-slate-100,
+main .divide-slate-200 {
+    border-color: var(--border) !important;
+}
+
+main .text-slate-950,
+main .text-slate-900,
+main .text-slate-800,
+main .text-slate-700,
+main .text-foreground,
+main .text-card-foreground,
+main .text-popover-foreground {
+    color: var(--text-primary) !important;
+}
+
+main .text-slate-600,
+main .text-slate-500,
+main .text-muted,
+main .text-muted-foreground {
+    color: var(--text-muted) !important;
+}
+
+main .text-slate-400,
+main .text-slate-300 {
+    color: var(--text-soft) !important;
+}
+
+main .shadow-sm,
+main .shadow-md,
+main .shadow-lg,
+main .shadow-slate-200\/50,
+main .shadow-slate-200\/60,
+main .shadow-slate-200\/70 {
+    box-shadow: var(--shadow-card) !important;
+}
+
+main :is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[24px\], .rounded-\[28px\], .rounded-\[32px\]) {
+    border-radius: var(--radius-lg) !important;
+}
+
+main :is(table, .surface-panel),
+main :is(.border-slate-200.bg-white, .border-slate-100.bg-white) {
+    box-shadow: var(--shadow-card);
+}
+
+main thead tr {
+    background: color-mix(in srgb, var(--surface-muted) 88%, var(--brand-primary) 12%) !important;
+}
+
+main th {
+    font-size: 0.72rem !important;
+    letter-spacing: 0.06em !important;
+}
+
+main tbody tr:hover {
+    background: color-mix(in srgb, var(--surface-muted) 84%, var(--brand-primary) 16%) !important;
+}
+
+main :is(input, select, textarea, .form-control, .form-select) {
+    min-height: 2.45rem;
+}
+
+main label {
+    color: var(--text-muted) !important;
+    font-weight: 650;
+}
+
+main [class*="bg-emerald-100"],
+main [class*="bg-green-100"] {
+    background-color: var(--status-success-bg) !important;
+    color: var(--status-success-text) !important;
+}
+
+main [class*="bg-amber-100"],
+main [class*="bg-yellow-100"],
+main [class*="bg-orange-100"] {
+    background-color: var(--status-warning-bg) !important;
+    color: var(--status-warning-text) !important;
+}
+
+main [class*="bg-red-100"],
+main [class*="bg-rose-100"] {
+    background-color: var(--status-danger-bg) !important;
+    color: var(--status-danger-text) !important;
+}
+
+main svg line[stroke="#e2e8f0"],
+main svg line[stroke="#E2E8F0"] {
+    stroke: var(--border) !important;
+}
+
+main svg path[stroke="#2563eb"],
+main svg path[stroke="#3b82f6"] {
+    stroke: var(--brand-primary) !important;
+}
+
+main svg circle[fill="#2563eb"],
+main svg circle[fill="#3b82f6"] {
+    fill: var(--brand-primary) !important;
+}
+
+html.dark,
+html.dark body,
+html.dark .app-shell,
+html.dark .app-main,
+html.dark .app-content {
+    background-color: var(--app-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark body {
+    background:
+        linear-gradient(180deg, rgba(94, 234, 212, 0.04), transparent 22rem),
+        var(--app-bg);
+}
+
+html.dark .app-shell {
+    background:
+        linear-gradient(180deg, rgba(94, 234, 212, 0.045), transparent 18rem),
+        var(--app-bg);
+}
+
+html.dark main .bg-white,
+html.dark main .bg-card,
+html.dark main .bg-popover,
+html.dark main [class*="bg-white"] {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark main .bg-slate-50,
+html.dark main .bg-slate-50\/40,
+html.dark main .bg-slate-50\/50,
+html.dark main .bg-slate-50\/60,
+html.dark main .bg-slate-50\/70,
+html.dark main .bg-slate-50\/95,
+html.dark main .bg-slate-100,
+html.dark main .bg-slate-100\/50,
+html.dark main .bg-muted {
+    background-color: var(--surface-muted) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark main .bg-slate-200,
+html.dark main .bg-slate-300 {
+    background-color: #2E3B37 !important;
+}
+
+html.dark main .text-slate-950,
+html.dark main .text-slate-900,
+html.dark main .text-slate-800,
+html.dark main .text-slate-700,
+html.dark main .text-foreground,
+html.dark main .text-card-foreground,
+html.dark main .text-popover-foreground {
+    color: var(--text-primary) !important;
+}
+
+html.dark main .text-slate-600,
+html.dark main .text-slate-500,
+html.dark main .text-muted,
+html.dark main .text-muted-foreground {
+    color: var(--text-muted) !important;
+}
+
+html.dark main .text-slate-400,
+html.dark main .text-slate-300 {
+    color: var(--text-soft) !important;
+}
+
+html.dark main .border-slate-100,
+html.dark main .border-slate-200,
+html.dark main .border-slate-300,
+html.dark main .border-border,
+html.dark main .divide-slate-100,
+html.dark main .divide-slate-200 {
+    border-color: var(--border) !important;
+}
+
+html.dark main .bg-violet-50,
+html.dark main .bg-violet-50\/10,
+html.dark main .bg-violet-50\/40,
+html.dark main .bg-violet-50\/60,
+html.dark main .bg-violet-50\/70,
+html.dark main .bg-violet-100,
+html.dark main .bg-purple-50,
+html.dark main .bg-purple-100,
+html.dark main .bg-indigo-50,
+html.dark main .bg-indigo-100,
+html.dark main .bg-blue-50,
+html.dark main .bg-blue-100 {
+    background-color: rgba(94, 234, 212, 0.13) !important;
+}
+
+html.dark main .text-violet-500,
+html.dark main .text-violet-600,
+html.dark main .text-violet-700,
+html.dark main .text-purple-600,
+html.dark main .text-purple-700,
+html.dark main .text-indigo-600,
+html.dark main .text-indigo-700,
+html.dark main .text-blue-600,
+html.dark main .text-blue-700 {
+    color: var(--brand-primary) !important;
+}
+
+html.dark main .btn-primary,
+html.dark main .bg-primary,
+html.dark main .bg-violet-500,
+html.dark main .bg-violet-600,
+html.dark main .bg-violet-700,
+html.dark main .bg-purple-500,
+html.dark main .bg-purple-600,
+html.dark main .bg-indigo-500,
+html.dark main .bg-indigo-600,
+html.dark main .bg-blue-600 {
+    background-color: #0F766E !important;
+    border-color: #0F766E !important;
+    color: #FFFFFF !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea,
+html.dark .form-control,
+html.dark .form-select {
+    background-color: var(--surface-raised) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border) !important;
 }

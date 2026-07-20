@@ -71,40 +71,40 @@
         };
     </script>
     <script>
-        const brandDark = "#172554";
-        const brandDarkAlt = "#1E3A8A";
-        const brandPrimary = "#2563EB";
-        const brandPrimaryHover = "#1D4ED8";
-        const brandAccent = "#0F766E";
-        const brandLight = "#EFF6FF";
-        const brandMuted = "#64748B";
+        const brandDark = "#12312D";
+        const brandDarkAlt = "#115E59";
+        const brandPrimary = "#0F766E";
+        const brandPrimaryHover = "#115E59";
+        const brandAccent = "#B45309";
+        const brandLight = "#E6F4F1";
+        const brandMuted = "#64706D";
         
-        const semanticRedBg = "#FFE4E6";
-        const semanticRedText = "#BE123C";
+        const semanticRedBg = "#FCE4E1";
+        const semanticRedText = "#B42318";
         
-        const semanticGreenBg = "#CCFBF1";
+        const semanticGreenBg = "#DFF6EE";
         const semanticGreenText = "#0F766E";
         
-        const semanticNeutralBg = "#F8FAFC";
-        const semanticNeutralText = "#475569";
+        const semanticNeutralBg = "#F1F5F4";
+        const semanticNeutralText = "#4F5D59";
         
-        const neutralBg = "#F6F8FB";
-        const neutralBorder = "#E2E8F0";
-        const neutralMuted = "#64748B";
-        const neutralDark = "#0F172A";
+        const neutralBg = "#F7F8F7";
+        const neutralBorder = "#DDE5E2";
+        const neutralMuted = "#64706D";
+        const neutralDark = "#17211F";
 
         const customGray = {
             50: neutralBg,
-            100: "#F1F5F9",
+            100: "#EFF3F1",
             200: neutralBorder,
-            300: "#CBD5E1",
-            400: "#94A3B8",
+            300: "#B9C8C3",
+            400: "#8B9894",
             500: neutralMuted,
-            600: "#475569",
-            700: "#334155",
-            800: "#1E293B",
+            600: "#4F5D59",
+            700: "#34413D",
+            800: "#222C29",
             900: neutralDark,
-            950: "#020617"
+            950: "#101614"
         };
 
         tailwind.config = {
@@ -207,12 +207,12 @@
                         900: "#0C4A6E"
                     },
                     blue: {
-                        50: "#EFF6FF",
-                        100: "#DBEAFE",
-                        200: "#BFDBFE",
-                        300: "#93C5FD",
-                        400: "#60A5FA",
-                        500: "#3B82F6",
+                        50: brandLight,
+                        100: "#CFE8E3",
+                        200: "#A7D8CF",
+                        300: "#76C3B8",
+                        400: "#3AA89A",
+                        500: "#16877E",
                         600: brandPrimary,
                         700: brandPrimaryHover,
                         800: brandDarkAlt,
@@ -285,7 +285,7 @@
                     chart: {
                         purple: brandPrimary,
                         teal: "#14B8A6",
-                        green: "#10B981",
+                        green: "#0F766E",
                         neutral: neutralBorder
                     },
 
@@ -349,15 +349,15 @@
                     text: null
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.97)',
                     borderWidth: 1,
-                    borderColor: '#e2e8f0',
-                    borderRadius: 12,
+                    borderColor: '#dde5e2',
+                    borderRadius: 8,
                     shadow: true,
                     style: {
                         fontFamily: 'Inter, sans-serif',
                         fontSize: '13px',
-                        color: '#0f172a'
+                        color: '#17211f'
                     },
                     pointFormat: '<b>{point.name}</b>: <b>{point.y}</b> tasks ({point.percentage:.1f}%)'
                 },
@@ -435,14 +435,14 @@
                     enabled: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.97)',
                     borderWidth: 1,
-                    borderColor: '#e2e8f0',
-                    borderRadius: 12,
+                    borderColor: '#dde5e2',
+                    borderRadius: 8,
                     shadow: true,
                     style: {
                         fontSize: '13px',
-                        color: '#0f172a'
+                        color: '#17211f'
                     },
                     pointFormatter: function() {
                         const start = Highcharts.dateFormat('%b %e, %Y', this.start);
@@ -458,24 +458,24 @@
                     min: options.xAxisMin,
                     max: options.xAxisMax,
                     gridLineWidth: 1,
-                    gridLineColor: '#f1f5f9',
-                    lineColor: '#e2e8f0',
-                    tickColor: '#e2e8f0',
+                    gridLineColor: '#eff3f1',
+                    lineColor: '#dde5e2',
+                    tickColor: '#dde5e2',
                     labels: {
                         format: '{value:%b %Y}',
                         style: {
-                            color: '#64748b',
+                            color: '#64706d',
                             fontSize: '11px'
                         }
                     },
                     currentDateIndicator: {
-                        color: '#2563eb',
+                        color: '#0f766e',
                         dashStyle: 'ShortDash',
                         width: 2,
                         label: {
                             format: 'Today',
                             style: {
-                                color: '#2563eb',
+                                color: '#0f766e',
                                 fontWeight: 'bold'
                             }
                         }
@@ -483,10 +483,10 @@
                 }],
                 yAxis: {
                     gridLineWidth: 1,
-                    gridLineColor: '#f1f5f9',
+                    gridLineColor: '#eff3f1',
                     labels: {
                         style: {
-                            color: '#334155',
+                            color: '#34413d',
                             fontSize: '12px',
                             fontWeight: '600'
                         }
@@ -528,7 +528,7 @@
                             amount: item.completed,
                             fill: item.color
                         },
-                        color: '#e2e8f0'
+                        color: '#dde5e2'
                     }))
                 }]
             });

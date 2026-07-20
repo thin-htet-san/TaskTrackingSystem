@@ -10,12 +10,12 @@ main {
 }
 
 .sidebar {
-    background-color: #0F172A;
+    background-color: var(--sidebar-bg);
 }
 
 .top-row {
-    background-color: #ffffff;
-    border-bottom: 1px solid #E5E7EB;
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
@@ -27,13 +27,13 @@ main {
     white-space: nowrap;
     margin-left: 1.5rem;
     text-decoration: none;
-    color: #6B7280;
+    color: var(--text-muted);
 }
 
 .top-row ::deep a:hover,
 .top-row ::deep .btn-link:hover {
     text-decoration: underline;
-    color: #111827;
+    color: var(--text-primary);
 }
 
 @media (min-width: 641px) {
@@ -50,8 +50,8 @@ main {
 }
 
 #blazor-error-ui {
-    background: #FFE4E6;
-    color: #991B1B;
+    background: var(--status-danger-bg);
+    color: var(--status-danger-text);
     bottom: 0;
     position: fixed;
     width: 100%;

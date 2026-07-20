@@ -24,13 +24,13 @@
 
 ::deep a.nav-link-item:hover,
 ::deep button.nav-dropdown-toggle:hover {
-    border-color: rgba(255, 255, 255, 0.08);
-    background-color: rgba(255, 255, 255, 0.07);
+    border-color: rgba(94, 234, 212, 0.14);
+    background-color: rgba(255, 255, 255, 0.065);
     color: #FFFFFF;
 }
 
 ::deep a.nav-link-item.active {
-    border-color: rgba(96, 165, 250, 0.28) !important;
+    border-color: rgba(94, 234, 212, 0.26) !important;
     background-color: var(--sidebar-active, rgba(37, 99, 235, 0.18)) !important;
     color: #FFFFFF !important;
     box-shadow: inset 3px 0 0 var(--brand-primary);
