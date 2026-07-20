@@ -495,9 +495,7 @@ html.dark .flatpickr-day.endRange {
     --app-sidebar-width: 18rem;
     display: flex;
     min-height: 100vh;
-    background:
-        linear-gradient(180deg, rgba(37, 99, 235, 0.035), transparent 18rem),
-        var(--app-bg);
+    background: var(--app-bg);
     color: var(--text-primary);
     overflow: hidden;
 }
@@ -520,9 +518,7 @@ html.dark .flatpickr-day.endRange {
     inset: 0;
     pointer-events: none;
     content: "";
-    background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 18rem),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%);
+    background: transparent;
 }
 
 .app-sidebar > * {
@@ -545,7 +541,7 @@ html.dark .flatpickr-day.endRange {
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+    background: var(--brand-primary);
     color: #FFFFFF;
     box-shadow: 0 10px 28px rgba(37, 99, 235, 0.28);
 }
@@ -1070,9 +1066,7 @@ html.dark .form-select {
    PROFESSIONAL UI REFRESH
    ========================================== */
 body {
-    background:
-        linear-gradient(180deg, rgba(15, 118, 110, 0.035), transparent 22rem),
-        var(--app-bg);
+    background: var(--app-bg);
 }
 
 ::selection {
@@ -1081,26 +1075,19 @@ body {
 }
 
 .app-shell {
-    background:
-        linear-gradient(180deg, rgba(15, 118, 110, 0.045), transparent 19rem),
-        radial-gradient(circle at 100% 0, rgba(180, 83, 9, 0.05), transparent 18rem),
-        var(--app-bg);
+    background: var(--app-bg);
 }
 
 .app-shell .app-sidebar {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 36%),
-        var(--sidebar-bg);
+    background: var(--sidebar-bg);
 }
 
 .app-sidebar::before {
-    background:
-        linear-gradient(90deg, rgba(94, 234, 212, 0.14), transparent 0.45rem),
-        radial-gradient(circle at top left, rgba(15, 118, 110, 0.20), transparent 17rem);
+    background: transparent;
 }
 
 .app-sidebar-logo {
-    background: linear-gradient(135deg, #0F766E, #B45309);
+    background: #0F766E;
     box-shadow: 0 12px 28px rgba(15, 118, 110, 0.24);
 }
 
@@ -1344,15 +1331,11 @@ html.dark .app-content {
 }
 
 html.dark body {
-    background:
-        linear-gradient(180deg, rgba(94, 234, 212, 0.04), transparent 22rem),
-        var(--app-bg);
+    background: var(--app-bg);
 }
 
 html.dark .app-shell {
-    background:
-        linear-gradient(180deg, rgba(94, 234, 212, 0.045), transparent 18rem),
-        var(--app-bg);
+    background: var(--app-bg);
 }
 
 html.dark main .bg-white,
@@ -1493,9 +1476,7 @@ body.tts-sidebar-open {
     gap: 1rem !important;
     min-width: 0 !important;
     width: 100% !important;
-    background:
-        linear-gradient(180deg, rgba(15, 118, 110, 0.035), transparent 14rem),
-        var(--app-bg) !important;
+    background: var(--app-bg) !important;
 }
 
 .app-shell .app-sidebar {
@@ -1507,9 +1488,7 @@ body.tts-sidebar-open {
     min-height: 100dvh !important;
     max-width: var(--app-sidebar-width) !important;
     transform: translateX(0) !important;
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 36%),
-        var(--sidebar-bg) !important;
+    background: var(--sidebar-bg) !important;
 }
 
 .app-main {
@@ -1569,9 +1548,7 @@ main :is(.rounded-xl.border, .rounded-lg.border, .surface-panel) {
 }
 
 main :is(.rounded-xl.border.border-slate-200.bg-white, .rounded-lg.border.border-slate-200.bg-white) {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
-        var(--surface) !important;
+    background: var(--surface) !important;
 }
 
 main :is(h2, h3) {

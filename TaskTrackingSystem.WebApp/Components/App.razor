@@ -325,7 +325,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="TaskTrackingSystem.WebApp.styles.css" />
     <link rel="stylesheet" href="app.css" />
-    <script src="theme-toggle.js?v=20260720-2" defer></script>
+    <script src="theme-toggle.js?v=20260720-3" defer></script>
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/gantt/modules/gantt.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -544,65 +544,6 @@
                 initFlatpickr();
             }
         }
-        const themePreferenceStorageKey = 'tts-theme';
-        const normalizeThemePreference = theme =>
-            theme === 'dark' || theme === 'light' ? theme : 'light';
-
-        window.themePreference = {
-            apply(theme) {
-                const normalizedTheme = normalizeThemePreference(theme);
-                const isDark = normalizedTheme === 'dark';
-                const root = document.documentElement;
-                root.classList.toggle('dark', isDark);
-                root.dataset.theme = normalizedTheme;
-                if (document.body) {
-                    document.body.classList.toggle('dark', isDark);
-                    document.body.dataset.theme = normalizedTheme;
-                }
-                try {
-                    localStorage.setItem(themePreferenceStorageKey, normalizedTheme);
-                } catch {
-                }
-                return isDark;
-            },
-            init() {
-                let theme = 'light';
-                try {
-                    theme = normalizeThemePreference(localStorage.getItem(themePreferenceStorageKey));
-                } catch {
-                }
-                return this.apply(theme);
-            },
-            toggle() {
-                const currentTheme = document.documentElement.dataset.theme ||
-                    (document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                return this.apply(currentTheme === 'dark' ? 'light' : 'dark');
-            }
-        };
-        window.updateTaskifyThemeControls = function () {
-            const isDark = document.documentElement.dataset.theme === 'dark' ||
-                document.documentElement.classList.contains('dark');
-            const title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
-            const iconName = isDark ? 'sun' : 'moon';
-            document.querySelectorAll('[data-theme-toggle]').forEach(button => {
-                button.setAttribute('aria-pressed', String(isDark));
-                button.setAttribute('aria-label', title);
-                button.setAttribute('title', title);
-                const icon = button.querySelector('[data-lucide]');
-                if (icon) {
-                    icon.setAttribute('data-lucide', iconName);
-                }
-            });
-            initIcons();
-        };
-        window.toggleTaskifyThemeButton = function () {
-            if (!window.themePreference) {
-                return false;
-            }
-            window.themePreference.toggle();
-            window.updateTaskifyThemeControls();
-            return false;
-        };
         function downloadFile(filename, contentType, content) {
             const file = new Blob([content], {type: contentType});
             const exportUrl = URL.createObjectURL(file);
@@ -642,9 +583,6 @@
             }
         }
         function refreshClientEnhancements() {
-            if (window.themePreference && typeof window.themePreference.init === 'function') {
-                window.themePreference.init();
-            }
             if (window.updateTaskifyThemeControls) {
                 window.updateTaskifyThemeControls();
             }

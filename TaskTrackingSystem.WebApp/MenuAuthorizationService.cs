@@ -171,8 +171,7 @@ public class MenuAuthorizationService
 
         if (_sessionState.CachedAccessRoleId == roleKey && _sessionState.CachedAccessItems != null)
         {
-            // Cache hit, but verify the access has not been changed by an admin.
-            return LoadAccessItemsWithVersionCheckAsync(user, roleKey);
+            return Task.FromResult(_sessionState.CachedAccessItems);
         }
 
         return LoadAccessItemsAsync(user, roleKey);
@@ -200,7 +199,7 @@ public class MenuAuthorizationService
 
         if (_sessionState.CachedAccessRoleId == roleKey && _sessionState.CachedAccessCodes != null)
         {
-            return LoadAccessCodesWithVersionCheckAsync(user, roleKey);
+            return Task.FromResult(_sessionState.CachedAccessCodes);
         }
 
         return LoadAccessCodesAsync(user, roleKey);

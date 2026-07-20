@@ -56,9 +56,9 @@
     }
 
     function initTheme() {
-        let storedTheme = "light";
+        let storedTheme = currentTheme();
         try {
-            storedTheme = normalize(localStorage.getItem(storageKey));
+            storedTheme = normalize(localStorage.getItem(storageKey) || storedTheme);
         } catch {
         }
 
@@ -101,4 +101,8 @@
     }
 
     window.addEventListener("pageshow", updateControls);
+
+    if (window.Blazor && typeof window.Blazor.addEventListener === "function") {
+        window.Blazor.addEventListener("enhancedload", updateControls);
+    }
 })();
