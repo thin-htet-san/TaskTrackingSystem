@@ -972,3 +972,96 @@ html.dark .hover\:bg-indigo-100:hover {
         min-width: 760px;
     }
 }
+
+/* ==========================================
+   UNIVERSAL DARK MODE OVERRIDES
+   ========================================== */
+html.dark,
+html.dark body,
+html.dark .app-shell,
+html.dark .app-main,
+html.dark .app-content {
+    background-color: #0B1120 !important;
+    color: #F8FAFC !important;
+}
+
+html.dark .bg-white,
+html.dark .bg-card,
+html.dark .bg-popover,
+html.dark [class*="bg-white"] {
+    background-color: #111827 !important;
+    color: #F8FAFC !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/40,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/95,
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/50,
+html.dark .bg-muted {
+    background-color: #182235 !important;
+    color: #F8FAFC !important;
+}
+
+html.dark .bg-slate-200,
+html.dark .bg-slate-300 {
+    background-color: #263449 !important;
+}
+
+html.dark .text-slate-950,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-foreground,
+html.dark .text-card-foreground,
+html.dark .text-popover-foreground {
+    color: #F8FAFC !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-muted,
+html.dark .text-muted-foreground {
+    color: #CBD5E1 !important;
+}
+
+html.dark .text-slate-400,
+html.dark .text-slate-300 {
+    color: #94A3B8 !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-border,
+html.dark .divide-slate-100,
+html.dark .divide-slate-200 {
+    border-color: #263449 !important;
+}
+
+html.dark .shadow-slate-200\/60,
+html.dark .shadow-slate-200\/50,
+html.dark .shadow-slate-200\/70,
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-lg {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45) !important;
+}
+
+html.dark svg line[stroke="#e2e8f0"],
+html.dark svg line[stroke="#E2E8F0"] {
+    stroke: #263449 !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea,
+html.dark .form-control,
+html.dark .form-select {
+    background-color: #111827 !important;
+    color: #F8FAFC !important;
+    border-color: #263449 !important;
+}
