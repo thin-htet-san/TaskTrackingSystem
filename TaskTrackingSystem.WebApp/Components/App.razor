@@ -569,6 +569,20 @@
                 return this.apply(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
             }
         };
+        window.toggleTaskifyThemeButton = function (button) {
+            const isDark = window.themePreference.toggle();
+            const title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+            const iconName = isDark ? 'sun' : 'moon';
+            button.setAttribute('aria-pressed', String(isDark));
+            button.setAttribute('aria-label', title);
+            button.setAttribute('title', title);
+            const icon = button.querySelector('[data-lucide]');
+            if (icon) {
+                icon.setAttribute('data-lucide', iconName);
+            }
+            initIcons();
+            return false;
+        };
         function downloadFile(filename, contentType, content) {
             const file = new Blob([content], {type: contentType});
             const exportUrl = URL.createObjectURL(file);

@@ -2,7 +2,7 @@
 @inject IJSRuntime JS
 
 <button type="button"
-        @onclick="ToggleTheme"
+        onclick="return window.toggleTaskifyThemeButton(this);"
         class="control-button"
         title="@ButtonTitle"
         aria-label="@ButtonTitle"
@@ -26,9 +26,4 @@
         await JS.InvokeVoidAsync("initIcons");
     }
 
-    private async Task ToggleTheme()
-    {
-        isDarkMode = await JS.InvokeAsync<bool>("themePreference.toggle");
-        await JS.InvokeVoidAsync("initIcons");
-    }
 }

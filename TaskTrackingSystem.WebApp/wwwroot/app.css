@@ -1490,6 +1490,7 @@ body.tts-sidebar-open {
 
 .app-shell {
     display: flex !important;
+    gap: 1rem !important;
     min-width: 0 !important;
     width: 100% !important;
     background:
@@ -1611,6 +1612,7 @@ main svg [fill="#ef4444"] {
         min-height: 100dvh !important;
         padding-left: 0 !important;
         overflow: hidden !important;
+        gap: 1rem !important;
     }
 
     .app-main {
@@ -1651,6 +1653,7 @@ main svg [fill="#ef4444"] {
         min-height: 100dvh !important;
         padding-left: 0 !important;
         overflow: auto !important;
+        gap: 0 !important;
     }
 
     .app-sidebar {
