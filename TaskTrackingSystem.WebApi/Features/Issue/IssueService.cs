@@ -21,6 +21,13 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
             _db = db;
         }
 
+        private static DateTime ToUtcDate(DateTime value)
+        {
+            return value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value.Date, DateTimeKind.Utc);
+        }
+
         public async Task<IEnumerable<IssueDto>> GetAllIssuesAsync(long roleId, long currentUserId)
         {
             var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
@@ -161,8 +168,8 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 IsBlocked = dto.IsBlocked,
                 BlockedBy = dto.BlockedBy,
                 EscalationLevel = dto.EscalationLevel,
-                StartDate = dto.StartDate,
-                DueDate = dto.DueDate,
+                StartDate = ToUtcDate(dto.StartDate),
+                DueDate = ToUtcDate(dto.DueDate),
                 StatusId = dto.StatusId == 0 ? AppTaskStatus.Todo : dto.StatusId,
                 PriorityId = dto.PriorityId == 0 ? TaskPriority.Medium : dto.PriorityId,
                 CreatedAt = DateTime.UtcNow,
@@ -214,8 +221,8 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
             issue.IsBlocked = dto.IsBlocked;
             issue.BlockedBy = dto.BlockedBy;
             issue.EscalationLevel = dto.EscalationLevel;
-            issue.StartDate = dto.StartDate;
-            issue.DueDate = dto.DueDate;
+            issue.StartDate = ToUtcDate(dto.StartDate);
+            issue.DueDate = ToUtcDate(dto.DueDate);
             issue.StatusId = dto.StatusId;
             issue.PriorityId = dto.PriorityId;
             issue.UpdatedAt = DateTime.UtcNow;

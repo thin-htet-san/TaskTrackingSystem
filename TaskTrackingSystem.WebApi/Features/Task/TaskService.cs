@@ -30,6 +30,13 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 : null;
         }
 
+        private static DateTime ToUtcDate(DateTime value)
+        {
+            return value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value.Date, DateTimeKind.Utc);
+        }
+
         public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(long roleId, long currentUserId)
         {
             var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId);
@@ -204,7 +211,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 PriorityId = dto.PriorityId == 0 ? TaskPriority.Medium : dto.PriorityId,
                 AssignedTo = dto.AssignedTo,
                 AssignedBy = dto.AssignedBy,
-                DueDate = dto.DueDate,
+                DueDate = ToUtcDate(dto.DueDate),
                 IsDeleted = false,
                 IsArchived = false,
                 CreatedAt = DateTime.UtcNow,
@@ -265,7 +272,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.PriorityId = dto.PriorityId;
             task.AssignedTo = dto.AssignedTo;
             task.AssignedBy = dto.AssignedBy;
-            task.DueDate = dto.DueDate;
+            task.DueDate = ToUtcDate(dto.DueDate);
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
 

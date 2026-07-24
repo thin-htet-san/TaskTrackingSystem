@@ -31,6 +31,13 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 : null;
         }
 
+        private static DateTime ToUtcDate(DateTime value)
+        {
+            return value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value.Date, DateTimeKind.Utc);
+        }
+
         public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync(long roleId, long currentUserId)
         {
             var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
@@ -115,8 +122,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             {
                 Name = dto.Name,
                 Description = dto.Description,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
+                StartDate = ToUtcDate(dto.StartDate),
+                EndDate = ToUtcDate(dto.EndDate),
                 CreatedById = dto.CreatedById,
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
@@ -163,8 +170,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             project.Name = dto.Name;
             project.Description = dto.Description;
-            project.StartDate = dto.StartDate;
-            project.EndDate = dto.EndDate;
+            project.StartDate = ToUtcDate(dto.StartDate);
+            project.EndDate = ToUtcDate(dto.EndDate);
             project.BudgetedHours = dto.BudgetedHours;
             project.UpdatedAt = DateTime.UtcNow;
             project.UpdatedBy = currentUserId;
