@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using TaskTrackingSystem.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -113,6 +114,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.EnablePersistAuthorization();
+    });
+}
+else
+{
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(
+                Result.Failure("The server hit an error while processing the request.", 500));
+        });
     });
 }
 
@@ -368,6 +382,57 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     }
 
     await db.SaveChangesAsync();
+
+    await ResetPostgresSequencesAsync(db);
+}
+
+static async System.Threading.Tasks.Task ResetPostgresSequencesAsync(AppDbContext db)
+{
+    await db.Database.ExecuteSqlRawAsync(@"
+DO $$
+DECLARE
+    sequence_record RECORD;
+    max_value BIGINT;
+BEGIN
+    FOR sequence_record IN
+        SELECT
+            sequence_namespace.nspname AS sequence_schema,
+            sequence_class.relname AS sequence_name,
+            table_namespace.nspname AS table_schema,
+            table_class.relname AS table_name,
+            table_attribute.attname AS column_name
+        FROM pg_class sequence_class
+        JOIN pg_namespace sequence_namespace ON sequence_namespace.oid = sequence_class.relnamespace
+        JOIN pg_depend dependency ON dependency.objid = sequence_class.oid
+        JOIN pg_class table_class ON table_class.oid = dependency.refobjid
+        JOIN pg_namespace table_namespace ON table_namespace.oid = table_class.relnamespace
+        JOIN pg_attribute table_attribute
+            ON table_attribute.attrelid = table_class.oid
+            AND table_attribute.attnum = dependency.refobjsubid
+        WHERE sequence_class.relkind = 'S'
+          AND table_namespace.nspname = 'public'
+          AND dependency.deptype IN ('a', 'i')
+    LOOP
+        EXECUTE format(
+            'SELECT MAX(%I)::bigint FROM %I.%I',
+            sequence_record.column_name,
+            sequence_record.table_schema,
+            sequence_record.table_name)
+        INTO max_value;
+
+        IF max_value IS NULL THEN
+            EXECUTE format(
+                'SELECT setval(%L::regclass, 1, false)',
+                format('%I.%I', sequence_record.sequence_schema, sequence_record.sequence_name));
+        ELSE
+            EXECUTE format(
+                'SELECT setval(%L::regclass, %s, true)',
+                format('%I.%I', sequence_record.sequence_schema, sequence_record.sequence_name),
+                max_value);
+        END IF;
+    END LOOP;
+END $$;
+");
 }
 
 static async System.Threading.Tasks.Task EnsureReportUpgradeSchemaAsync(AppDbContext db)
