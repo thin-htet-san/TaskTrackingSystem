@@ -17,11 +17,16 @@ namespace TaskTrackingSystem.WebApi.Features.Project
     {
         private readonly AppDbContext _db;
         private readonly TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService _notificationService;
+        private readonly Infrastructure.AuditLogService _auditLog;
 
-        public ProjectService(AppDbContext db, TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService)
+        public ProjectService(
+            AppDbContext db,
+            TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService,
+            Infrastructure.AuditLogService auditLog)
         {
             _db = db;
             _notificationService = notificationService;
+            _auditLog = auditLog;
         }
 
         private static DateTime? GetCompletedAt(TaskTrackingSystem.Database.AppDbContextModels.Task task)
@@ -133,6 +138,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             _db.Projects.Add(project);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Create", "Project", $"Created project '{project.Name}'");
 
             var resultDto = new ProjectDto
             {
@@ -178,6 +184,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             _db.Projects.Update(project);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Update", "Project", $"Updated project '{project.Name}'");
             return Result.Success(200);
         }
 
@@ -214,6 +221,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             }
 
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Delete", "Project", $"Deleted project '{project.Name}'");
             return Result.Success(200);
         }
 

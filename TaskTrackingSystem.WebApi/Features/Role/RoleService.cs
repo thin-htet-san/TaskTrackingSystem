@@ -84,7 +84,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result<RoleDto>.Failure(ResultMessages.RoleNameRequired, 400);
             }
 
-            var nameExists = await _db.Roles.AnyAsync(r => r.Name == dto.Name && r.IsDeleted != true);
+            var nameExists = await _db.Roles.AnyAsync(r => r.Name == dto.Name);
             if (nameExists)
             {
                 return Result<RoleDto>.Failure("Role name is already taken.", 400);

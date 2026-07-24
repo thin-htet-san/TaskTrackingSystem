@@ -16,11 +16,16 @@ namespace TaskTrackingSystem.WebApi.Features.Task
     {
         private readonly AppDbContext _db;
         private readonly TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService _notificationService;
+        private readonly AuditLogService _auditLog;
 
-        public TaskService(AppDbContext db, TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService)
+        public TaskService(
+            AppDbContext db,
+            TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService,
+            AuditLogService auditLog)
         {
             _db = db;
             _notificationService = notificationService;
+            _auditLog = auditLog;
         }
 
         private static DateTime? GetCompletedAt(TaskTrackingSystem.Database.AppDbContextModels.Task task)
@@ -220,6 +225,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Create", "Task", $"Created task '{task.Title}'");
 
             if (task.AssignedTo.HasValue)
             {
@@ -278,6 +284,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Update", "Task", $"Updated task '{task.Title}'");
 
             if (previousAssignedTo != task.AssignedTo && task.AssignedTo.HasValue && currentUserId.HasValue)
             {
@@ -305,6 +312,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.UpdatedBy = currentUserId;
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Delete", "Task", $"Deleted task '{task.Title}'");
             return Result.Success(200);
         }
 
