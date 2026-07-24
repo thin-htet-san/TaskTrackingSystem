@@ -6,17 +6,20 @@
     else
     {
         <div class="relative mx-auto h-40 w-40">
-            <svg viewBox="0 0 180 180" class="h-40 w-40 -rotate-90" role="img" aria-label="@AriaLabel">
-                <circle cx="90" cy="90" r="66" fill="none" stroke="#e2e8f0" stroke-width="22" />
+            <svg viewBox="0 0 180 180" class="h-40 w-40" role="img" aria-label="@AriaLabel">
                 @foreach (var slice in Slices)
                 {
-                    <circle cx="90" cy="90" r="66" fill="none" stroke="@slice.Color" stroke-width="22" stroke-dasharray="@slice.DashArray" stroke-dashoffset="@slice.DashOffset" stroke-linecap="round" />
+                    if (slice.IsFullCircle)
+                    {
+                        <circle cx="90" cy="90" r="66" fill="@slice.Color" stroke="var(--surface)" stroke-width="2" />
+                    }
+                    else
+                    {
+                        <path d="@slice.Path" fill="@slice.Color" stroke="var(--surface)" stroke-width="2" stroke-linejoin="round" />
+                    }
+
                 }
             </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span class="text-2xl font-bold tabular-nums text-slate-950">@Total.ToString("0")</span>
-                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@CenterLabel</span>
-            </div>
         </div>
         <div class="space-y-2">
             @foreach (var item in Items)
@@ -45,20 +48,46 @@
 
     private IReadOnlyList<Slice> BuildSlices()
     {
+        const double center = 90;
         const double radius = 66;
-        var circumference = 2 * Math.PI * radius;
-        var offset = 0.0;
+        var startAngle = -90.0;
         var slices = new List<Slice>();
 
         foreach (var item in Items)
         {
-            var arc = Total > 0 ? circumference * Math.Max(0, item.Value) / Total : 0;
-            slices.Add(new Slice(item.Color, $"{arc:0.##} {(circumference - arc):0.##}", -offset));
-            offset += arc;
+            var value = Math.Max(0, item.Value);
+            if (value <= 0 || Total <= 0)
+            {
+                continue;
+            }
+
+            var sweep = 360 * value / Total;
+            var endAngle = startAngle + sweep;
+
+            if (sweep >= 359.999)
+            {
+                slices.Add(new Slice(item.Color, string.Empty, true));
+                startAngle = endAngle;
+                continue;
+            }
+
+            var start = PointOnCircle(center, center, radius, startAngle);
+            var end = PointOnCircle(center, center, radius, endAngle);
+            var largeArc = sweep > 180 ? 1 : 0;
+            var path = $"M {center:0.##} {center:0.##} L {start.X:0.##} {start.Y:0.##} A {radius:0.##} {radius:0.##} 0 {largeArc} 1 {end.X:0.##} {end.Y:0.##} Z";
+
+            slices.Add(new Slice(item.Color, path, false));
+            startAngle = endAngle;
         }
 
         return slices;
     }
 
-    private sealed record Slice(string Color, string DashArray, double DashOffset);
+    private static (double X, double Y) PointOnCircle(double centerX, double centerY, double radius, double angleDegrees)
+    {
+        var radians = angleDegrees * Math.PI / 180;
+        return (centerX + radius * Math.Cos(radians), centerY + radius * Math.Sin(radians));
+    }
+
+    private sealed record Slice(string Color, string Path, bool IsFullCircle);
 }
