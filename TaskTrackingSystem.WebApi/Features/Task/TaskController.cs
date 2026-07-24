@@ -79,7 +79,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Create"))
             {
-                return Forbid();
+                return StatusCode(403, Result<TaskDto>.Failure("You do not have permission to create tasks.", 403));
             }
 
             var currentUserId = User.GetUserId();
@@ -92,7 +92,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to update tasks.", 403));
             }
 
             long? currentUserId = User.GetUserId();
@@ -105,7 +105,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Delete"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to delete tasks.", 403));
             }
 
             var result = await _taskService.SoftDeleteTaskAsync(id, User.GetUserId());
@@ -135,7 +135,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Task", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result<int>.Failure("You do not have permission to archive tasks.", 403));
             }
 
             var result = await _taskService.ArchiveDoneTasksAsync(projectId, User.GetRoleId(), User.GetUserId());
