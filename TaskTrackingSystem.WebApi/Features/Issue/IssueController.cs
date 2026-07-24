@@ -82,7 +82,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Issue", "Create"))
             {
-                return Forbid();
+                return StatusCode(403, Result<IssueDto>.Failure("You do not have permission to create issues.", 403));
             }
 
             var result = await _issueService.CreateIssueAsync(dto, User.GetRoleId(), User.GetUserId());
@@ -94,7 +94,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Issue", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to update issues.", 403));
             }
 
             var result = await _issueService.UpdateIssueAsync(id, dto, User.GetRoleId(), User.GetUserId());
@@ -106,7 +106,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Issue", "Delete"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to delete issues.", 403));
             }
 
             var result = await _issueService.SoftDeleteIssueAsync(id, User.GetRoleId(), User.GetUserId());

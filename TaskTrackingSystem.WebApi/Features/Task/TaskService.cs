@@ -16,11 +16,16 @@ namespace TaskTrackingSystem.WebApi.Features.Task
     {
         private readonly AppDbContext _db;
         private readonly TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService _notificationService;
+        private readonly AuditLogService _auditLog;
 
-        public TaskService(AppDbContext db, TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService)
+        public TaskService(
+            AppDbContext db,
+            TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService,
+            AuditLogService auditLog)
         {
             _db = db;
             _notificationService = notificationService;
+            _auditLog = auditLog;
         }
 
         private static DateTime? GetCompletedAt(TaskTrackingSystem.Database.AppDbContextModels.Task task)
@@ -28,6 +33,13 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return task.StatusId == AppTaskStatus.Done
                 ? task.UpdatedAt ?? task.CreatedAt
                 : null;
+        }
+
+        private static DateTime ToUtcDate(DateTime value)
+        {
+            return value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value.Date, DateTimeKind.Utc);
         }
 
         public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(long roleId, long currentUserId)
@@ -204,7 +216,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 PriorityId = dto.PriorityId == 0 ? TaskPriority.Medium : dto.PriorityId,
                 AssignedTo = dto.AssignedTo,
                 AssignedBy = dto.AssignedBy,
-                DueDate = dto.DueDate,
+                DueDate = ToUtcDate(dto.DueDate),
                 IsDeleted = false,
                 IsArchived = false,
                 CreatedAt = DateTime.UtcNow,
@@ -213,6 +225,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Create", "Task", $"Created task '{task.Title}'");
 
             if (task.AssignedTo.HasValue)
             {
@@ -265,12 +278,13 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.PriorityId = dto.PriorityId;
             task.AssignedTo = dto.AssignedTo;
             task.AssignedBy = dto.AssignedBy;
-            task.DueDate = dto.DueDate;
+            task.DueDate = ToUtcDate(dto.DueDate);
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
 
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Update", "Task", $"Updated task '{task.Title}'");
 
             if (previousAssignedTo != task.AssignedTo && task.AssignedTo.HasValue && currentUserId.HasValue)
             {
@@ -298,6 +312,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.UpdatedBy = currentUserId;
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Delete", "Task", $"Deleted task '{task.Title}'");
             return Result.Success(200);
         }
 

@@ -26,6 +26,21 @@ public class PermissionAuthorizationService
             return false;
         }
 
+        var roleName = user.GetRoleName();
+        if (string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (await _db.Roles.AnyAsync(r =>
+                r.Id == roleId &&
+                r.IsDeleted != true &&
+                r.Name != null &&
+                r.Name.ToLower() == "admin"))
+        {
+            return true;
+        }
+
         return await _db.RolePermissions
             .AnyAsync(rp =>
                 rp.RoleId == roleId &&

@@ -17,11 +17,16 @@ namespace TaskTrackingSystem.WebApi.Features.Project
     {
         private readonly AppDbContext _db;
         private readonly TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService _notificationService;
+        private readonly Infrastructure.AuditLogService _auditLog;
 
-        public ProjectService(AppDbContext db, TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService)
+        public ProjectService(
+            AppDbContext db,
+            TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService notificationService,
+            Infrastructure.AuditLogService auditLog)
         {
             _db = db;
             _notificationService = notificationService;
+            _auditLog = auditLog;
         }
 
         private static DateTime? GetCompletedAt(TaskTrackingSystem.Database.AppDbContextModels.Task task)
@@ -29,6 +34,13 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return task.StatusId == AppTaskStatus.Done
                 ? task.UpdatedAt ?? task.CreatedAt
                 : null;
+        }
+
+        private static DateTime ToUtcDate(DateTime value)
+        {
+            return value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value.Date, DateTimeKind.Utc);
         }
 
         public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync(long roleId, long currentUserId)
@@ -115,8 +127,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             {
                 Name = dto.Name,
                 Description = dto.Description,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
+                StartDate = ToUtcDate(dto.StartDate),
+                EndDate = ToUtcDate(dto.EndDate),
                 CreatedById = dto.CreatedById,
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
@@ -126,6 +138,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             _db.Projects.Add(project);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Create", "Project", $"Created project '{project.Name}'");
 
             var resultDto = new ProjectDto
             {
@@ -163,14 +176,15 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             project.Name = dto.Name;
             project.Description = dto.Description;
-            project.StartDate = dto.StartDate;
-            project.EndDate = dto.EndDate;
+            project.StartDate = ToUtcDate(dto.StartDate);
+            project.EndDate = ToUtcDate(dto.EndDate);
             project.BudgetedHours = dto.BudgetedHours;
             project.UpdatedAt = DateTime.UtcNow;
             project.UpdatedBy = currentUserId;
 
             _db.Projects.Update(project);
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Update", "Project", $"Updated project '{project.Name}'");
             return Result.Success(200);
         }
 
@@ -207,6 +221,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             }
 
             await _db.SaveChangesAsync();
+            await _auditLog.LogAsync("Delete", "Project", $"Deleted project '{project.Name}'");
             return Result.Success(200);
         }
 

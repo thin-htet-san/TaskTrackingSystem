@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using TaskTrackingSystem.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,6 +95,24 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JwtSettings:Audience must be configured."),
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(
+                Result.Failure("Your session has expired. Please log out and log in again.", 401));
+        },
+        OnForbidden = async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(
+                Result.Failure("You do not have permission to perform this action.", 403));
+        }
+    };
 });
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
@@ -115,6 +134,19 @@ if (app.Environment.IsDevelopment())
         options.EnablePersistAuthorization();
     });
 }
+else
+{
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(
+                Result.Failure("The server hit an error while processing the request.", 500));
+        });
+    });
+}
 
 app.UseCors("AllowWebApp");
 
@@ -122,6 +154,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/version", () => Results.Ok(new
+{
+    status = "ok",
+    build = "auth-json-a93c81d",
+    timestamp = "2026-07-24T06:35:00Z"
+}));
+app.MapGet("/api/version", () => Results.Ok(new
+{
+    status = "ok",
+    build = "cached-token-3438c94",
+    timestamp = "2026-07-24T06:45:00Z"
+}));
 app.MapControllers();
 app.MapHub<TaskTrackingSystem.WebApi.Features.Notification.NotificationHub>("/hubs/notifications");
 
@@ -368,6 +412,57 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     }
 
     await db.SaveChangesAsync();
+
+    await ResetPostgresSequencesAsync(db);
+}
+
+static async System.Threading.Tasks.Task ResetPostgresSequencesAsync(AppDbContext db)
+{
+    await db.Database.ExecuteSqlRawAsync(@"
+DO $$
+DECLARE
+    sequence_record RECORD;
+    max_value BIGINT;
+BEGIN
+    FOR sequence_record IN
+        SELECT
+            sequence_namespace.nspname AS sequence_schema,
+            sequence_class.relname AS sequence_name,
+            table_namespace.nspname AS table_schema,
+            table_class.relname AS table_name,
+            table_attribute.attname AS column_name
+        FROM pg_class sequence_class
+        JOIN pg_namespace sequence_namespace ON sequence_namespace.oid = sequence_class.relnamespace
+        JOIN pg_depend dependency ON dependency.objid = sequence_class.oid
+        JOIN pg_class table_class ON table_class.oid = dependency.refobjid
+        JOIN pg_namespace table_namespace ON table_namespace.oid = table_class.relnamespace
+        JOIN pg_attribute table_attribute
+            ON table_attribute.attrelid = table_class.oid
+            AND table_attribute.attnum = dependency.refobjsubid
+        WHERE sequence_class.relkind = 'S'
+          AND table_namespace.nspname = 'public'
+          AND dependency.deptype IN ('a', 'i')
+    LOOP
+        EXECUTE format(
+            'SELECT MAX(%I)::bigint FROM %I.%I',
+            sequence_record.column_name,
+            sequence_record.table_schema,
+            sequence_record.table_name)
+        INTO max_value;
+
+        IF max_value IS NULL THEN
+            EXECUTE format(
+                'SELECT setval(%L::regclass, 1, false)',
+                format('%I.%I', sequence_record.sequence_schema, sequence_record.sequence_name));
+        ELSE
+            EXECUTE format(
+                'SELECT setval(%L::regclass, %s, true)',
+                format('%I.%I', sequence_record.sequence_schema, sequence_record.sequence_name),
+                max_value);
+        END IF;
+    END LOOP;
+END $$;
+");
 }
 
 static async System.Threading.Tasks.Task EnsureReportUpgradeSchemaAsync(AppDbContext db)

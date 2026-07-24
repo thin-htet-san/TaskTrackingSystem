@@ -56,7 +56,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Create"))
             {
-                return Forbid();
+                return StatusCode(403, Result<RoleDto>.Failure("You do not have permission to create roles.", 403));
             }
 
             long? currentUserId = User.GetUserId();
@@ -69,7 +69,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to update roles.", 403));
             }
 
             long? currentUserId = User.GetUserId();
@@ -82,7 +82,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Delete"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to delete roles.", 403));
             }
 
             var result = await _roleService.SoftDeleteRoleAsync(id, User.GetUserId());
@@ -96,7 +96,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result<List<string>>.Failure("You do not have permission to view role access.", 403));
             }
 
             var result = await _roleService.GetAssignedAccessCodesByRoleIdAsync(id);
@@ -113,7 +113,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Role", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to assign role access.", 403));
             }
 
             var result = await _roleService.AssignAccessToRoleAsync(id, dto, User.GetUserId());

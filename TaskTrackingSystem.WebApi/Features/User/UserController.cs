@@ -78,7 +78,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/User", "Create"))
             {
-                return Forbid();
+                return StatusCode(403, Result<UserDto>.Failure("You do not have permission to create users.", 403));
             }
 
             long? currentUserId = null;
@@ -91,7 +91,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/User", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to update users.", 403));
             }
 
             long? currentUserId = null;
@@ -104,7 +104,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/User", "Delete"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to delete users.", 403));
             }
 
             long? loggedInUserId = null;

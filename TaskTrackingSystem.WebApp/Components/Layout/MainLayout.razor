@@ -9,14 +9,14 @@
             onclick="document.body.classList.remove('tts-sidebar-open');"
             aria-label="@AppLocalization.Text("common.closeNavigation", "Close navigation")"></button>
 
-    <aside class="app-sidebar sticky top-0 z-40 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r border-slate-800 bg-slate-950 text-white">
+    <aside class="app-sidebar sticky top-0 z-40 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r">
         <div class="app-sidebar-brand flex min-h-20 items-center gap-3 px-5 py-4">
             <span class="app-sidebar-logo inline-flex h-10 w-10 items-center justify-center rounded-lg text-white shadow-sm">
                 <i data-lucide="clipboard-check" class="h-5 w-5"></i>
             </span>
             <span class="app-sidebar-title flex flex-col leading-tight">
-                <strong class="text-lg font-bold tracking-normal text-white">Taskify</strong>
-                <span class="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">@AppLocalization.Text("common.workspace", "Workspace")</span>
+                <strong class="text-lg font-bold tracking-normal">Taskify</strong>
+                <span class="mt-0.5 text-[11px] font-semibold uppercase tracking-wide">@AppLocalization.Text("common.workspace", "Workspace")</span>
             </span>
             <button type="button"
                     class="control-button mobile-sidebar-close ml-auto hidden h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white hover:bg-white/15 hover:text-white lg:hidden"
@@ -30,18 +30,18 @@
             <NavMenu @rendermode="new InteractiveServerRenderMode(prerender: false)" />
         </div>
 
-        <div class="app-sidebar-user absolute inset-x-0 bottom-0 z-20 shrink-0 border-t border-white/10 bg-slate-950/95 p-3 backdrop-blur">
+        <div class="app-sidebar-user absolute inset-x-0 bottom-0 z-20 shrink-0 border-t p-3 backdrop-blur">
             <AuthorizeView>
                 <Authorized>
-                    <div class="flex items-center rounded-lg border border-white/10 bg-white/[0.04] p-2 transition-colors hover:bg-white/[0.08]">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white font-semibold text-sm shrink-0">
+                    <div class="app-sidebar-user-card flex items-center rounded-lg border p-2 transition-colors">
+                        <span class="app-sidebar-avatar flex h-10 w-10 items-center justify-center rounded-full font-semibold text-sm shrink-0">
                             @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
                         </span>
                         <div class="ml-3 flex min-w-0 flex-col overflow-hidden">
-                            <span class="max-w-[130px] truncate text-sm font-semibold text-white">@context.User.Identity?.Name</span>
+                            <span class="app-sidebar-username max-w-[130px] truncate text-sm font-semibold">@context.User.Identity?.Name</span>
                             <form id="logout-form" method="post" action="/account/logout" class="mt-0.5">
                                 <AntiforgeryToken />
-                                <button type="button" onclick="document.body.classList.remove('tts-sidebar-open'); document.getElementById('logout-confirm-dialog').style.display='flex';" class="text-xs hover:opacity-90 font-semibold text-left flex items-center gap-1 transition-all text-slate-300">
+                                <button type="button" onclick="document.body.classList.remove('tts-sidebar-open'); document.getElementById('logout-confirm-dialog').style.display='flex';" class="app-sidebar-signout text-xs hover:opacity-90 font-semibold text-left flex items-center gap-1 transition-all">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
                                     @Language.Texts.SignOut
                                 </button>
@@ -50,7 +50,7 @@
                     </div>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="/login" class="flex items-center justify-center rounded-lg bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/15">
+                    <a href="/login" class="app-sidebar-user-card flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors">
                         @Language.Texts.SignIn
                     </a>
                 </NotAuthorized>

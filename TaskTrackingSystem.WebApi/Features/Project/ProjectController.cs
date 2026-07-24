@@ -58,7 +58,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Create"))
             {
-                return Forbid();
+                return StatusCode(403, Result<ProjectDto>.Failure("You do not have permission to create projects.", 403));
             }
 
             long? currentUserId = User.GetUserId();
@@ -71,7 +71,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to update projects.", 403));
             }
 
             var currentUserId = User.GetUserId();
@@ -84,7 +84,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Delete"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to delete projects.", 403));
             }
 
             var result = await _projectService.SoftDeleteProjectAsync(id, User.GetRoleId(), User.GetUserId());
@@ -103,7 +103,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to assign project members.", 403));
             }
 
             var result = await _projectService.AssignMembersToProjectAsync(id, dto, User.GetRoleId(), User.GetUserId());
@@ -119,7 +119,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             if (!await _permissionAuthorizationService.CanAccessAsync(User, "api/Project", "Update"))
             {
-                return Forbid();
+                return StatusCode(403, Result.Failure("You do not have permission to update project members.", 403));
             }
 
             var result = await _projectService.RemoveMemberFromProjectAsync(id, userId, User.GetRoleId(), User.GetUserId());
