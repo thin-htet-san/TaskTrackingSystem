@@ -25,6 +25,7 @@ public class FirebaseNotificationService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly NotificationRealtimeService _realtimeService;
     private readonly string _serviceAccountPath;
+    private readonly bool _pushEnabled;
 
     public FirebaseNotificationService(
         AppDbContext db,
@@ -41,6 +42,7 @@ public class FirebaseNotificationService
         _serviceAccountPath = Path.IsPathRooted(configuredPath)
             ? configuredPath
             : Path.Combine(environment.ContentRootPath, configuredPath);
+        _pushEnabled = configuration.GetValue("Firebase:PushEnabled", false);
     }
 
     public global::System.Threading.Tasks.Task NotifyTaskAssignedAsync(Database.AppDbContextModels.Task task, long senderId)
@@ -279,6 +281,11 @@ public class FirebaseNotificationService
             await _realtimeService.SendCreatedAsync(notification.RecipientId, dto, recipientUnreadCount);
         }
 
+        if (!_pushEnabled)
+        {
+            return;
+        }
+
         var tokens = await _db.UserDevices
             .Where(d => uniqueRecipientIds.Contains(d.UserId))
             .Select(d => d.FcmToken)
@@ -287,7 +294,14 @@ public class FirebaseNotificationService
 
         foreach (var token in tokens)
         {
-            await SendPushAsync(token, title, body, sourceType, sourceId, notificationType);
+            try
+            {
+                await SendPushAsync(token, title, body, sourceType, sourceId, notificationType);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Firebase] Push notification skipped: {ex.Message}");
+            }
         }
     }
 

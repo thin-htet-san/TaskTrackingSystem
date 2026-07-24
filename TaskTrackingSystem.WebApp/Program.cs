@@ -15,16 +15,16 @@ var webApiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://127.0.0.1
 var webApiBuilder = builder.Services.AddHttpClient("WebApi", client =>
 {
     client.BaseAddress = new Uri(webApiBaseUrl);
-    client.Timeout = builder.Environment.IsDevelopment()
-        ? TimeSpan.FromSeconds(30)
-        : TimeSpan.FromSeconds(10);
+    client.Timeout = TimeSpan.FromSeconds(
+        builder.Configuration.GetValue("WebApi:TimeoutSeconds", builder.Environment.IsDevelopment() ? 30 : 60));
 });
 
 webApiBuilder.ConfigurePrimaryHttpMessageHandler(() =>
 {
     var handler = new SocketsHttpHandler
     {
-        ConnectTimeout = TimeSpan.FromSeconds(5),
+        ConnectTimeout = TimeSpan.FromSeconds(
+            builder.Configuration.GetValue("WebApi:ConnectTimeoutSeconds", builder.Environment.IsDevelopment() ? 5 : 15)),
         PooledConnectionLifetime = TimeSpan.FromMinutes(5)
     };
 
