@@ -95,6 +95,24 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JwtSettings:Audience must be configured."),
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(
+                Result.Failure("Your session has expired. Please log out and log in again.", 401));
+        },
+        OnForbidden = async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(
+                Result.Failure("You do not have permission to perform this action.", 403));
+        }
+    };
 });
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
@@ -136,6 +154,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/version", () => Results.Ok(new
+{
+    status = "ok",
+    build = "auth-json-a93c81d",
+    timestamp = "2026-07-24T06:35:00Z"
+}));
 app.MapControllers();
 app.MapHub<TaskTrackingSystem.WebApi.Features.Notification.NotificationHub>("/hubs/notifications");
 
