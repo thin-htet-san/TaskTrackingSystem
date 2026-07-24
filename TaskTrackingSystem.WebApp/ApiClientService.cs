@@ -70,6 +70,12 @@ public class ApiClientService
             return claimToken;
         }
 
+        var cachedToken = _sessionState.CachedUser?.FindFirst("jwt_token")?.Value;
+        if (!string.IsNullOrEmpty(cachedToken))
+        {
+            return cachedToken;
+        }
+
         return _httpContextAccessor.HttpContext?.User.FindFirst("jwt_token")?.Value;
     }
 }

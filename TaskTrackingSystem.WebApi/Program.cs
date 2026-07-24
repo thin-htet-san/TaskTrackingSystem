@@ -160,6 +160,12 @@ app.MapGet("/version", () => Results.Ok(new
     build = "auth-json-a93c81d",
     timestamp = "2026-07-24T06:35:00Z"
 }));
+app.MapGet("/api/version", () => Results.Ok(new
+{
+    status = "ok",
+    build = "cached-token-3438c94",
+    timestamp = "2026-07-24T06:45:00Z"
+}));
 app.MapControllers();
 app.MapHub<TaskTrackingSystem.WebApi.Features.Notification.NotificationHub>("/hubs/notifications");
 
