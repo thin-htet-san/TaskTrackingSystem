@@ -8,7 +8,6 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
-@inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
@@ -144,6 +143,36 @@
                                 <i data-lucide="calendar" class="h-3 w-3 inline mr-1 text-slate-400"></i>
                                 Due: @DisplayFormats.Date(SelectedTask.DueDate)
                             </span>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-3 border-b border-slate-100 bg-white">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("task.selectedAssignee", "Selected Assignee")</span>
+                                <div class="mt-1">
+                                    @{
+                                        var targetAssignee = TargetAssignee;
+                                    }
+                                    @if (targetAssignee != null)
+                                    {
+                                        <span class="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                                            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
+                                                @(targetAssignee.FirstName.Length > 0 ? targetAssignee.FirstName[0].ToString().ToUpper() : "")@(targetAssignee.LastName.Length > 0 ? targetAssignee.LastName[0].ToString().ToUpper() : "")
+                                            </span>
+                                            <span>@targetAssignee.FirstName @targetAssignee.LastName</span>
+                                            <span class="text-slate-400">@@@targetAssignee.Username</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                                            <i data-lucide="user-minus" class="h-3.5 w-3.5 text-slate-400"></i>
+                                            @AppLocalization.Text("common.unassigned", "Unassigned")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -372,6 +401,11 @@
         }
     }
 
+    private UserDto? TargetAssignee =>
+        TargetAssigneeId.HasValue
+            ? allUsers.FirstOrDefault(u => u.Id == TargetAssigneeId.Value)
+            : null;
+
     private void ApplyTaskSearch()
     {
         taskSearch = taskSearchInput;
@@ -500,10 +534,14 @@
             if (response.IsSuccessStatusCode)
             {
                 SelectedTask.AssignedTo = TargetAssigneeId;
+                var taskInList = tasks.FirstOrDefault(t => t.Id == SelectedTask.Id);
+                if (taskInList != null)
+                {
+                    taskInList.AssignedTo = TargetAssigneeId;
+                }
                 statusMessage = "Task assignee updated successfully!";
                 successMessage = "Assignment saved successfully!";
                 isError = false;
-                Navigation.NavigateTo("/tasks/all");
             }
             else
             {
