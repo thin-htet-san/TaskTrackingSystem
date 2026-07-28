@@ -48,8 +48,8 @@
             <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">Overdue Tasks</p>
-                        <p class="mt-1 text-3xl font-bold text-rose-700">@overdueCount</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">@AppLocalization.Text("dashboard.overdueTasks", "Overdue Tasks")</p>
+                        <p class="mt-1 text-3xl font-bold text-rose-700">@AppLocalization.Number(overdueCount)</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100">
                         <i data-lucide="alert-circle" class="h-6 w-6 text-rose-600"></i>
@@ -60,7 +60,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">@AppLocalization.Text("report.highPriorityOverdue", "High Priority Overdue")</p>
-                        <p class="mt-1 text-3xl font-bold text-amber-700">@criticalCount</p>
+                        <p class="mt-1 text-3xl font-bold text-amber-700">@AppLocalization.Number(criticalCount)</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
                         <i data-lucide="flame" class="h-6 w-6 text-amber-600"></i>
@@ -71,7 +71,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-orange-500">@AppLocalization.Text("report.dueWithin3Days", "Due Within 3 Days")</p>
-                        <p class="mt-1 text-3xl font-bold text-orange-700">@dueSoonCount</p>
+                        <p class="mt-1 text-3xl font-bold text-orange-700">@AppLocalization.Number(dueSoonCount)</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
                         <i data-lucide="clock" class="h-6 w-6 text-orange-600"></i>
@@ -82,7 +82,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">@AppLocalization.Text("report.avgDaysOverdue", "Avg Days Overdue")</p>
-                        <p class="mt-1 text-3xl font-bold text-violet-700">@avgDaysOverdue</p>
+                        <p class="mt-1 text-3xl font-bold text-violet-700">@AppLocalization.Number(avgDaysOverdue)</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
                         <i data-lucide="calendar-x" class="h-6 w-6 text-violet-600"></i>
@@ -101,16 +101,16 @@
                        class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.priority", "Priority")</label>
                 <select @bind="filterPriority" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
-                    <option value="0">All Priorities</option>
-                    <option value="1">Low</option>
-                    <option value="2">Medium</option>
-                    <option value="3">High</option>
+                    <option value="0">@AppLocalization.Text("common.allPriorities", "All Priorities")</option>
+                    <option value="1">@AppLocalization.Text("priority.low", "Low")</option>
+                    <option value="2">@AppLocalization.Text("priority.medium", "Medium")</option>
+                    <option value="3">@AppLocalization.Text("priority.high", "High")</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Delay Type</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("report.delayType", "Delay Type")</label>
                 <select @bind="filterDelayType" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
                     <option value="all">@AppLocalization.Text("report.allDelayed", "All Delayed")</option>
                     <option value="overdue">@AppLocalization.Text("report.overduePastDue", "Overdue (Past Due)")</option>
@@ -174,7 +174,7 @@
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                     <h3 class="text-sm font-semibold text-slate-700">
-                    @AppLocalization.Text("report.showingDelayedTasks", "Showing") <span class="text-rose-600 font-bold">@(overdueReportPage?.TotalCount ?? 0)</span> @AppLocalization.Text("report.delayedOrOverdueTasks", "delayed / overdue task(s)")
+                    @AppLocalization.Text("report.showingDelayedTasks", "Showing") <span class="text-rose-600 font-bold">@AppLocalization.Number(overdueReportPage?.TotalCount ?? 0)</span> @AppLocalization.Text("report.delayedOrOverdueTasks", "delayed / overdue task(s)")
                 </h3>
             </div>
             <table class="w-full">
@@ -197,7 +197,7 @@
                         {
                             var task = entry.task;
                             <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4 text-sm font-semibold text-slate-500 align-top">@((currentPage - 1) * pageSize + entry.index + 1)</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-slate-500 align-top">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4">
                                     <div>
                                         <p class="text-sm font-semibold text-slate-900">@task.Title</p>
@@ -225,7 +225,7 @@
                                     }
                                     else
                                     {
-                                        <span class="text-xs text-slate-400">Unassigned</span>
+                                        <span class="text-xs text-slate-400">@AppLocalization.Text("common.unassigned", "Unassigned")</span>
                                     }
                                 </td>
                                 <td class="px-6 py-4">
@@ -238,7 +238,7 @@
                                     {
                                         <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
                                             <i data-lucide="alert-triangle" class="h-3 w-3"></i>
-                                            @task.DaysOverdue day@(task.DaysOverdue != 1 ? "s" : "")
+                                            @AppLocalization.Number(task.DaysOverdue) @AppLocalization.Text("report.days", "days")
                                         </span>
                                     }
                                     else
@@ -246,12 +246,12 @@
                                         var daysDue = Math.Abs(task.DaysOverdue);
                                         <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                                             <i data-lucide="clock" class="h-3 w-3"></i>
-                                            Due in @daysDue day@(daysDue != 1 ? "s" : "")
+                                            @AppLocalization.Text("report.dueIn", "Due in") @AppLocalization.Number(daysDue) @AppLocalization.Text("report.days", "days")
                                         </span>
                                     }
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-700">
-                                    <span class="font-semibold text-rose-600">@task.OverdueIssues</span> overdue
+                                    <span class="font-semibold text-rose-600">@AppLocalization.Number(task.OverdueIssues)</span> @AppLocalization.Text("common.overdue", "overdue")
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-medium text-slate-800">@(string.IsNullOrWhiteSpace(task.DelayReason) ? "No reason recorded" : task.DelayReason)</div>
@@ -262,7 +262,7 @@
                     }
                     else
                     {
-                        <EmptyState ColSpan="8" Icon="check-circle" Title="No overdue tasks" Subtitle="Great! No tasks are overdue or at risk based on the current filters." />
+                        <EmptyState ColSpan="8" Icon="check-circle" Title="@AppLocalization.Text("report.noOverdueTasks", "No overdue tasks")" Subtitle="@AppLocalization.Text("report.noOverdueTasksDesc", "Great! No tasks are overdue or at risk based on the current filters.")" />
                     }
                 </tbody>
             </table>

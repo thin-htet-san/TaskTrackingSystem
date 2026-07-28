@@ -8,28 +8,28 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Employee Dashboard</PageTitle>
+<PageTitle>@AppLocalization.Text("dashboard.employeeTitle", "Employee Dashboard")</PageTitle>
 
 <div class="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8 dark:bg-slate-950 dark:text-slate-50">
     <div class="mx-auto max-w-[1440px] space-y-6">
         <div class="rounded-xl border border-slate-200 bg-white px-8 py-8 shadow-sm">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.08em] text-violet-700">Team Member</p>
-                    <h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">My Work</h2>
+                    <p class="text-sm font-semibold uppercase tracking-[0.08em] text-violet-700">@AppLocalization.Text("dashboard.teamMember", "Team Member")</p>
+                    <h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">@AppLocalization.Text("dashboard.myWork", "My Work")</h2>
                     <p class="mt-3 max-w-2xl text-sm text-slate-600">
-                        Tasks, deadlines, and your progress in one place.
+                        @AppLocalization.Text("dashboard.employeeIntro", "Tasks, deadlines, and your progress in one place.")
                     </p>
                 </div>
 
                 <div class="flex flex-wrap gap-3">
                     <a href="/tasks/all" class="inline-flex items-center rounded-2xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-600">
                         <i data-lucide="check-square" class="mr-2 h-4 w-4"></i>
-                        View Tasks
+                        @AppLocalization.Text("dashboard.viewTasks", "View Tasks")
                     </a>
                     <a href="/reports/tasks" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
                         <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
-                        Reports
+                        @AppLocalization.Text("menu.REPORTS", "Reports")
                     </a>
                 </div>
             </div>
@@ -43,7 +43,7 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
-                    <span class="text-sm font-medium">Loading dashboard...</span>
+                    <span class="text-sm font-medium">@AppLocalization.Text("dashboard.loadingDashboard", "Loading dashboard...")</span>
                 </div>
             </div>
         }
@@ -66,8 +66,8 @@
                                     <i data-lucide="timer-reset" class="h-4 w-4"></i>
                                 </span>
                                 <div>
-                                    <h3 class="text-xl font-bold text-slate-950">In Progress</h3>
-                                    <p class="text-sm text-slate-500">Tasks currently being worked on</p>
+                                    <h3 class="text-xl font-bold text-slate-950">@AppLocalization.Text("status.inprogress", "In Progress")</h3>
+                                    <p class="text-sm text-slate-500">@AppLocalization.Text("dashboard.tasksInProgressDesc", "Tasks currently being worked on")</p>
                                 </div>
                             </div>
                             <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@InProgressTasks.Count</span>
@@ -93,7 +93,7 @@
                             }
                             else
                             {
-                                <div class="px-6 py-10 text-sm text-slate-500">No tasks in progress right now.</div>
+                                <div class="px-6 py-10 text-sm text-slate-500">@AppLocalization.Text("dashboard.noTasksInProgress", "No tasks in progress right now.")</div>
                             }
                         </div>
                     </div>
@@ -105,8 +105,8 @@
                                     <i data-lucide="clock-3" class="h-4 w-4"></i>
                                 </span>
                                 <div>
-                                    <h3 class="text-xl font-bold text-slate-950">To Do & Upcoming</h3>
-                                    <p class="text-sm text-slate-500">Tasks waiting for action or coming up soon</p>
+                                    <h3 class="text-xl font-bold text-slate-950">@AppLocalization.Text("dashboard.todoUpcoming", "To Do & Upcoming")</h3>
+                                    <p class="text-sm text-slate-500">@AppLocalization.Text("dashboard.todoUpcomingDesc", "Tasks waiting for action or coming up soon")</p>
                                 </div>
                             </div>
                             <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@TodoUpcomingTasks.Count</span>
@@ -132,7 +132,7 @@
                             }
                             else
                             {
-                                <div class="px-6 py-10 text-sm text-slate-500">No upcoming tasks found.</div>
+                                <div class="px-6 py-10 text-sm text-slate-500">@AppLocalization.Text("dashboard.noUpcomingTasks", "No upcoming tasks found.")</div>
                             }
                         </div>
                     </div>
@@ -144,8 +144,8 @@
                                     <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                                 </span>
                                 <div>
-                                    <h3 class="text-xl font-bold text-slate-950">Overdue</h3>
-                                    <p class="text-sm text-slate-500">Tasks past their due date</p>
+                                    <h3 class="text-xl font-bold text-slate-950">@AppLocalization.Text("status.overdue", "Overdue")</h3>
+                                    <p class="text-sm text-slate-500">@AppLocalization.Text("dashboard.overdueDesc", "Tasks past their due date")</p>
                                 </div>
                             </div>
                             <span class="rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-600">@OverdueTasks.Count</span>
@@ -173,7 +173,7 @@
                             }
                             else
                             {
-                                <div class="px-6 py-10 text-sm text-slate-500">No overdue tasks. Nice work.</div>
+                                <div class="px-6 py-10 text-sm text-slate-500">@AppLocalization.Text("dashboard.noOverdueTasks", "No overdue tasks. Nice work.")</div>
                             }
                         </div>
                     </div>
@@ -227,8 +227,8 @@
 
                     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                         <div class="border-b border-slate-100 px-6 py-5">
-                            <h3 class="text-xl font-bold text-slate-950">Related Tasks</h3>
-                            <p class="mt-1 text-sm text-slate-500">Tasks marked on @SelectedDateLabel</p>
+                            <h3 class="text-xl font-bold text-slate-950">@AppLocalization.Text("dashboard.relatedTasks", "Related Tasks")</h3>
+                            <p class="mt-1 text-sm text-slate-500">@AppLocalization.Text("dashboard.tasksMarkedOn", "Tasks marked on {date}").Replace("{date}", SelectedDateLabel)</p>
                         </div>
 
                         <div class="divide-y divide-slate-100">
@@ -251,7 +251,7 @@
                             }
                             else
                             {
-                                <div class="px-6 py-10 text-sm text-slate-500">No tasks are scheduled for this day.</div>
+                                <div class="px-6 py-10 text-sm text-slate-500">@AppLocalization.Text("dashboard.noTasksForDay", "No tasks are scheduled for this day.")</div>
                             }
                         </div>
                     </div>
@@ -269,7 +269,9 @@
     private List<ProjectDto> projects = new();
     private DateTime selectedDate = DateTime.Today;
 
-    private readonly string[] WeekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    private string[] WeekdayLabels => AppLocalization.IsBurmeseCulture
+        ? ["တနင်္ဂနွေ", "တနင်္လာ", "အင်္ဂါ", "ဗုဒ္ဓဟူး", "ကြာသပတေး", "သောကြာ", "စနေ"]
+        : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     private List<CalendarCellViewModel> CalendarCells => BuildCalendarCells();
     private List<TaskDto> SelectedDateTasks => tasks
@@ -278,9 +280,9 @@
         .ThenBy(task => task.DueDate)
         .ToList();
 
-    private string SelectedDateLabel => selectedDate.ToString("dddd, MMM d");
-    private string CalendarMonthLabel => selectedDate.ToString("MMMM yyyy");
-    private string CalendarTodayLabel => DateTime.Today.ToString("dddd, d");
+    private string SelectedDateLabel => GetDisplayDateLabel(selectedDate);
+    private string CalendarMonthLabel => GetMonthYearLabel(selectedDate);
+    private string CalendarTodayLabel => GetDisplayDateLabel(DateTime.Today);
     private string CurrentTimeLabel => DateTime.Now.ToString("h:mm tt");
     private string TimeZoneLabel
     {
@@ -354,7 +356,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to load dashboard data: {ex.Message}";
+            errorMessage = $"{AppLocalization.Text("common.error", "Error")}: {ex.Message}";
         }
         finally
         {
@@ -387,11 +389,11 @@
 
         return new List<DashboardMetric>
         {
-            new("timer-reset", "active", inProgress.ToString(), "In Progress", "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-violet-700"),
-            new("list-checks", "queued", todo.ToString(), "To Do", "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-cyan-600"),
-            new("calendar-clock", "soon", dueSoon.ToString(), "Due Soon", "rounded-2xl bg-amber-500 p-3 text-white", "text-sm font-semibold text-amber-600"),
-            new("circle-check-big", "done", completed.ToString(), "Completed", "rounded-2xl bg-emerald-600 p-3 text-white", "text-sm font-semibold text-emerald-600"),
-            new("triangle-alert", "late", overdue.ToString(), "Overdue", "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
+            new("timer-reset", "active", inProgress.ToString(), AppLocalization.Text("status.inprogress", "In Progress"), "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-violet-700"),
+            new("list-checks", "queued", todo.ToString(), AppLocalization.Text("status.todo", "To Do"), "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-cyan-600"),
+            new("calendar-clock", "soon", dueSoon.ToString(), AppLocalization.Text("dashboard.dueSoon", "Due Soon"), "rounded-2xl bg-amber-500 p-3 text-white", "text-sm font-semibold text-amber-600"),
+            new("circle-check-big", "done", completed.ToString(), AppLocalization.Text("status.done", "Completed"), "rounded-2xl bg-emerald-600 p-3 text-white", "text-sm font-semibold text-emerald-600"),
+            new("triangle-alert", "late", overdue.ToString(), AppLocalization.Text("status.overdue", "Overdue"), "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
         };
     }
 
@@ -466,20 +468,20 @@
 
         if (task.StatusId == AppTaskStatus.Done)
         {
-            return "Done";
+            return AppLocalization.Text("dashboard.done", "Done");
         }
 
         if (days < 0)
         {
-            return $"{Math.Abs(days)}d ago";
+            return AppLocalization.Text("dashboard.daysAgo", "{count}d ago").Replace("{count}", Math.Abs(days).ToString());
         }
 
         if (days == 0)
         {
-            return "Today";
+            return AppLocalization.Text("dashboard.today", "Today");
         }
 
-        return $"{days}d left";
+        return AppLocalization.Text("dashboard.daysLeft", "{count}d left").Replace("{count}", days.ToString());
     }
 
     private string GetDueTextClass(TaskDto task)
@@ -507,8 +509,18 @@
     private string DaysOverdue(TaskDto task)
     {
         var days = (DateTime.Today - task.DueDate.Date).Days;
-        return days <= 0 ? "Due today" : $"{days}d ago";
+        return days <= 0
+            ? AppLocalization.Text("dashboard.dueToday", "Due today")
+            : AppLocalization.Text("dashboard.daysAgo", "{count}d ago").Replace("{count}", days.ToString());
     }
+
+    private string GetDisplayDateLabel(DateTime date) => AppLocalization.IsBurmeseCulture
+        ? $"{date.Month}လ {date.Day}ရက်"
+        : date.ToString("dddd, MMM d");
+
+    private string GetMonthYearLabel(DateTime date) => AppLocalization.IsBurmeseCulture
+        ? $"{date.Year} ခုနှစ် {date.Month}လ"
+        : date.ToString("MMMM yyyy");
 
     private sealed record CalendarCellViewModel(
         DateTime Date,

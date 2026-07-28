@@ -16,16 +16,16 @@
 @inject MenuAuthorizationService MenuAuthorization
 @inject NavigationManager NavigationManager
 
-<PageTitle>Dashboard</PageTitle>
+<PageTitle>@AppLocalization.PageTitle("dashboard", "Dashboard")</PageTitle>
 
 <div class="space-y-8 text-slate-900 dark:text-slate-100">
     <div class="rounded-xl border border-slate-200 bg-white px-8 py-8 text-slate-900 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.08em] text-teal-700 dark:text-teal-300">Overview</p>
-                <h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Welcome back, @currentUserFullName</h2>
+                <p class="text-sm font-semibold uppercase tracking-[0.08em] text-teal-700 dark:text-teal-300">@AppLocalization.Text("dashboard.overview", "Overview")</p>
+                <h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">@AppLocalization.Text("dashboard.welcomeBack", "Welcome back, {name}").Replace("{name}", currentUserFullName)</h2>
                 <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-                    Projects, users, and team progress at a glance.
+                    @AppLocalization.Text("dashboard.adminIntro", "Projects, users, and team progress at a glance.")
                 </p>
             </div>
             <div class="flex flex-wrap gap-3">
@@ -33,12 +33,12 @@
                 {
                     <a href="/tasks/all" class="inline-flex items-center rounded-lg bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500">
                         <i data-lucide="plus" class="mr-2 h-4 w-4"></i>
-                        New Task
+                        @AppLocalization.Text("task.newTask", "New Task")
                     </a>
                 }
                 <a href="/reports/tasks" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
                     <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
-                    Reports
+                    @AppLocalization.Text("menu.REPORTS", "Reports")
                 </a>
             </div>
         </div>
@@ -50,8 +50,8 @@
         <div class="rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <h3 class="text-xl font-bold text-slate-900">Project Activity</h3>
-                    <p class="mt-1 text-sm text-slate-500">Active vs completed tasks per month.</p>
+                    <h3 class="text-xl font-bold text-slate-900">@AppLocalization.Text("dashboard.projectActivity", "Project Activity")</h3>
+                    <p class="mt-1 text-sm text-slate-500">@AppLocalization.Text("dashboard.projectActivityDesc", "Active vs completed tasks per month.")</p>
                 </div>
                 <div class="text-sm text-slate-500">@ActivityRangeLabel</div>
             </div>
@@ -99,8 +99,8 @@
                         <div class="pointer-events-none absolute z-20 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-lg shadow-slate-200/70"
                              style="@HoveredActivityStyle">
                             <div class="text-sm font-semibold text-slate-900">@hoveredActivity.Value.Label</div>
-                            <div class="mt-2 text-sm text-emerald-600">Completed: @hoveredActivity.Value.Completed</div>
-                            <div class="mt-1 text-sm text-violet-600">Active: @hoveredActivity.Value.Active</div>
+                            <div class="mt-2 text-sm text-emerald-600">@AppLocalization.Text("dashboard.completedCount", "Completed: {count}").Replace("{count}", hoveredActivity.Value.Completed.ToString())</div>
+                            <div class="mt-1 text-sm text-violet-600">@AppLocalization.Text("dashboard.activeCount", "Active: {count}").Replace("{count}", hoveredActivity.Value.Active.ToString())</div>
                         </div>
                     }
                 </div>
@@ -114,7 +114,7 @@
             </div>
         </div>
 
-        <ChartCard Title="Task Distribution" Subtitle="@($"{TotalTasksCount} total tasks")">
+        <ChartCard Title="@AppLocalization.Text("dashboard.taskDistribution", "Task Distribution")" Subtitle="@AppLocalization.Text("dashboard.totalTasks", "{count} total tasks").Replace("{count}", TotalTasksCount.ToString())">
             <ChildContent>
                 <DonutChart Items="DistributionChartItems" />
             </ChildContent>
@@ -125,11 +125,11 @@
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h3 class="text-xl font-bold text-slate-900">All Projects</h3>
-                    <p class="mt-1 text-sm text-slate-500">A quick snapshot of the current project list.</p>
+                    <h3 class="text-xl font-bold text-slate-900">@AppLocalization.Text("dashboard.allProjects", "All Projects")</h3>
+                    <p class="mt-1 text-sm text-slate-500">@AppLocalization.Text("dashboard.projectsSnapshot", "A quick snapshot of the current project list.")</p>
                 </div>
                 <a href="/projects/all" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-teal-700 shadow-sm transition-colors hover:bg-teal-50 dark:border-slate-700 dark:bg-slate-900 dark:text-teal-300 dark:hover:bg-slate-800">
-                    View all
+                    @AppLocalization.Text("dashboard.viewAll", "View all")
                 </a>
             </div>
 
@@ -147,7 +147,7 @@
                                 <p class="mt-1 text-xs text-slate-500">@DisplayFormats.Date(project.StartDate) - @DisplayFormats.Date(project.EndDate)</p>
                             </div>
                             <div class="text-right">
-                                <div class="text-sm font-semibold text-slate-900">@progress.CompletedTasksCount/@progress.TotalTasksCount tasks</div>
+                                <div class="text-sm font-semibold text-slate-900">@progress.CompletedTasksCount/@progress.TotalTasksCount @AppLocalization.Text("dashboard.tasksUnit", "tasks")</div>
                                 <div class="text-xs text-slate-500">@progress.CompletionPercentage%</div>
                             </div>
                         </div>
@@ -163,8 +163,8 @@
         <div class="rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <h3 class="text-xl font-bold text-slate-900">Calendar</h3>
-                    <p class="mt-1 text-sm text-slate-500">Today and upcoming project starts.</p>
+                    <h3 class="text-xl font-bold text-slate-900">@AppLocalization.Text("dashboard.calendar", "Calendar")</h3>
+                    <p class="mt-1 text-sm text-slate-500">@AppLocalization.Text("dashboard.calendarDesc", "Today and upcoming project starts.")</p>
                 </div>
                 <div class="text-right">
                     <div class="text-sm font-semibold text-violet-600">@CalendarMonthLabel</div>
@@ -196,7 +196,7 @@
             </div>
 
             <div class="mt-6 max-h-[360px] space-y-3 overflow-y-auto pr-1">
-                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Events</div>
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">@AppLocalization.Text("dashboard.events", "Events")</div>
                 @foreach (var item in UpcomingProjectStarts)
                 {
                     <div class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -214,24 +214,24 @@
     <div class="rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <h3 class="text-xl font-bold text-slate-900">Project Timeline</h3>
-                <p class="mt-1 text-sm text-slate-500">Browse every project in a gantt view and adjust the month window below.</p>
+                <h3 class="text-xl font-bold text-slate-900">@AppLocalization.Text("dashboard.projectTimeline", "Project Timeline")</h3>
+                <p class="mt-1 text-sm text-slate-500">@AppLocalization.Text("dashboard.projectTimelineDesc", "Browse every project in a gantt view and adjust the month window below.")</p>
             </div>
             <a href="/projects/all" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-teal-700 shadow-sm transition-colors hover:bg-teal-50 dark:border-slate-700 dark:bg-slate-900 dark:text-teal-300 dark:hover:bg-slate-800">
-                View all
+                @AppLocalization.Text("dashboard.viewAll", "View all")
             </a>
         </div>
 
         <div class="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
             <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">From</label>
+                <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">@AppLocalization.Text("dashboard.from", "From")</label>
                 <input type="month"
                        class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                        value="@timelineStartMonthValue"
                        @onchange="OnTimelineStartMonthChanged" />
             </div>
             <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">To</label>
+                <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">@AppLocalization.Text("dashboard.to", "To")</label>
                 <input type="month"
                        class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                        value="@timelineEndMonthValue"
@@ -250,7 +250,7 @@
         }
         else
         {
-            <div class="flex items-center justify-center py-16 text-slate-400 text-sm">No projects to display.</div>
+            <div class="flex items-center justify-center py-16 text-slate-400 text-sm">@AppLocalization.Text("dashboard.noProjectsToDisplay", "No projects to display.")</div>
         }
     </div>
 </div>
@@ -274,7 +274,9 @@
     private int? hoveredActivityIndex;
     private int? hoveredSliceIndex;
 
-    private readonly string[] WeekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    private string[] WeekdayLabels => AppLocalization.IsBurmeseCulture
+        ? ["တနင်္ဂနွေ", "တနင်္လာ", "အင်္ဂါ", "ဗုဒ္ဓဟူး", "ကြာသပတေး", "သောကြာ", "စနေ"]
+        : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     private List<ActivityMonthStat> ActivityMonths => BuildActivityMonths();
     private List<string> ActivityLabels => ActivityMonths.Select(month => month.Label).ToList();
@@ -297,19 +299,19 @@
     private string CompletionDeltaText => BuildCompletionDeltaText();
     private List<DashboardMetric> SummaryMetrics => new()
     {
-        new("users", UsersDeltaText, summary.TotalUsers.ToString(), "Total users", "flex h-12 w-12 items-center justify-center rounded-lg bg-teal-700 text-white dark:bg-teal-600", "text-sm font-semibold text-emerald-600 dark:text-emerald-300"),
-        new("folder-kanban", ProjectsDeltaText, projectsList.Count.ToString(), "Total projects", "flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white", "text-sm font-semibold text-emerald-500"),
-        new("check-square", TasksDeltaText, ActiveTasksCount.ToString(), "Active tasks", "flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white", "text-sm font-semibold text-emerald-500"),
-        new("trending-up", CompletionDeltaText, $"{CompletionRate}%", "Completion rate", "flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white", "text-sm font-semibold text-emerald-500")
+        new("users", UsersDeltaText, summary.TotalUsers.ToString(), AppLocalization.Text("dashboard.totalUsers", "Total users"), "flex h-12 w-12 items-center justify-center rounded-lg bg-teal-700 text-white dark:bg-teal-600", "text-sm font-semibold text-emerald-600 dark:text-emerald-300"),
+        new("folder-kanban", ProjectsDeltaText, projectsList.Count.ToString(), AppLocalization.Text("dashboard.totalProjects", "Total projects"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white", "text-sm font-semibold text-emerald-500"),
+        new("check-square", TasksDeltaText, ActiveTasksCount.ToString(), AppLocalization.Text("dashboard.activeTasks", "Active tasks"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white", "text-sm font-semibold text-emerald-500"),
+        new("trending-up", CompletionDeltaText, $"{CompletionRate}%", AppLocalization.Text("dashboard.completionRate", "Completion rate"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white", "text-sm font-semibold text-emerald-500")
     };
-    private string CalendarMonthLabel => DateTime.Today.ToString("MMMM yyyy");
+    private string CalendarMonthLabel => GetMonthYearLabel(DateTime.Today);
     private List<CalendarCell> CalendarCells => BuildCalendarCells();
     private List<CalendarEventItem> UpcomingProjectStarts => BuildUpcomingProjectStarts();
     private List<ProjectDto> FeaturedProjects => TimelineProjects.Take(5).ToList();
     private List<ProjectDto> ProjectListItems => projectsList.OrderBy(p => p.StartDate).ThenByDescending(p => p.CreatedAt).ToList();
     private List<ProjectDto> TimelineProjects => projectsList.OrderBy(p => p.StartDate).ThenByDescending(p => p.CreatedAt).ToList();
     private List<DateTime> TimelineMonths => BuildTimelineMonths();
-    private string TimelineRangeLabel => TryGetTimelineRange(out var range) ? $"{range.Start:MMM yyyy} - {range.End:MMM yyyy}" : string.Empty;
+    private string TimelineRangeLabel => TryGetTimelineRange(out var range) ? $"{GetMonthYearLabel(range.Start)} - {GetMonthYearLabel(range.End)}" : string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -598,12 +600,12 @@
         return slices;
     }
 
-    private static string GetDistributionLabel(int index) => index switch
+    private string GetDistributionLabel(int index) => index switch
     {
-        0 => "Completed",
-        1 => "In Progress",
-        2 => "To Do",
-        _ => "Overdue"
+        0 => AppLocalization.Text("status.done", "Completed"),
+        1 => AppLocalization.Text("status.inprogress", "In Progress"),
+        2 => AppLocalization.Text("status.todo", "To Do"),
+        _ => AppLocalization.Text("status.overdue", "Overdue")
     };
 
     private List<DistributionLegendItem> BuildDistributionLegend()
@@ -641,7 +643,7 @@
         return projectsList
             .Where(project => project.StartDate.Date >= DateTime.Today)
             .OrderBy(project => project.StartDate)
-            .Select(project => new CalendarEventItem(project.Name, project.StartDate.ToString("MMM d"), GetProjectColor(project.Id)))
+            .Select(project => new CalendarEventItem(project.Name, GetDisplayDateLabel(project.StartDate), GetProjectColor(project.Id)))
             .ToList();
     }
 
@@ -828,7 +830,9 @@
 
     private string GetProjectBadgeLabel(ProjectDto project)
     {
-        return project.StartDate.Date > DateTime.Today ? "Upcoming" : "Active";
+        return project.StartDate.Date > DateTime.Today
+            ? AppLocalization.Text("dashboard.upcoming", "Upcoming")
+            : AppLocalization.Text("dashboard.active", "Active");
     }
 
     private string GetProjectBadgeClasses(ProjectDto project)
@@ -924,15 +928,15 @@
     {
         if (delta > 0)
         {
-            return $"+{delta} this month";
+            return $"+{delta} {AppLocalization.Text("dashboard.thisMonth", "this month")}";
         }
 
         if (delta < 0)
         {
-            return $"{delta} this month";
+            return $"{delta} {AppLocalization.Text("dashboard.thisMonth", "this month")}";
         }
 
-        return "0 this month";
+        return $"0 {AppLocalization.Text("dashboard.thisMonth", "this month")}";
     }
 
     private string BuildCompletionDeltaText()
@@ -943,15 +947,15 @@
 
         if (delta > 0)
         {
-            return $"+{delta}% vs last mo";
+            return $"+{delta}% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
         }
 
         if (delta < 0)
         {
-            return $"{delta}% vs last mo";
+            return $"{delta}% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
         }
 
-        return "0% vs last mo";
+        return $"0% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
     }
 
     private int GetUsersThisMonth() =>
@@ -992,7 +996,17 @@
         return (int)Math.Round(monthTasks.Count(task => task.StatusId == AppTaskStatus.Done) / (double)monthTasks.Count * 100);
     }
 
-    private string GetMonthLabel(DateTime date) => date.ToString("MMM");
+    private string GetMonthLabel(DateTime date) => AppLocalization.IsBurmeseCulture
+        ? $"{date.Month}လ"
+        : date.ToString("MMM");
+
+    private string GetDisplayDateLabel(DateTime date) => AppLocalization.IsBurmeseCulture
+        ? $"{date.Month}လ {date.Day}ရက်"
+        : date.ToString("MMM d");
+
+    private string GetMonthYearLabel(DateTime date) => AppLocalization.IsBurmeseCulture
+        ? $"{date.Year} ခုနှစ် {date.Month}လ"
+        : date.ToString("MMMM yyyy");
 
     private readonly record struct ActivityMonthStat(string Label, int Active, int Completed);
     private readonly record struct ActivityPoint(string Label, double X, double Y, int Active, int Completed);

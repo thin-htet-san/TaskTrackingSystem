@@ -48,21 +48,21 @@
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("report.periodFilter", "Period Filter")</label>
                 <select @bind="filterPeriod" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
                     <option value="all">@AppLocalization.Text("common.all", "All Time")</option>
-                    <option value="daily">Daily (Today)</option>
-                    <option value="monthly">Monthly (This Month)</option>
-                    <option value="yearly">Yearly (This Year)</option>
-                    <option value="custom">Custom Range</option>
+                    <option value="daily">@AppLocalization.Text("report.daily", "Daily (Today)")</option>
+                    <option value="monthly">@AppLocalization.Text("report.monthly", "Monthly (This Month)")</option>
+                    <option value="yearly">@AppLocalization.Text("report.yearly", "Yearly (This Year)")</option>
+                    <option value="custom">@AppLocalization.Text("report.customRange", "Custom Range")</option>
                 </select>
             </div>
 
             @if (filterPeriod == "custom")
             {
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Start Date</label>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.startDate", "Start Date")</label>
                     <input @bind="filterStartDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">End Date</label>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.endDate", "End Date")</label>
                     <input @bind="filterEndDate" type="date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
             }
@@ -78,10 +78,10 @@
                 </select>
             </div>
             <button @onclick="ApplyAllFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-                <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+                <i data-lucide="search" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.search", "Search")
             </button>
             <button @onclick="ResetAllFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> Reset
+                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> @AppLocalization.Text("action.reset", "Reset")
             </button>
 
             <div class="flex flex-wrap items-center gap-6 w-full border-t border-slate-100 pt-3 mt-1">
@@ -142,13 +142,13 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/60">
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Employee</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned Issues</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Open / Overdue</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actual Hours</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Workload</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Trend</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.index", "No.")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.employee", "Employee")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.assignedIssues", "Assigned Issues")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.openOverdue", "Open / Overdue")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.actualHours", "Actual Hours")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.workload", "Workload")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("report.trend", "Trend")</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -158,7 +158,7 @@
                             {
                                 var emp = entry.emp;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="px-6 py-4 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-500">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center space-x-3">
                                             <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-semibold text-xs">
@@ -170,11 +170,11 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm font-medium text-slate-900">@emp.AssignedIssues</td>
-                                    <td class="px-6 py-4 text-sm font-medium"><span class="text-blue-600">@emp.OpenIssues</span> / <span class="text-rose-600">@emp.OverdueIssues</span></td>
-                                    <td class="px-6 py-4 text-sm font-semibold text-slate-800">@emp.ActualHours.ToString("N1") hrs</td>
-                                    <td class="px-6 py-4"><span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold @GetWorkloadBadge(emp.WorkloadLevel)">@emp.WorkloadLevel</span></td>
-                                    <td class="px-6 py-4"><span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold @GetTrendBadge(emp.Trend)">@emp.Trend</span></td>
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-900">@AppLocalization.Number(emp.AssignedIssues)</td>
+                                    <td class="px-6 py-4 text-sm font-medium"><span class="text-blue-600">@AppLocalization.Number(emp.OpenIssues)</span> / <span class="text-rose-600">@AppLocalization.Number(emp.OverdueIssues)</span></td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-800">@AppLocalization.Number(emp.ActualHours, "N1") @AppLocalization.Text("common.hoursAbbrev", "hrs")</td>
+                                    <td class="px-6 py-4"><span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold @GetWorkloadBadge(emp.WorkloadLevel)">@GetWorkloadLabel(emp.WorkloadLevel)</span></td>
+                                    <td class="px-6 py-4"><span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold @GetTrendBadge(emp.Trend)">@GetTrendLabel(emp.Trend)</span></td>
                                 </tr>
                             }
                         }
@@ -182,7 +182,7 @@
                         {
                             <tr>
                                 <td colspan="7" class="px-6 py-12 text-center">
-                                    <p class="text-sm text-slate-400">No employee data found matching criteria.</p>
+                                    <p class="text-sm text-slate-400">@AppLocalization.Text("report.noEmployeeData", "No employee data found matching criteria.")</p>
                                 </td>
                             </tr>
                         }
@@ -465,11 +465,25 @@
         _ => "bg-emerald-50 text-emerald-700"
     };
 
+    private static string GetWorkloadLabel(string workload) => workload switch
+    {
+        "High" => AppLocalization.Text("report.workloadHigh", "High"),
+        "Light" => AppLocalization.Text("report.workloadLight", "Light"),
+        _ => AppLocalization.Text("report.workloadBalanced", "Balanced")
+    };
+
     private static string GetTrendBadge(string trend) => trend switch
     {
         "Improving" => "bg-emerald-50 text-emerald-700",
         "Declining" => "bg-rose-50 text-rose-700",
         _ => "bg-blue-50 text-blue-700"
+    };
+
+    private static string GetTrendLabel(string trend) => trend switch
+    {
+        "Improving" => AppLocalization.Text("report.trendImproving", "Improving"),
+        "Declining" => AppLocalization.Text("report.trendDeclining", "Declining"),
+        _ => AppLocalization.Text("report.trendStable", "Stable")
     };
 
     private static string BuildShortName(string fullName)

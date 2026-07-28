@@ -7,20 +7,20 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Manager Dashboard</PageTitle>
+<PageTitle>@AppLocalization.Text("dashboard.managerTitle", "Manager Dashboard")</PageTitle>
 
 <div class="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8 dark:bg-slate-950 dark:text-slate-50">
     <div class="mx-auto max-w-[1440px] space-y-6">
         <div class="rounded-xl border border-slate-200 bg-white px-8 py-8 shadow-sm">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.08em] text-violet-700">Team View</p>
-                    <h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">My Projects</h2>
+                    <p class="text-sm font-semibold uppercase tracking-[0.08em] text-violet-700">@AppLocalization.Text("dashboard.teamView", "Team View")</p>
+                    <h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">@AppLocalization.Text("dashboard.myProjects", "My Projects")</h2>
                     <p class="mt-3 max-w-2xl text-sm text-slate-600">
-                        Track your team, project health, and weekly task progress in one place.
+                        @AppLocalization.Text("dashboard.managerIntro", "Track your team, project health, and weekly task progress in one place.")
                         @if (summary.PendingTasksCount > 0)
                         {
-                            <span class="text-slate-500"> @summary.PendingTasksCount tasks are still pending.</span>
+                            <span class="text-slate-500"> @AppLocalization.Text("dashboard.pendingTasksNotice", "{count} tasks are still pending.").Replace("{count}", summary.PendingTasksCount.ToString())</span>
                         }
                     </p>
                 </div>
@@ -28,11 +28,11 @@
                 <div class="flex flex-wrap gap-3">
                     <a href="/projects/all" class="inline-flex items-center rounded-2xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-600">
                         <i data-lucide="folder-kanban" class="mr-2 h-4 w-4"></i>
-                        All Projects
+                        @AppLocalization.Text("dashboard.allProjects", "All Projects")
                     </a>
                     <a href="/reports/tasks" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
                         <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
-                        Task Report
+                        @AppLocalization.Text("dashboard.taskReport", "Task Report")
                     </a>
                 </div>
             </div>
@@ -46,7 +46,7 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
-                    <span class="text-sm font-medium">Loading dashboard...</span>
+                    <span class="text-sm font-medium">@AppLocalization.Text("dashboard.loadingDashboard", "Loading dashboard...")</span>
                 </div>
             </div>
         }
@@ -61,7 +61,7 @@
             <ManagerOverview Metrics="SummaryMetrics" />
 
             <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)]">
-                <ChartCard Title="Weekly Task Progress" Subtitle="Completed vs pending tasks per week" TitleClass="text-xl font-bold text-slate-950">
+                <ChartCard Title="@AppLocalization.Text("dashboard.weeklyTaskProgress", "Weekly Task Progress")" Subtitle="@AppLocalization.Text("dashboard.weeklyTaskProgressDesc", "Completed vs pending tasks per week")" TitleClass="text-xl font-bold text-slate-950">
                     <Actions>
                         <div class="text-sm text-slate-500">@WeeklyRangeLabel</div>
                     </Actions>
@@ -70,10 +70,10 @@
                     </ChildContent>
                 </ChartCard>
 
-                <ChartCard Title="Team Progress" Subtitle="Members with active workload" TitleClass="text-xl font-bold text-slate-950">
+                <ChartCard Title="@AppLocalization.Text("dashboard.teamProgress", "Team Progress")" Subtitle="@AppLocalization.Text("dashboard.teamProgressDesc", "Members with active workload")" TitleClass="text-xl font-bold text-slate-950">
                     <ChildContent>
                         <div class="max-h-[460px] overflow-y-auto pr-1">
-                            <ProgressListChart Items="TeamProgressItems" EmptyText="No assigned work yet." />
+                            <ProgressListChart Items="TeamProgressItems" EmptyText="@AppLocalization.Text("dashboard.noAssignedWork", "No assigned work yet.")" />
                         </div>
                     </ChildContent>
                 </ChartCard>
@@ -114,8 +114,8 @@
                 </div>
 
                 <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h3 class="text-xl font-bold text-slate-950">Upcoming Deadlines</h3>
-                    <p class="mt-1 text-sm text-slate-500">Projects ending soon</p>
+                    <h3 class="text-xl font-bold text-slate-950">@AppLocalization.Text("dashboard.upcomingDeadlines", "Upcoming Deadlines")</h3>
+                    <p class="mt-1 text-sm text-slate-500">@AppLocalization.Text("dashboard.projectsEndingSoon", "Projects ending soon")</p>
 
                     <div class="mt-6 max-h-[460px] space-y-3 overflow-y-auto pr-1">
                         @if (UpcomingDeadlines.Any())
@@ -126,7 +126,7 @@
                                     <span class="h-2.5 w-2.5 rounded-full" style="background-color: @item.Color;"></span>
                                     <div class="min-w-0 flex-1">
                                         <div class="truncate text-sm font-semibold text-slate-950">@item.Name</div>
-                                        <div class="text-xs text-slate-500">ends @item.EndDateLabel</div>
+                                        <div class="text-xs text-slate-500">@AppLocalization.LocalizeDigits(item.EndDateLabel)</div>
                                     </div>
                                     <div class="@item.DaysLeftClass">@item.DaysLeftLabel</div>
                                 </div>
@@ -135,7 +135,7 @@
                         else
                         {
                             <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                                No upcoming deadlines.
+                                @AppLocalization.Text("dashboard.noUpcomingDeadlines", "No upcoming deadlines.")
                             </div>
                         }
                     </div>
@@ -145,11 +145,11 @@
             <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
                     <div>
-                        <h3 class="text-xl font-bold text-slate-950">My Projects</h3>
-                        <p class="mt-1 text-sm text-slate-500">Click "View Tasks" to drill in</p>
+                        <h3 class="text-xl font-bold text-slate-950">@AppLocalization.Text("dashboard.myProjects", "My Projects")</h3>
+                        <p class="mt-1 text-sm text-slate-500">@AppLocalization.Text("dashboard.clickViewTasks", "Click \"View Tasks\" to drill in")</p>
                     </div>
                     <a href="/projects/all" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 shadow-sm transition-colors hover:bg-slate-50">
-                        View all
+                        @AppLocalization.Text("dashboard.viewAll", "View all")
                     </a>
                 </div>
 
@@ -168,9 +168,9 @@
                                         </div>
 
                                         <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
-                                            <span>@project.Completed/@project.Total tasks</span>
-                                            <span class="text-rose-600">@project.Overdue overdue</span>
-                                            <span>@project.TeamSize members</span>
+                                            <span>@project.Completed/@project.Total @AppLocalization.Text("dashboard.tasksUnit", "tasks")</span>
+                                            <span class="text-rose-600">@project.Overdue @AppLocalization.Text("status.overdue", "overdue")</span>
+                                            <span>@project.TeamSize @AppLocalization.Text("dashboard.teamMembers", "members")</span>
                                         </div>
 
                                         <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
@@ -181,11 +181,11 @@
                                     <div class="flex flex-col items-start gap-3 lg:items-end">
                                         <div class="text-right">
                                             <div class="text-xl font-bold text-slate-950">@project.ProgressPercentage.ToString("F0")%</div>
-                                            <div class="text-xs uppercase tracking-[0.08em] text-slate-500">Complete</div>
+                                            <div class="text-xs uppercase tracking-[0.08em] text-slate-500">@AppLocalization.Text("dashboard.complete", "Complete")</div>
                                         </div>
                                         <button @onclick="() => ViewProjectTasks(project.Id)" class="inline-flex items-center rounded-2xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-600">
                                             <i data-lucide="eye" class="mr-2 h-4 w-4"></i>
-                                            View Tasks
+                                            @AppLocalization.Text("dashboard.viewTasks", "View Tasks")
                                         </button>
                                     </div>
                                 </div>
@@ -194,7 +194,7 @@
                     }
                     else
                     {
-                        <div class="px-6 py-10 text-sm text-slate-500">No projects available for this account.</div>
+                        <div class="px-6 py-10 text-sm text-slate-500">@AppLocalization.Text("dashboard.noProjectsForAccount", "No projects available for this account.")</div>
                     }
                 </div>
             </div>
@@ -230,7 +230,7 @@
     private string WeeklyRangeLabel
         => WeeklyProgress.Count > 0
             ? $"{WeeklyProgress.First().DateRangeLabel} - {WeeklyProgress.Last().DateRangeLabel}"
-            : DateTime.Today.ToString("MMMM yyyy");
+            : GetMonthYearLabel(DateTime.Today);
 
     private List<DashboardMetric> SummaryMetrics => BuildSummaryMetrics();
     private List<ProjectCardViewModel> ProjectCards => BuildProjectCards();
@@ -249,17 +249,19 @@
             week.Label,
             new[]
             {
-                new ChartDataPoint("Completed", week.Completed, "#3b82f6"),
-                new ChartDataPoint("Pending", week.Pending, "#14b8a6")
+                new ChartDataPoint(AppLocalization.Text("status.done", "Completed"), week.Completed, "#3b82f6"),
+                new ChartDataPoint(AppLocalization.Text("dashboard.pending", "Pending"), week.Pending, "#14b8a6")
             },
             week.DateRangeLabel))
         .ToList();
     private List<YAxisTickViewModel> YTicks => BuildYAxisTicks();
     private List<CalendarCellViewModel> CalendarCells => BuildCalendarCells();
     private List<DeadlineItemViewModel> UpcomingDeadlines => BuildUpcomingDeadlines();
-    private readonly string[] WeekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    private string CalendarMonthLabel => DateTime.Today.ToString("MMMM yyyy");
-    private string CalendarTodayLabel => DateTime.Today.ToString("dddd, d");
+    private string[] WeekdayLabels => AppLocalization.IsBurmeseCulture
+        ? ["တနင်္ဂနွေ", "တနင်္လာ", "အင်္ဂါ", "ဗုဒ္ဓဟူး", "ကြာသပတေး", "သောကြာ", "စနေ"]
+        : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    private string CalendarMonthLabel => GetMonthYearLabel(DateTime.Today);
+    private string CalendarTodayLabel => GetDisplayDateLabel(DateTime.Today);
     private string CurrentTimeLabel => DateTime.Now.ToString("h:mm tt");
     private string TimeZoneLabel
     {
@@ -357,10 +359,10 @@
 
         return new List<DashboardMetric>
         {
-            new("folder-kanban", "all active", activeProjects.ToString(), "Active Projects", "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
-            new("check-square", "across projects", totalTasks.ToString(), "Total Tasks", "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-emerald-700"),
-            new("users", "your team", teamMembers.ToString(), "Team Members", "rounded-2xl bg-emerald-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
-            new("triangle-alert", "needs attention", overdueTasks.ToString(), "Overdue Tasks", "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
+            new("folder-kanban", AppLocalization.Text("dashboard.allActive", "all active"), activeProjects.ToString(), AppLocalization.Text("dashboard.activeProjects", "Active Projects"), "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
+            new("check-square", AppLocalization.Text("dashboard.acrossProjects", "across projects"), totalTasks.ToString(), AppLocalization.Text("dashboard.totalTasksMetric", "Total Tasks"), "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-emerald-700"),
+            new("users", AppLocalization.Text("dashboard.yourTeam", "your team"), teamMembers.ToString(), AppLocalization.Text("dashboard.teamMembers", "Team Members"), "rounded-2xl bg-emerald-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
+            new("triangle-alert", AppLocalization.Text("dashboard.needsAttention", "needs attention"), overdueTasks.ToString(), AppLocalization.Text("dashboard.overdueTasks", "Overdue Tasks"), "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
         };
     }
 
@@ -388,7 +390,11 @@
 
                 var isOverdue = project.EndDate.Date < DateTime.Today && percentage < 100;
                 var isUpcoming = project.StartDate.Date > DateTime.Today;
-                var statusLabel = isOverdue ? "At Risk" : isUpcoming ? "Upcoming" : "Active";
+                var statusLabel = isOverdue
+                    ? AppLocalization.Text("dashboard.atRisk", "At Risk")
+                    : isUpcoming
+                        ? AppLocalization.Text("dashboard.upcoming", "Upcoming")
+                        : AppLocalization.Text("dashboard.active", "Active");
                 var statusClass = isOverdue
                     ? "rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-300"
                     : isUpcoming
@@ -427,7 +433,7 @@
                 var completed = userTasks.Count(task => task.StatusId == AppTaskStatus.Done);
                 var percentage = Math.Round((double)completed / total * 100, 2);
                 var initials = BuildInitials(user.FirstName, user.LastName);
-                var label = total == 1 ? "1 task" : $"{total} tasks";
+                var label = $"{total} {AppLocalization.Text("dashboard.tasksUnit", "tasks")}";
 
                 return new TeamProgressViewModel(
                     user.Id,
@@ -480,7 +486,9 @@
             .Select(project =>
             {
                 var daysLeft = (project.EndDate.Date - DateTime.Today).Days;
-                var label = daysLeft == 0 ? "Today" : daysLeft == 1 ? "1d" : $"{daysLeft}d";
+                var label = daysLeft == 0
+                    ? AppLocalization.Text("dashboard.today", "Today")
+                    : AppLocalization.Text("dashboard.daysLeft", "{count}d left").Replace("{count}", daysLeft.ToString());
                 var labelClass = daysLeft <= 14 ? "text-amber-500 font-semibold" : "text-slate-500";
 
                 return new DeadlineItemViewModel(
@@ -622,6 +630,14 @@
 
         return palette[(int)(Math.Abs(projectId) % palette.Length)];
     }
+
+    private string GetDisplayDateLabel(DateTime date) => AppLocalization.IsBurmeseCulture
+        ? $"{date.Month}လ {date.Day}ရက်"
+        : date.ToString("dddd, d");
+
+    private string GetMonthYearLabel(DateTime date) => AppLocalization.IsBurmeseCulture
+        ? $"{date.Year} ခုနှစ် {date.Month}လ"
+        : date.ToString("MMMM yyyy");
 
     private string GetCalendarCellClasses(CalendarCellViewModel cell)
     {

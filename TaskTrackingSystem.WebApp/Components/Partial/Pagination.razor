@@ -1,40 +1,46 @@
-@* Partial/Pagination.razor - Reusable pagination component *@
+@using TaskTrackingSystem.Shared.Localization
 
 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-3">
     <div class="text-xs text-slate-500">
         @if (TotalCount == 0)
         {
-            <span>No results</span>
+            <span>@AppLocalization.Text("common.noResults", "No results")</span>
         }
         else
         {
             var from = (CurrentPage - 1) * PageSize + 1;
             var to = Math.Min(CurrentPage * PageSize, TotalCount);
-            <span>Showing <span class="font-semibold text-slate-700">@from-@to</span> of <span class="font-semibold text-slate-700">@TotalCount</span> results</span>
+            <span>
+                @AppLocalization.Text("pagination.showing", "Showing")
+                <span class="font-semibold text-slate-700">@AppLocalization.Number(from)-@AppLocalization.Number(to)</span>
+                @AppLocalization.Text("pagination.of", "of")
+                <span class="font-semibold text-slate-700">@AppLocalization.Number(TotalCount)</span>
+                @AppLocalization.Text("pagination.results", "results")
+            </span>
         }
     </div>
 
     <div class="flex items-center gap-3">
         <div class="flex items-center gap-2 text-xs text-slate-500">
-            <span>Rows per page</span>
+            <span>@AppLocalization.Text("pagination.rowsPerPage", "Rows per page")</span>
             <select value="@PageSize" @onchange="HandlePageSizeChange"
                     class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all">
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
+                <option value="5">@AppLocalization.Number(5)</option>
+                <option value="10">@AppLocalization.Number(10)</option>
+                <option value="20">@AppLocalization.Number(20)</option>
+                <option value="50">@AppLocalization.Number(50)</option>
             </select>
         </div>
 
         <div class="flex items-center gap-1">
             <button @onclick="() => GoToPage(1)" disabled="@(CurrentPage <= 1)"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-white hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    title="First page">
+                    title="@AppLocalization.Text("pagination.firstPage", "First page")">
                 <i data-lucide="chevrons-left" class="h-3.5 w-3.5"></i>
             </button>
             <button @onclick="() => GoToPage(CurrentPage - 1)" disabled="@(CurrentPage <= 1)"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-white hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    title="Previous page">
+                    title="@AppLocalization.Text("pagination.previousPage", "Previous page")">
                 <i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>
             </button>
 
@@ -48,19 +54,19 @@
                 {
                     <button @onclick="() => GoToPage(p)"
                             class="@GetPageButtonClass(p)">
-                        @p
+                        @AppLocalization.Number(p)
                     </button>
                 }
             }
 
             <button @onclick="() => GoToPage(CurrentPage + 1)" disabled="@(CurrentPage >= TotalPages)"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-white hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    title="Next page">
+                    title="@AppLocalization.Text("pagination.nextPage", "Next page")">
                 <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
             </button>
             <button @onclick="() => GoToPage(TotalPages)" disabled="@(CurrentPage >= TotalPages)"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-white hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    title="Last page">
+                    title="@AppLocalization.Text("pagination.lastPage", "Last page")">
                 <i data-lucide="chevrons-right" class="h-3.5 w-3.5"></i>
             </button>
         </div>

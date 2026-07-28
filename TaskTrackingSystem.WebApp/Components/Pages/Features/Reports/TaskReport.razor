@@ -167,10 +167,10 @@
     else
     {
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            @TaskMetricCard(AppLocalization.Text("report.total", "Total"), FilteredList.Count().ToString(), "file-text", "violet")
-            @TaskMetricCard(AppLocalization.Text("status.done", "Completed"), FilteredList.Count(t => t.StatusId == AppTaskStatus.Done).ToString(), "check-circle-2", "emerald")
+            @TaskMetricCard(AppLocalization.Text("report.total", "Total"), AppLocalization.Number(FilteredList.Count()), "file-text", "violet")
+            @TaskMetricCard(AppLocalization.Text("status.done", "Completed"), AppLocalization.Number(FilteredList.Count(t => t.StatusId == AppTaskStatus.Done)), "check-circle-2", "emerald")
             @TaskMetricCard(AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress).ToString(), "timer", "blue")
-            @TaskMetricCard(AppLocalization.Text("status.overdue", "Overdue"), FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done).ToString(), "alarm-clock", "rose")
+            @TaskMetricCard(AppLocalization.Text("status.overdue", "Overdue"), AppLocalization.Number(FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done)), "alarm-clock", "rose")
         </div>
 
         <InsightPanel Insights="TaskInsights.ToList()" />
@@ -226,7 +226,7 @@
                             {
                                 var t = entry.t;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="px-6 py-3 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
+                                    <td class="px-6 py-3 text-sm font-semibold text-slate-500">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                     <td class="px-6 py-3">
                                         <button @onclick="() => ToggleExpanded(t.TaskId)" class="text-left text-sm font-medium text-slate-900 hover:text-violet-600">@t.Title</button>
                                     </td>
@@ -248,7 +248,7 @@
                                         <td colspan="7" class="px-6 py-4">
                                             <div class="grid grid-cols-1 gap-3 text-sm text-slate-600 md:grid-cols-4">
                                                 <div><span class="font-semibold text-slate-800">@AppLocalization.Text("common.assignee", "Assignee"):</span> @(t.AssignedToUser ?? AppLocalization.Text("common.unassigned", "Unassigned"))</div>
-                                                <div><span class="font-semibold text-slate-800">@AppLocalization.Text("common.due", "Due"):</span> @DisplayFormats.Date(t.DueDate)</div>
+                                                <div>@DisplayFormats.Date(t.DueDate)</div>
                                                 <div><span class="font-semibold text-slate-800">@AppLocalization.Text("report.openIssues", "Open issues"):</span> @t.OpenIssues</div>
                                                 <div><span class="font-semibold text-slate-800">@AppLocalization.Text("report.lastActivity", "Last activity"):</span> @DisplayFormats.Date(t.LastActivity)</div>
                                             </div>

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using TaskTrackingSystem.Database.AppDbContextModels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Net.Sockets;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -117,7 +118,9 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    opt.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsql => npgsql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(2), null));
 });
 
 var app = builder.Build();
@@ -176,7 +179,7 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    await db.Database.EnsureCreatedAsync();
+    await EnsureDatabaseCreatedWithRetryAsync(db);
     // In Supabase/Hugging Face, EnsureCreatedAsync() might skip table creation 
     // because other schemas (auth, storage, etc.) contain tables.
     // We check if the 'Menus' table exists in the public schema, and force creation of tables if it doesn't.
@@ -414,6 +417,38 @@ static async System.Threading.Tasks.Task EnsureSeedDataAsync(WebApplication app)
     await db.SaveChangesAsync();
 
     await ResetPostgresSequencesAsync(db);
+}
+
+static async System.Threading.Tasks.Task EnsureDatabaseCreatedWithRetryAsync(AppDbContext db)
+{
+    const int maxAttempts = 3;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            await db.Database.EnsureCreatedAsync();
+            return;
+        }
+        catch (Exception ex) when (attempt < maxAttempts && IsTransientDatabaseStartupException(ex))
+        {
+            Console.WriteLine($"Database startup connection failed (attempt {attempt}/{maxAttempts}). Retrying in 2 seconds. {ex.GetBaseException().Message}");
+            await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(2));
+        }
+    }
+}
+
+static bool IsTransientDatabaseStartupException(Exception exception)
+{
+    for (var current = exception; current != null; current = current.InnerException)
+    {
+        if (current is SocketException)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static async System.Threading.Tasks.Task ResetPostgresSequencesAsync(AppDbContext db)

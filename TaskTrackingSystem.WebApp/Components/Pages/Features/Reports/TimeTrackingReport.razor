@@ -46,8 +46,8 @@
             <div class="rounded-xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">Total Estimated Effort</p>
-                        <p class="mt-1 text-3xl font-bold text-violet-700">@totalHours.ToString("N1") hrs</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-violet-500">@AppLocalization.Text("report.totalEstimatedEffort", "Total Estimated Effort")</p>
+                        <p class="mt-1 text-3xl font-bold text-violet-700">@AppLocalization.Number(totalHours, "N1") @AppLocalization.Text("common.hoursAbbrev", "hrs")</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
                         <i data-lucide="clock" class="h-6 w-6 text-violet-600"></i>
@@ -57,8 +57,8 @@
             <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500">Actual Hours</p>
-                        <p class="mt-1 text-3xl font-bold text-emerald-700">@actualHours.ToString("N1") hrs</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-500">@AppLocalization.Text("common.actualHours", "Actual Hours")</p>
+                        <p class="mt-1 text-3xl font-bold text-emerald-700">@AppLocalization.Number(actualHours, "N1") @AppLocalization.Text("common.hoursAbbrev", "hrs")</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
                         <i data-lucide="check-circle-2" class="h-6 w-6 text-emerald-600"></i>
@@ -68,8 +68,8 @@
             <div class="rounded-xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">Variance</p>
-                        <p class="mt-1 text-3xl font-bold text-amber-700">@varianceHours.ToString("+0.0;-0.0;0.0") hrs</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-500">@AppLocalization.Text("report.variance", "Variance")</p>
+                        <p class="mt-1 text-3xl font-bold text-amber-700">@AppLocalization.LocalizeDigits(varianceHours.ToString("+0.0;-0.0;0.0", System.Globalization.CultureInfo.InvariantCulture)) @AppLocalization.Text("common.hoursAbbrev", "hrs")</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
                         <i data-lucide="timer" class="h-6 w-6 text-amber-600"></i>
@@ -79,8 +79,8 @@
             <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">Utilization</p>
-                        <p class="mt-1 text-3xl font-bold text-rose-700">@utilizationPercent.ToString("N0")%</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-rose-500">@AppLocalization.Text("report.utilization", "Utilization")</p>
+                        <p class="mt-1 text-3xl font-bold text-rose-700">@AppLocalization.Number(utilizationPercent, "N0")%</p>
                     </div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100">
                         <i data-lucide="alert-triangle" class="h-6 w-6 text-rose-600"></i>
@@ -100,7 +100,7 @@
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">Project</label>
+                    <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.project", "Project")</label>
                     <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
                         <option value="0">@AppLocalization.Text("common.allProjects", "All Projects")</option>
                         @foreach (var proj in allProjects)
@@ -119,10 +119,10 @@
                     </select>
                 </div>
                 <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
-                    <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
+                    <i data-lucide="search" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.search", "Search")
                 </button>
                 <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> Reset
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.reset", "Reset")
                 </button>
             </div>
             
@@ -191,20 +191,20 @@
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-slate-700">
-                    Showing <span class="text-violet-600 font-bold">@FilteredIssues.Count()</span> timesheet issue entry(s)
+                    @AppLocalization.Text("pagination.showing", "Showing") <span class="text-violet-600 font-bold">@AppLocalization.Number(FilteredIssues.Count())</span> @AppLocalization.Text("report.timesheetEntries", "timesheet issue entry(s)")
                 </h3>
             </div>
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/60">
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task &amp; Project</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Hours</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actual Hours</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.index", "No.")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.issue", "Issue")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.taskProject", "Task & Project")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.assignee", "Assignee")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.estimatedHours", "Est. Hours")</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.actualHours", "Actual Hours")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.dueDate", "Due Date")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.status", "Status")</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -214,7 +214,7 @@
                         {
                             var issue = entry.issue;
                             <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-slate-500">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4">
                                     <div>
                                         <p class="text-sm font-semibold text-slate-900">@issue.Title</p>
@@ -240,14 +240,14 @@
                                     }
                                     else
                                     {
-                                        <span class="text-xs text-slate-400">Unassigned</span>
+                                        <span class="text-xs text-slate-400">@AppLocalization.Text("common.unassigned", "Unassigned")</span>
                                     }
                                 </td>
                                 <td class="px-6 py-4 text-sm font-semibold text-slate-800">
-                                    @((issue.EstimatedHours ?? 0).ToString("N1")) hrs
+                                    @AppLocalization.Number(issue.EstimatedHours ?? 0, "N1") @AppLocalization.Text("common.hoursAbbrev", "hrs")
                                 </td>
                                 <td class="px-6 py-4 text-sm font-semibold @(GetVariance(issue) > 0 ? "text-rose-600" : "text-emerald-600")">
-                                    @((issue.ActualHours ?? 0).ToString("N1")) hrs
+                                    @AppLocalization.Number(issue.ActualHours ?? 0, "N1") @AppLocalization.Text("common.hoursAbbrev", "hrs")
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-600">
                                     @DisplayFormats.Date(issue.DueDate)
@@ -255,9 +255,9 @@
                                 <td class="px-6 py-4">
                                     @{
                                         var (statusLabel, statusClass) = issue.StatusId switch {
-                                            AppTaskStatus.InProgress => ("In Progress", "bg-blue-50 text-blue-700"),
-                                            AppTaskStatus.Done => ("Completed", "bg-emerald-50 text-emerald-700"),
-                                            _ => ("To Do", "bg-slate-100 text-slate-600")
+                                            AppTaskStatus.InProgress => (AppLocalization.StatusLabel(AppTaskStatus.InProgress), "bg-blue-50 text-blue-700"),
+                                            AppTaskStatus.Done => (AppLocalization.StatusLabel(AppTaskStatus.Done), "bg-emerald-50 text-emerald-700"),
+                                            _ => (AppLocalization.StatusLabel(AppTaskStatus.Todo), "bg-slate-100 text-slate-600")
                                         };
                                     }
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusClass">@statusLabel</span>
@@ -267,7 +267,7 @@
                     }
                     else
                     {
-                        <EmptyState ColSpan="8" Icon="clock" Title="No effort entries" Subtitle="No timesheet effort entries matched your filters." />
+                        <EmptyState ColSpan="8" Icon="clock" Title="@AppLocalization.Text("report.noEffortEntries", "No effort entries")" Subtitle="@AppLocalization.Text("report.noEffortEntriesDesc", "No timesheet effort entries matched your filters.")" />
                     }
                 </tbody>
             </table>

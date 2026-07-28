@@ -49,13 +49,13 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/60">
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">No.</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.index", "No.")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.date", "Timestamp")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.user", "User")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.module", "Module")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.actions", "Action")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.description", "Description")</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">IP Address</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("field.ipAddress", "IP Address")</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-sans">
@@ -65,9 +65,9 @@
                         {
                             var log = entry.log;
                             <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4 text-sm font-semibold text-slate-500 align-top">@((currentPage - 1) * pageSize + entry.index + 1)</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-slate-500 align-top">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4 text-xs font-mono text-slate-500 whitespace-nowrap align-top">
-                                    @log.CreatedAt.ToString("dd-MM-yyyy HH:mm:ss")
+                                    @AppLocalization.LocalizeDigits(log.CreatedAt.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture))
                                 </td>
                                 <td class="px-6 py-4 align-top">
                                     <div class="flex items-center gap-2">
@@ -82,19 +82,19 @@
                                 </td>
                                 <td class="px-6 py-4 align-top">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                        @log.Module
+                                        @AppLocalization.ModuleName(log.Module)
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 align-top">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold @GetActionBadge(log.Action)">
-                                        @log.Action
+                                        @AppLocalization.ActionName(log.Action)
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-xs text-slate-700 whitespace-normal break-words align-top">
-                                    @log.Description
+                                    @AppLocalization.AuditDescription(log.Description)
                                 </td>
                                 <td class="px-6 py-4 text-xs font-mono text-slate-500 whitespace-nowrap align-top">
-                                    @(string.IsNullOrWhiteSpace(log.IpAddress) ? "N/A" : log.IpAddress)
+                                    @(string.IsNullOrWhiteSpace(log.IpAddress) ? AppLocalization.Text("common.na", "N/A") : AppLocalization.LocalizeDigits(log.IpAddress))
                                 </td>
                             </tr>
                         }

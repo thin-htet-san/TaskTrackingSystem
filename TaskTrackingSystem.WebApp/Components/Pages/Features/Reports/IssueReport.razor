@@ -79,10 +79,10 @@
     else
     {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @MetricCard(AppLocalization.Text("report.totalIssues", "Total Issues"), FilteredIssues.Count().ToString(), "file-pen-line", "violet")
-            @MetricCard(AppLocalization.Text("report.openIssues", "Open Issues"), OpenIssues.ToString(), "list-todo", "blue")
-            @MetricCard(AppLocalization.Text("report.overdueIssues", "Overdue Issues"), OverdueIssues.ToString(), "alarm-clock", "rose")
-            @MetricCard(AppLocalization.Text("report.blockedIssues", "Blocked Issues"), BlockedIssues.ToString(), "ban", "amber")
+            @MetricCard(AppLocalization.Text("report.totalIssues", "Total Issues"), AppLocalization.Number(FilteredIssues.Count()), "file-pen-line", "violet")
+            @MetricCard(AppLocalization.Text("report.openIssues", "Open Issues"), AppLocalization.Number(OpenIssues), "list-todo", "blue")
+            @MetricCard(AppLocalization.Text("report.overdueIssues", "Overdue Issues"), AppLocalization.Number(OverdueIssues), "alarm-clock", "rose")
+            @MetricCard(AppLocalization.Text("report.blockedIssues", "Blocked Issues"), AppLocalization.Number(BlockedIssues), "ban", "amber")
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -110,7 +110,7 @@
                             </ReportChartCard>
                         </div>
                         <div class="xl:col-span-3">
-                            <RadialMetricCard Title="@AppLocalization.Text("report.blockedOverdue", "Blocked / overdue")" Subtitle="@AppLocalization.Text("report.executionRisk", "Execution risk in the filtered issue set.")" Percent="@BlockedOverduePercent" Value="@((BlockedIssues + OverdueIssues).ToString())" ValueLabel="@AppLocalization.Text("report.riskIssues", "risk issues")" CenterLabel="@AppLocalization.Text("report.risk", "risk")" Color="#ef4444" Insight="@AppLocalization.Text("report.focusStandup", "Focus standup discussion here first.")" />
+                            <RadialMetricCard Title="@AppLocalization.Text("report.blockedOverdue", "Blocked / overdue")" Subtitle="@AppLocalization.Text("report.executionRisk", "Execution risk in the filtered issue set.")" Percent="@BlockedOverduePercent" Value="@AppLocalization.Number(BlockedIssues + OverdueIssues)" ValueLabel="@AppLocalization.Text("report.riskIssues", "risk issues")" CenterLabel="@AppLocalization.Text("report.risk", "risk")" Color="#ef4444" Insight="@AppLocalization.Text("report.focusStandup", "Focus standup discussion here first.")" />
                         </div>
                         <div class="xl:col-span-4">
                             <ReportChartCard Title="@AppLocalization.Text("report.issuesByProject", "Issues by project")" Subtitle="@AppLocalization.Text("report.issuesByProjectDesc", "Where issue volume is concentrated.")" Insight="@AppLocalization.Text("report.issuesByProjectInsight", "Useful for project-level triage and planning health.")">
@@ -182,7 +182,7 @@
                                         </td>
                                         <td class="px-4 py-3 text-sm text-slate-600 break-words">@(issue.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))</td>
                                         <td class="px-4 py-3"><span class="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">@GetStatusLabel(issue.StatusId)</span></td>
-                                        <td class="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">@((issue.EstimatedHours ?? 0).ToString("N1")) / @((issue.ActualHours ?? 0).ToString("N1"))</td>
+                                        <td class="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">@AppLocalization.Number(issue.EstimatedHours ?? 0, "N1") / @AppLocalization.Number(issue.ActualHours ?? 0, "N1")</td>
                                         <td class="px-4 py-3 text-sm whitespace-nowrap @(IsOverdue(issue) ? "font-semibold text-rose-600" : "text-slate-600")">@DisplayFormats.Date(issue.DueDate)</td>
                                         <td class="px-4 py-3 whitespace-nowrap">@RiskBadge(issue)</td>
                                     </tr>
@@ -309,7 +309,7 @@
     }
 
     private static bool IsOverdue(IssueDto issue) => issue.StatusId != AppTaskStatus.Done && issue.DueDate.Date < DateTime.Today;
-    private static string GetTaskCode(long taskId) => $"TSK-{taskId:D4}";
+    private static string GetTaskCode(long taskId) => $"TSK-{AppLocalization.LocalizeDigits(taskId.ToString("D4", System.Globalization.CultureInfo.InvariantCulture))}";
     private static string GetStatusLabel(AppTaskStatus status) => AppLocalization.StatusLabel(status);
     private static string GetStatusBadge(AppTaskStatus status) => status == AppTaskStatus.Done ? "bg-emerald-50 text-emerald-700" : status == AppTaskStatus.InProgress ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-700";
     private static string GetPriorityLabel(TaskPriority priority) => AppLocalization.PriorityLabel(priority);
@@ -329,7 +329,7 @@
     private IReadOnlyList<(string Label, int Value)> PriorityChart => Enum.GetValues<TaskPriority>().Select(p => (GetPriorityLabel(p), FilteredIssues.Count(i => i.PriorityId == p))).ToList();
     private IReadOnlyList<(string Label, int Value)> EmployeeChart => FilteredIssues.GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned")).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
     private IReadOnlyList<(string Label, int Value)> ProjectChart => FilteredIssues.GroupBy(i => i.ProjectName).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
-    private IEnumerable<string> Insights => new[] { $"{OverdueIssues} {AppLocalization.Text("report.overdueIssuesNeedAttention", "overdue issues need attention.")}", $"{BlockedIssues} {AppLocalization.Text("report.issuesAreBlocked", "issues are blocked.")}", $"{AppLocalization.Text("report.actualHoursAre", "Actual hours are")} {FilteredIssues.Sum(i => i.ActualHours ?? 0):N1} {AppLocalization.Text("report.against", "against")} {FilteredIssues.Sum(i => i.EstimatedHours ?? 0):N1} {AppLocalization.Text("report.estimated", "estimated.")}" };
+    private IEnumerable<string> Insights => new[] { $"{AppLocalization.Number(OverdueIssues)} {AppLocalization.Text("report.overdueIssuesNeedAttention", "overdue issues need attention.")}", $"{AppLocalization.Number(BlockedIssues)} {AppLocalization.Text("report.issuesAreBlocked", "issues are blocked.")}", $"{AppLocalization.Text("report.actualHoursAre", "Actual hours are")} {AppLocalization.Number(FilteredIssues.Sum(i => i.ActualHours ?? 0), "N1")} {AppLocalization.Text("report.against", "against")} {AppLocalization.Number(FilteredIssues.Sum(i => i.EstimatedHours ?? 0), "N1")} {AppLocalization.Text("report.estimated", "estimated.")}" };
     private double BlockedOverduePercent => FilteredIssues.Any() ? (BlockedIssues + OverdueIssues) / (double)FilteredIssues.Count() * 100 : 0;
     private string IssueStatusInsight => OpenIssues > FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)
         ? $"{OpenIssues} {AppLocalization.Text("report.issuesStillOpen", "issues are still open across the selected scope.")}"

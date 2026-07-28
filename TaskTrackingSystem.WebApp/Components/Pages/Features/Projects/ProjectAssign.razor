@@ -109,7 +109,7 @@
                         <div class="flex flex-col gap-2">
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("project.assignedMembers", "Assigned Members")</span>
-                                <span class="text-xs font-bold text-violet-700">@SelectedUserIds.Count @AppLocalization.Text("common.selected", "selected")</span>
+                                <span class="text-xs font-bold text-violet-700">@AppLocalization.Number(SelectedUserIds.Count) @AppLocalization.Text("common.selected", "selected")</span>
                             </div>
                             @{
                                 var selectedUsers = SelectedUsers.ToList();
@@ -157,7 +157,7 @@
                                     <option value="0">@AppLocalization.Text("common.allRoles", "All Roles")</option>
                                     @foreach (var r in roles)
                                     {
-                                        <option value="@r.Id">@r.Name</option>
+                                        <option value="@r.Id">@AppLocalization.RoleName(r.Name)</option>
                                     }
                                 </select>
                             </div>
@@ -173,7 +173,7 @@
                             <span class="text-slate-300">|</span>
                             <button @onclick="DeselectAllUsers" class="text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors">@AppLocalization.Text("common.deselectAll", "Deselect All")</button>
                             <span class="text-slate-300">|</span>
-                            <span class="text-xs font-bold text-slate-600">@SelectedUserIds.Count @AppLocalization.Text("common.selected", "selected")</span>
+                            <span class="text-xs font-bold text-slate-600">@AppLocalization.Number(SelectedUserIds.Count) @AppLocalization.Text("common.selected", "selected")</span>
                         </div>
                     </div>
 
@@ -397,7 +397,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading project members: {ex.Message}");
-            statusMessage = "Failed to load project members.";
+            statusMessage = AppLocalization.Text("project.failedLoadMembers", "Failed to load project members.");
             isError = true;
         }
         finally
@@ -464,13 +464,13 @@
             var response = await client.PostAsJsonAsync($"Project/{SelectedProject.Id}/members", dto);
             if (response.IsSuccessStatusCode)
             {
-                statusMessage = "Project assignments saved successfully!";
-                successMessage = "Assignment saved successfully!";
+                statusMessage = AppLocalization.Text("project.assignmentsSaved", "Project assignments saved successfully!");
+                successMessage = AppLocalization.Text("common.assignmentSaved", "Assignment saved successfully!");
                 isError = false;
             }
             else
             {
-                statusMessage = "Failed to save assignment. Please try again.";
+                statusMessage = AppLocalization.Text("project.failedSaveAssignment", "Failed to save assignment. Please try again.");
                 isError = true;
             }
         }

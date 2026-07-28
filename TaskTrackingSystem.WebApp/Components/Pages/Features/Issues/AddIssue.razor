@@ -290,13 +290,13 @@
     private bool isLoadingProjectMembers;
 
     private TaskDto? SelectedTask => tasks.FirstOrDefault(t => t.Id == formTaskId);
-    private string SelectedTaskLabel => SelectedTask == null ? "No task selected" : SelectedTask.Title;
+    private string SelectedTaskLabel => SelectedTask == null ? AppLocalization.Text("common.noTaskSelectedForIssue", "No task selected") : SelectedTask.Title;
     private string SelectedProjectLabel => SelectedTask == null
-        ? "No project"
-        : (projects.FirstOrDefault(p => p.Id == SelectedTask.ProjectId)?.Name ?? $"Project #{SelectedTask.ProjectId}");
+        ? AppLocalization.Text("common.noProject", "No project")
+        : (projects.FirstOrDefault(p => p.Id == SelectedTask.ProjectId)?.Name ?? $"{AppLocalization.Text("common.project", "Project")} #{AppLocalization.Number(SelectedTask.ProjectId)}");
     private string SelectedAssigneeLabel => formAssignedTo.HasValue
-        ? (projectMembers.FirstOrDefault(u => u.Id == formAssignedTo.Value) is { } user ? $"{user.FirstName} {user.LastName}" : "Selected member")
-        : "Unassigned";
+        ? (projectMembers.FirstOrDefault(u => u.Id == formAssignedTo.Value) is { } user ? $"{user.FirstName} {user.LastName}" : AppLocalization.Text("common.selectedMember", "Selected member"))
+        : AppLocalization.Text("common.unassigned", "Unassigned");
 
     private IEnumerable<UserDto> FilteredProjectMembers
     {
@@ -452,14 +452,14 @@
         if (formTaskId <= 0)
         {
             isTaskError = true;
-            taskErrorMessage = "Please select a task.";
+            taskErrorMessage = AppLocalization.Text("validation.selectTaskRequired", "Please select a task.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(formTitle))
         {
             isTitleError = true;
-            titleErrorMessage = "Issue title is required.";
+            titleErrorMessage = AppLocalization.Text("validation.issueTitleRequired", "Issue title is required.");
             return;
         }
 
@@ -481,13 +481,13 @@
     {
         if (formTaskId <= 0)
         {
-            errorMessage = "Please select a task.";
+            errorMessage = AppLocalization.Text("validation.selectTaskRequired", "Please select a task.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(formTitle))
         {
-            errorMessage = "Issue title is required.";
+            errorMessage = AppLocalization.Text("validation.issueTitleRequired", "Issue title is required.");
             return;
         }
 
@@ -520,12 +520,12 @@
 
             if (result?.IsSuccess == true)
             {
-                successMessage = "Issue created successfully!";
+                successMessage = AppLocalization.Text("issue.created", "Issue created successfully!");
                 ResetForm();
             }
             else
             {
-                errorMessage = result?.ErrorMessage ?? "Failed to create issue.";
+                errorMessage = result?.ErrorMessage ?? AppLocalization.Text("issue.failedCreate", "Failed to create issue.");
             }
         }
         catch (Exception ex)
