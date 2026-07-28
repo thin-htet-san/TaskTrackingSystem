@@ -27,7 +27,9 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 _codex_build/
+_codex-build/
 _codex_obj/
+.codex-build/
 bld/
 [Bb]in/
 [Oo]bj/

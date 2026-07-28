@@ -330,8 +330,6 @@
     private long currentUserId = 0;
     private string userRoleName = "Employee";
 
-    private List<string> scopes = new();
-
     // Comments Form
     private string newCommentMessage = "";
     private bool isSavingComment = false;
@@ -434,7 +432,6 @@
                     assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo.Value);
                 }
 
-                CalculateScopes();
             }
         }
         catch (Exception ex)
@@ -446,28 +443,6 @@
             isLoading = false;
         }
     }
-
-    private void CalculateScopes()
-    {
-        scopes = new List<string>();
-
-        if (task == null) return;
-
-        if (hasTaskManagePermission)
-        {
-            scopes.Add("task:all");
-            scopes.Add("task:write");
-            scopes.Add("comment:write");
-        }
-        else
-        {
-            scopes.Add("task:read");
-            // Comments stay available to everyone who can view the task.
-            scopes.Add("comment:write");
-        }
-    }
-
-    // ─── INLINE MUTATIONS ──────────────────────────────────────────────────────
 
     private async Task OnStatusChanged(ChangeEventArgs e)
     {
@@ -598,8 +573,6 @@
         isEditingTitle = false;
         isSavingTitle = false;
     }
-
-    // ─── COMMENTS ACTIONS ──────────────────────────────────────────────────────
 
     private async Task PostComment()
     {

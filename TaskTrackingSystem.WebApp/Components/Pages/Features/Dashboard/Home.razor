@@ -144,7 +144,7 @@
                                     <p class="truncate text-sm font-semibold text-slate-900">@project.Name</p>
                                     <span class="@GetProjectBadgeClasses(project)">@GetProjectBadgeLabel(project)</span>
                                 </div>
-                                <p class="mt-1 text-xs text-slate-500">@DisplayFormats.Date(project.StartDate) to @DisplayFormats.Date(project.EndDate)</p>
+                                <p class="mt-1 text-xs text-slate-500">@DisplayFormats.Date(project.StartDate) - @DisplayFormats.Date(project.EndDate)</p>
                             </div>
                             <div class="text-right">
                                 <div class="text-sm font-semibold text-slate-900">@progress.CompletedTasksCount/@progress.TotalTasksCount tasks</div>
@@ -563,7 +563,7 @@
 
         // 2. Adjust total so it maps 100% cleanly to the math displayed
         var total = Math.Max(TotalTasksCount, 1);
-        var circumference = 2 * Math.PI * 74;  // 2╧Çr for r=74
+        var circumference = 2 * Math.PI * 74;
         var slices = new List<DistributionSlice>();
         var cumulativeArc = 0.0;
 
@@ -571,7 +571,7 @@
         {
             if (rawCounts[i] <= 0)
             {
-                // Arc length 0 with a full-circumference gap ΓåÆ invisible.
+                // Arc length 0 with a full-circumference gap is invisible.
                 // Avoids stroke-linecap="round" rendering a phantom dot.
                 slices.Add(new DistributionSlice(GetDistributionLabel(i), 0, colors[i], $"0 {circumference:0.##}", 0));
                 continue;
@@ -676,7 +676,7 @@
         }
 
         var first = months.First();
-        var n = months.Count; // total columns ΓÇö each flex-1 month slot = 1/n of bar width
+        var n = months.Count;
 
         return FeaturedProjects.Select(project =>
         {
@@ -694,7 +694,7 @@
 
             return new TimelineRow(
                 project.Name,
-                $"{DisplayFormats.Date(project.StartDate)} ΓÇô {DisplayFormats.Date(project.EndDate)}",
+                $"{DisplayFormats.Date(project.StartDate)} - {DisplayFormats.Date(project.EndDate)}",
                 GetProjectColor(project.Id),
                 left,
                 width,

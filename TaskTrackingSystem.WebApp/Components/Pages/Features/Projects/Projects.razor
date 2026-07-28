@@ -205,74 +205,6 @@
     </div>
 }
 
-@* ===== Assign Members Modal ===== *@
-@if (showAssignModal)
-{
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg mx-4 overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-900">Assign Members</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Project: <span class="font-semibold text-violet-700">@assigningProjectName</span></p>
-                </div>
-                <button @onclick="CloseAssignModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
-                    <i data-lucide="x" class="h-5 w-5"></i>
-                </button>
-            </div>
-            <div class="p-6 space-y-4">
-                <p class="text-xs text-slate-500">Select users to assign to this project. They will only see this project's tasks when they log in.</p>
-                
-                @if (isLoadingUsers)
-                {
-                    <div class="flex justify-center py-6"><LoadingSpinner Message="Loading users..." /></div>
-                }
-                else
-                {
-                    <div class="max-h-64 overflow-y-auto space-y-2 border border-slate-100 rounded-xl p-3">
-                        @foreach (var user in allUsers)
-                        {
-                            var isChecked = selectedUserIds.Contains(user.Id);
-                            <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                                <input type="checkbox" checked="@isChecked"
-                                       @onchange="(e) => ToggleUserSelection(user.Id, (bool)(e.Value ?? false))"
-                                       class="h-4 w-4 rounded border-slate-300 accent-violet-600" />
-                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold shrink-0">
-                                    @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
-                                </span>
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-800">@user.FirstName @user.LastName</p>
-                                    <p class="text-xs text-slate-400">@@@user.Username</p>
-                                </div>
-                            </label>
-                        }
-                    </div>
-                    <p class="text-xs text-slate-400">@selectedUserIds.Count user(s) selected</p>
-                }
-
-                @if (!string.IsNullOrEmpty(assignError))
-                {
-                    <div class="p-3 rounded-lg bg-red-50 border border-red-100">
-                        <p class="text-sm text-red-600">@assignError</p>
-                    </div>
-                }
-                @if (!string.IsNullOrEmpty(assignSuccess))
-                {
-                    <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                        <p class="text-sm text-emerald-700">@assignSuccess</p>
-                    </div>
-                }
-            </div>
-            <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                <button @onclick="CloseAssignModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Close</button>
-                <button @onclick="RequestAssignConfirmation" disabled="@isSavingAssign" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
-                    <i data-lucide="user-check" class="h-4 w-4 mr-1.5 inline"></i>
-                    @(isSavingAssign ? "Saving..." : "Save Assignment")
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
 @* ===== Confirm Dialog ===== *@
 <ConfirmDialog IsVisible="showConfirmDialog"
                Title="@confirmTitle"
@@ -285,21 +217,12 @@
                OnConfirm="HandleConfirmAction"
                OnCancel="CloseConfirmDialog" />
 
-<ConfirmDialog IsVisible="showAssignConfirmDialog"
-               Title="Save Assignment?"
-               Message="Are you sure you want to save these project member assignments?"
-               ConfirmText="Yes, Save"
-               Icon="user-check"
-               OnConfirm="ConfirmSaveAssignment"
-               OnCancel="CloseAssignConfirmDialog" />
-
 @code {
     private bool isLoading = true;
     private bool isAdmin = false;
     private bool canCreateProject = false;
     private bool canEditProject = false;
     private bool canDeleteProject = false;
-    private bool canAssignProject = false;
     private long currentUserId = 0;
     private bool showModal = false;
     private bool isEditing = false;
@@ -308,7 +231,6 @@
 
     // Confirm dialog state
     private bool showConfirmDialog = false;
-    private bool showAssignConfirmDialog = false;
     private string? successMessage;
     private string confirmTitle = "";
     private string confirmMessage = "";
@@ -319,17 +241,6 @@
     private string confirmButtonClass = "";
     private Func<Task>? confirmAction;
     private List<ProjectDto> projects = new();
-
-    // Assignment modal state
-    private bool showAssignModal = false;
-    private long assigningProjectId = 0;
-    private string assigningProjectName = "";
-    private List<UserDto> allUsers = new();
-    private HashSet<long> selectedUserIds = new();
-    private bool isLoadingUsers = false;
-    private bool isSavingAssign = false;
-    private string? assignError;
-    private string? assignSuccess;
 
     // Search state
     private string searchInput = "";
@@ -439,7 +350,6 @@
         canCreateProject = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Projects_Create");
         canEditProject = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Projects_Update");
         canDeleteProject = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Projects_Delete");
-        canAssignProject = isAdmin || await MenuAuthorization.HasAccessCodeAsync(user, "Projects_Update");
     }
 
     private void ClearValidation()
@@ -484,93 +394,6 @@
     }
 
     // ─── Assignment Modal ─────────────────────────────────────────────────────
-
-    private async Task OpenAssignModal(ProjectDto project)
-    {
-        assigningProjectId = project.Id;
-        assigningProjectName = project.Name;
-        assignError = null;
-        assignSuccess = null;
-        isLoadingUsers = true;
-        showAssignModal = true;
-        StateHasChanged();
-
-        var client = ApiClient.CreateClient();
-        try
-        {
-            allUsers = await client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive) ?? new();
-            var membersResult = await client.GetFromJsonAsync<Result<IEnumerable<UserDto>>>($"Project/{project.Id}/members", Serialization.CaseInsensitive);
-            selectedUserIds = new HashSet<long>(membersResult?.Value?.Select(u => u.Id) ?? Enumerable.Empty<long>());
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Load assign modal error: {ex.Message}");
-        }
-        finally
-        {
-            isLoadingUsers = false;
-            StateHasChanged();
-        }
-    }
-
-    private void CloseAssignModal()
-    {
-        showAssignModal = false;
-        assignError = null;
-        assignSuccess = null;
-    }
-
-    private void ToggleUserSelection(long userId, bool isChecked)
-    {
-        if (isChecked) selectedUserIds.Add(userId);
-        else selectedUserIds.Remove(userId);
-    }
-
-    private void RequestAssignConfirmation()
-    {
-        showAssignConfirmDialog = true;
-    }
-
-    private void CloseAssignConfirmDialog()
-    {
-        showAssignConfirmDialog = false;
-    }
-
-    private async Task ConfirmSaveAssignment()
-    {
-        showAssignConfirmDialog = false;
-        await SaveAssignment();
-    }
-
-    private async Task SaveAssignment()
-    {
-        isSavingAssign = true;
-        assignError = null;
-        assignSuccess = null;
-        var client = ApiClient.CreateClient();
-        try
-        {
-            var dto = new AssignMembersDto { UserIds = selectedUserIds.ToList() };
-            var response = await client.PostAsJsonAsync($"Project/{assigningProjectId}/members", dto);
-            if (response.IsSuccessStatusCode)
-            {
-                assignSuccess = "Members assigned successfully!";
-                successMessage = "Assignment saved successfully!";
-            }
-            else
-            {
-                assignError = "Failed to save assignment. Please try again.";
-            }
-        }
-        catch (Exception ex)
-        {
-            assignError = ex.Message;
-        }
-        finally
-        {
-            isSavingAssign = false;
-        }
-    }
 
     private void RequestSaveConfirmation()
     {

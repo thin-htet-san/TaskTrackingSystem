@@ -306,8 +306,6 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             }
         }
 
-        // ——— Legacy endpoints (kept for backward compatibility) ———
-
         public async Task<Result<IEnumerable<TaskReportDto>>> GetTasksReportAsync(
             DateTime? startDate, DateTime? endDate, string? status, int? projectId, long roleId, long currentUserId,
             bool? assignedToMe = null, bool? assignedToMyTeam = null)
@@ -492,8 +490,6 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             };
         }
 
-        // ——— Report 2: Team Productivity ———
-
         public async Task<Result<IEnumerable<TeamProductivityReportDto>>> GetTeamProductivityAsync(string? search, long roleId, long currentUserId)
         {
             var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
@@ -562,8 +558,6 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             wb.SaveAs(ms);
             return ms.ToArray();
         }
-
-        // â”€â”€â”€ Report 3: Overdue & Critical Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public async Task<Result<IEnumerable<OverdueCriticalTaskDto>>> GetOverdueCriticalTasksAsync(
             string? search,

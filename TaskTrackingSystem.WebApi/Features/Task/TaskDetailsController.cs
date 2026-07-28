@@ -28,8 +28,6 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             _notificationService = notificationService;
         }
 
-        // ─── COMMENTS ────────────────────────────────────────────────────────
-
         [HttpGet("tasks/{taskId}/comments")]
         public async Task<ActionResult<IEnumerable<CommentDto>>> GetComments(long taskId)
         {
