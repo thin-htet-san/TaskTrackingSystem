@@ -332,7 +332,7 @@
     private IEnumerable<string> Insights => new[] { $"{AppLocalization.Number(OverdueIssues)} {AppLocalization.Text("report.overdueIssuesNeedAttention", "overdue issues need attention.")}", $"{AppLocalization.Number(BlockedIssues)} {AppLocalization.Text("report.issuesAreBlocked", "issues are blocked.")}", $"{AppLocalization.Text("report.actualHoursAre", "Actual hours are")} {AppLocalization.Number(FilteredIssues.Sum(i => i.ActualHours ?? 0), "N1")} {AppLocalization.Text("report.against", "against")} {AppLocalization.Number(FilteredIssues.Sum(i => i.EstimatedHours ?? 0), "N1")} {AppLocalization.Text("report.estimated", "estimated.")}" };
     private double BlockedOverduePercent => FilteredIssues.Any() ? (BlockedIssues + OverdueIssues) / (double)FilteredIssues.Count() * 100 : 0;
     private string IssueStatusInsight => OpenIssues > FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)
-        ? $"{OpenIssues} {AppLocalization.Text("report.issuesStillOpen", "issues are still open across the selected scope.")}"
+        ? $"{AppLocalization.Number(OpenIssues)} {AppLocalization.Text("report.issuesStillOpen", "issues are still open across the selected scope.")}"
         : AppLocalization.Text("report.resolvedIssuesLeading", "Resolved issues are leading this filtered set.");
 
     private List<ReportChartItem> IssueFunnelItems => new()
@@ -359,7 +359,7 @@
             var blocked = g.Count(i => i.IsBlocked);
             var overdue = g.Count(IsOverdue);
             var score = Math.Min(100, (g.Count() * 10) + (blocked * 25) + (overdue * 20));
-            return new TopRiskItem(g.Key, $"{g.Count()} {AppLocalization.Text("common.issue", "issues")} · {blocked} {AppLocalization.Text("status.blocked", "blocked")}", score, overdue > 0 ? $"{overdue} {AppLocalization.Text("status.overdue", "overdue")}" : $"{g.Count()} {AppLocalization.Text("common.issue", "issues")}", overdue > 0 || blocked > 0 ? "rose" : "blue");
+            return new TopRiskItem(g.Key, $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("common.issue", "issues")} · {AppLocalization.Number(blocked)} {AppLocalization.Text("status.blocked", "blocked")}", score, overdue > 0 ? $"{AppLocalization.Number(overdue)} {AppLocalization.Text("status.overdue", "overdue")}" : $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("common.issue", "issues")}", overdue > 0 || blocked > 0 ? "rose" : "blue");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -372,7 +372,7 @@
             var blocked = g.Count(i => i.IsBlocked);
             var overdue = g.Count(IsOverdue);
             var score = Math.Min(100, (g.Count() * 12) + (blocked * 22) + (overdue * 18));
-            return new TopRiskItem(g.Key, $"{g.Count()} {AppLocalization.Text("report.assignedIssues", "assigned issues")}", score, blocked > 0 ? $"{blocked} {AppLocalization.Text("status.blocked", "blocked")}" : $"{overdue} {AppLocalization.Text("status.overdue", "overdue")}", blocked > 0 || overdue > 0 ? "amber" : "blue", AppLocalization.Text("report.supportSignal", "Support signal"));
+            return new TopRiskItem(g.Key, $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("report.assignedIssues", "assigned issues")}", score, blocked > 0 ? $"{AppLocalization.Number(blocked)} {AppLocalization.Text("status.blocked", "blocked")}" : $"{AppLocalization.Number(overdue)} {AppLocalization.Text("status.overdue", "overdue")}", blocked > 0 || overdue > 0 ? "amber" : "blue", AppLocalization.Text("report.supportSignal", "Support signal"));
         })
         .OrderByDescending(item => item.Score)
         .Take(5)

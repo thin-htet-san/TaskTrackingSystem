@@ -154,38 +154,38 @@
         {
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
                 <div class="xl:col-span-6">
-                    <RiskMatrixCard Title="Project health matrix" Subtitle="Progress health against issue risk." Points="ProjectHealthMatrix" Insight="Projects in the upper-right combine low progress with active issue pressure." />
+                    <RiskMatrixCard Title="@AppLocalization.Text("report.projectHealthMatrix", "Project health matrix")" Subtitle="@AppLocalization.Text("report.projectHealthMatrixDesc", "Progress health against issue risk.")" Points="ProjectHealthMatrix" Insight="@AppLocalization.Text("report.projectHealthMatrixInsight", "Projects in the upper-right combine low progress with active issue pressure.")" />
                 </div>
                 <div class="xl:col-span-6">
-                    <ReportChartCard Title="Completion vs risk" Subtitle="Each project plotted by completion and issue pressure." Insight="Lower completion with higher issue pressure should be reviewed first.">
+                    <ReportChartCard Title="@AppLocalization.Text("report.completionVsRisk", "Completion vs risk")" Subtitle="@AppLocalization.Text("report.completionVsRiskDesc", "Each project plotted by completion and issue pressure.")" Insight="@AppLocalization.Text("report.completionVsRiskInsight", "Lower completion with higher issue pressure should be reviewed first.")">
                         @if (!ProjectQuadrantPoints.Any())
                         {
-                            <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">No project risk data available.</div>
+                            <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">@AppLocalization.Text("report.noAtRiskProjects", "No project risk data available.")</div>
                         }
                         else
                         {
                             <div class="space-y-3">
                                 <div class="grid grid-cols-[44px_minmax(0,1fr)] gap-2">
                                     <div class="flex items-center justify-center rounded-lg bg-slate-50 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 [writing-mode:vertical-rl] rotate-180">
-                                        Risk
+                                        @AppLocalization.Text("common.risk", "Risk")
                                     </div>
                                     <div class="relative h-[280px] overflow-hidden rounded-xl border border-slate-200 bg-white">
                                         <div class="absolute inset-0 grid grid-cols-2 grid-rows-2">
                                             <div class="border-b border-r border-slate-200 bg-rose-50/50 p-3">
-                                                <div class="text-xs font-bold text-rose-700">Review now</div>
-                                                <div class="text-[11px] text-rose-600">Low completion · high risk</div>
+                                                <div class="text-xs font-bold text-rose-700">@AppLocalization.Text("report.reviewNow", "Review now")</div>
+                                                <div class="text-[11px] text-rose-600">@AppLocalization.Text("report.lowCompletionHighRisk", "Low completion · high risk")</div>
                                             </div>
                                             <div class="border-b border-slate-200 bg-amber-50/50 p-3">
-                                                <div class="text-xs font-bold text-amber-700">Watch closely</div>
-                                                <div class="text-[11px] text-amber-600">High completion · high risk</div>
+                                                <div class="text-xs font-bold text-amber-700">@AppLocalization.Text("report.watchClosely", "Watch closely")</div>
+                                                <div class="text-[11px] text-amber-600">@AppLocalization.Text("report.highCompletionHighRisk", "High completion · high risk")</div>
                                             </div>
                                             <div class="border-r border-slate-200 bg-blue-50/50 p-3">
-                                                <div class="text-xs font-bold text-blue-700">Recover plan</div>
-                                                <div class="text-[11px] text-blue-600">Low completion · low risk</div>
+                                                <div class="text-xs font-bold text-blue-700">@AppLocalization.Text("report.recoverPlan", "Recover plan")</div>
+                                                <div class="text-[11px] text-blue-600">@AppLocalization.Text("report.lowCompletionLowRisk", "Low completion · low risk")</div>
                                             </div>
                                             <div class="bg-emerald-50/50 p-3">
-                                                <div class="text-xs font-bold text-emerald-700">On track</div>
-                                                <div class="text-[11px] text-emerald-600">High completion · low risk</div>
+                                                <div class="text-xs font-bold text-emerald-700">@AppLocalization.Text("report.onTrack", "On track")</div>
+                                                <div class="text-[11px] text-emerald-600">@AppLocalization.Text("report.highCompletionLowRisk", "High completion · low risk")</div>
                                             </div>
                                         </div>
 
@@ -201,34 +201,34 @@
                                 <div class="grid grid-cols-[44px_minmax(0,1fr)] gap-2">
                                     <div></div>
                                     <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                                        <span>0% complete</span>
-                                        <span>Completion</span>
-                                        <span>100%</span>
+                                        <span>@AppLocalization.Text("report.percentComplete", "0% complete").Replace("{percent}", AppLocalization.Number(0))</span>
+                                        <span>@AppLocalization.Text("report.completion", "Completion")</span>
+                                        <span>@AppLocalization.Text("report.percentComplete", "100% complete").Replace("{percent}", AppLocalization.Number(100))</span>
                                     </div>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
-                                    <span class="font-semibold uppercase tracking-wider text-slate-400">Color</span>
-                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>Healthy</span>
-                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>Watch</span>
-                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>At risk</span>
-                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>Critical</span>
+                                    <span class="font-semibold uppercase tracking-wider text-slate-400">@AppLocalization.Text("report.color", "Color")</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>@AppLocalization.Text("report.healthGood", "Healthy")</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>@AppLocalization.Text("report.healthWatch", "Watch")</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>@AppLocalization.Text("report.healthAtRisk", "At risk")</span>
+                                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>@AppLocalization.Text("report.healthCritical", "Critical")</span>
                                 </div>
                             </div>
                         }
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-5">
-                    <ReportChartCard Title="Top at-risk projects" Subtitle="Projects needing planning attention first." Insight="Risk blends overdue, blocked, open issues, and project health.">
-                        <TopRiskList Items="AtRiskProjectItems" EmptyText="No at-risk projects in the current filter." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.topAtRiskProjects", "Top at-risk projects")" Subtitle="@AppLocalization.Text("report.topAtRiskProjectsDesc", "Projects needing planning attention first.")" Insight="@AppLocalization.Text("report.topAtRiskProjectsInsight", "Risk blends overdue, blocked, open issues, and project health.")">
+                        <TopRiskList Items="AtRiskProjectItems" EmptyText="@AppLocalization.Text("report.noAtRiskProjects", "No at-risk projects in the current filter.")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-7">
-                    <ReportChartCard Title="Timeline summary" Subtitle="Project schedule window with completion overlay." Insight="This gives the planning horizon without leaving the report.">
+                    <ReportChartCard Title="@AppLocalization.Text("report.timelineSummary", "Timeline summary")" Subtitle="@AppLocalization.Text("report.timelineSummaryDesc", "Project schedule window with completion overlay.")" Insight="@AppLocalization.Text("report.timelineSummaryInsight", "This gives the planning horizon without leaving the report.")">
                         <TimelineChart Items="ProjectTimelineItems" WrapperClass="max-h-[340px] overflow-auto" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-12">
-                    <ReportChartCard Title="Open, overdue, and blocking issues by project" Subtitle="Issue composition across the project portfolio." Insight="Open work is normal; overdue and blocked work are the triage signal.">
+                    <ReportChartCard Title="@AppLocalization.Text("report.issuesCompositionByProject", "Open, overdue, and blocking issues by project")" Subtitle="@AppLocalization.Text("report.issuesCompositionByProjectDesc", "Issue composition across the project portfolio.")" Insight="@AppLocalization.Text("report.issuesCompositionByProjectInsight", "Open work is normal; overdue and blocked work are the triage signal.")">
                         <StackedProgressBar Segments="ProjectIssueSegments" AriaLabel="Project issue summary" />
                     </ReportChartCard>
                 </div>
@@ -340,7 +340,7 @@
         {
             var score = GetProjectRiskScore(project);
             var tone = project.ProjectHealth == "Critical" || project.BlockedIssues > 0 ? "rose" : project.IsAtRisk ? "amber" : "blue";
-            return new TopRiskItem(project.ProjectName, $"{project.Progress:0}% complete · {project.OpenIssues} open issues", score, project.ProjectHealth, tone, $"{project.OverdueIssues} overdue · {project.BlockedIssues} blocked");
+            return new TopRiskItem(project.ProjectName, $"{AppLocalization.Text("report.percentComplete", "{percent}% complete").Replace("{percent}", AppLocalization.Number(project.Progress, "0"))} · {AppLocalization.Number(project.OpenIssues)} {AppLocalization.Text("report.openIssuesSegment", "open issues")}", score, GetProjectHealthLabel(project.ProjectHealth), tone, $"{AppLocalization.Number(project.OverdueIssues)} {AppLocalization.Text("status.overdue", "overdue")} · {AppLocalization.Number(project.BlockedIssues)} {AppLocalization.Text("status.blocked", "blocked")}");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -354,9 +354,9 @@
 
     private List<StackedSegment> ProjectIssueSegments => new()
     {
-        new("Open issues", allProjects.Sum(project => project.OpenIssues), "#3b82f6"),
-        new("Overdue issues", allProjects.Sum(project => project.OverdueIssues), "#ef4444"),
-        new("Blocked issues", allProjects.Sum(project => project.BlockedIssues), "#f59e0b")
+        new(AppLocalization.Text("report.openIssuesSegment", "Open issues"), allProjects.Sum(project => project.OpenIssues), "#3b82f6"),
+        new(AppLocalization.Text("report.overdueIssuesSegment", "Overdue issues"), allProjects.Sum(project => project.OverdueIssues), "#ef4444"),
+        new(AppLocalization.Text("report.blockedIssuesSegment", "Blocked issues"), allProjects.Sum(project => project.BlockedIssues), "#f59e0b")
     };
 
     // Search and Pagination

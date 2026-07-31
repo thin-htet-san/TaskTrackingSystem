@@ -250,9 +250,10 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 var taskIssues = issues.Where(i => i.TaskId == report.TaskId).ToList();
                 report.OpenIssues = taskIssues.Count(i => i.StatusId != AppTaskStatus.Done);
                 report.OverdueIssues = taskIssues.Count(i => i.StatusId != AppTaskStatus.Done && i.DueDate.Date < today);
+                report.BlockedIssues = taskIssues.Count(i => i.IsBlocked);
                 report.IssueSummary = taskIssues.Count == 0
                     ? "No issues"
-                    : $"{report.OpenIssues} open, {report.OverdueIssues} overdue, {taskIssues.Count(i => i.IsBlocked)} blocked";
+                    : $"{report.OpenIssues} open, {report.OverdueIssues} overdue, {report.BlockedIssues} blocked";
                 report.LastActivity = taskIssues
                     .Select(i => i.UpdatedAt ?? i.CreatedAt ?? report.LastActivity)
                     .DefaultIfEmpty(report.LastActivity)

@@ -47,40 +47,40 @@
                 }
             </div>
 
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
-                <span class="font-semibold uppercase tracking-wider text-slate-400">Legend</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>Healthy</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-blue-400"></span>Watch</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>At risk</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-rose-400"></span>Critical</span>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-500 font-sans">
+                <span class="font-semibold uppercase tracking-wider text-slate-400">@AppLocalization.Text("report.legend", "Legend")</span>
+                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>@AppLocalization.Text("report.healthGood", "Healthy")</span>
+                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-blue-400"></span>@AppLocalization.Text("report.healthWatch", "Watch")</span>
+                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>@AppLocalization.Text("report.healthAtRisk", "At risk")</span>
+                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-rose-400"></span>@AppLocalization.Text("report.healthCritical", "Critical")</span>
             </div>
         </div>
     }
 </ReportChartCard>
 
 @code {
-    [Parameter] public string Title { get; set; } = "Risk matrix";
+    [Parameter] public string Title { get; set; } = AppLocalization.Text("report.riskMatrix", "Risk matrix");
     [Parameter] public string? Subtitle { get; set; }
     [Parameter] public string? Insight { get; set; }
     [Parameter] public IReadOnlyList<RiskMatrixPoint> Points { get; set; } = Array.Empty<RiskMatrixPoint>();
-    [Parameter] public string EmptyText { get; set; } = "No matrix data available.";
-    [Parameter] public string SeverityAxisLabel { get; set; } = "Risk severity";
-    [Parameter] public IReadOnlyList<string> UrgencyLabels { get; set; } = new[] { "Low urgency", "Medium", "High urgency" };
-    [Parameter] public IReadOnlyList<string> SeverityLabels { get; set; } = new[] { "Low risk", "Medium", "High risk" };
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noMatrixData", "No matrix data available.");
+    [Parameter] public string SeverityAxisLabel { get; set; } = AppLocalization.Text("report.riskSeverity", "Risk severity");
+    [Parameter] public IReadOnlyList<string> UrgencyLabels { get; set; } = new[] { AppLocalization.Text("report.lowUrgency", "Low urgency"), AppLocalization.Text("report.medium", "Medium"), AppLocalization.Text("report.highUrgency", "High urgency") };
+    [Parameter] public IReadOnlyList<string> SeverityLabels { get; set; } = new[] { AppLocalization.Text("report.lowRisk", "Low risk"), AppLocalization.Text("report.medium", "Medium"), AppLocalization.Text("report.highRisk", "High risk") };
 
     private static string GetCellLabel(int severity, int urgency, double total)
     {
         if (total <= 0)
         {
-            return "No projects";
+            return AppLocalization.Text("report.noProjects", "No projects");
         }
 
         return (severity, urgency) switch
         {
-            (3, 3) => "Critical",
-            (3, _) or (_, 3) => "At risk",
-            (1, 1) => "Healthy",
-            _ => "Watch"
+            (3, 3) => AppLocalization.Text("report.healthCritical", "Critical"),
+            (3, _) or (_, 3) => AppLocalization.Text("report.healthAtRisk", "At risk"),
+            (1, 1) => AppLocalization.Text("report.healthGood", "Healthy"),
+            _ => AppLocalization.Text("report.healthWatch", "Watch")
         };
     }
 
@@ -120,10 +120,10 @@
     {
         if (total <= 0)
         {
-            return $"No projects. Severity {severity}, urgency {urgency}.";
+            return $"{AppLocalization.Text("report.noProjects", "No projects")}. {AppLocalization.Text("report.riskSeverity", "Severity")} {AppLocalization.Number(severity)}, {AppLocalization.Text("report.urgencyLabel", "urgency")} {AppLocalization.Number(urgency)}.";
         }
 
-        var names = string.Join(Environment.NewLine, points.OrderByDescending(point => point.Value).Select(point => $"{point.Label}: {point.Detail ?? $"{point.Value:0} item(s)"}"));
-        return $"{total:0} project(s){Environment.NewLine}{names}";
+        var names = string.Join(Environment.NewLine, points.OrderByDescending(point => point.Value).Select(point => $"{point.Label}: {point.Detail ?? $"{AppLocalization.Number(point.Value)} {AppLocalization.Text("report.itemsCount", "item(s)")}"}"));
+        return $"{AppLocalization.Number(total)} {AppLocalization.Text("report.projectsCount", "project(s)")}{Environment.NewLine}{names}";
     }
 }

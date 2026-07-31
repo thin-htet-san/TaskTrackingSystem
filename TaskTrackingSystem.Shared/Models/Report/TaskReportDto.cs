@@ -23,6 +23,7 @@ namespace TaskTrackingSystem.Shared.Models.Report
         public DateTime LastActivity { get; set; }
         public int OpenIssues { get; set; }
         public int OverdueIssues { get; set; }
+        public int BlockedIssues { get; set; }
         public string IssueSummary { get; set; } = string.Empty;
         public string TaskHealth { get; set; } = "Healthy";
     }

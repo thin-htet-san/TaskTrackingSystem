@@ -336,6 +336,16 @@
     <Routes />
     <script src="_framework/blazor.web.js"></script>
     <script>
+        window.convertDigitsToBurmese = function(strOrNum) {
+            if (strOrNum === null || strOrNum === undefined) return '';
+            const str = strOrNum.toString();
+            const map = {
+                '0': '၀', '1': '၁', '2': '၂', '3': '၃', '4': '၄',
+                '5': '၅', '6': '၆', '7': '၇', '8': '၈', '9': '၉'
+            };
+            return str.replace(/[0-9]/g, function(w) { return map[w]; });
+        };
+
         window.renderPieChart = function (containerId, data) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -406,6 +416,25 @@
             if (!container) return;
             const minWidth = options.minWidth || 1200;
             const chartHeight = Math.max(options.height || 420, 120 + (data.length * 44));
+
+            if (options.isBurmese) {
+                Highcharts.setOptions({
+                    lang: {
+                        months: ["ဇန်နဝါရီ", "ဖေဖော်ဝါရီ", "မတ်", "ဧပြီ", "မေ", "ဇွန်", "ဇူလိုင်", "သြဂုတ်", "စက်တင်ဘာ", "အောက်တိုဘာ", "နိုဝင်ဘာ", "ဒီဇင်ဘာ"],
+                        shortMonths: ["ဇန်", "ဖေ", "မတ်", "ဧပြီ", "မေ", "ဇွန်", "ဇူလိုင်", "သြဂုတ်", "စက်", "အောက်", "နို", "ဒီ"],
+                        weekdays: ["တနင်္ဂနွေ", "တနင်္လာ", "အင်္ဂါ", "ဗုဒ္ဓဟူး", "ကြာသပတေး", "သောကြာ", "စနေ"]
+                    }
+                });
+            } else {
+                Highcharts.setOptions({
+                    lang: {
+                        months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+                        shortMonths: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                        weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                    }
+                });
+            }
+
             Highcharts.ganttChart(containerId, {
                 chart: {
                     backgroundColor: 'transparent',
@@ -452,6 +481,12 @@
                         const progress = this.completed && this.completed.amount !== undefined 
                             ? Math.round(this.completed.amount * 100) + '%' 
                             : '0%';
+                        if (options.isBurmese) {
+                            const startStr = window.convertDigitsToBurmese(start);
+                            const endStr = window.convertDigitsToBurmese(end);
+                            const progressStr = window.convertDigitsToBurmese(progress);
+                            return `<b>${this.name}</b><br/>စတင်ရက်: ${startStr}<br/>ပြီးဆုံးရက်: ${endStr}<br/>တိုးတက်မှု: ${progressStr}`;
+                        }
                         return `<b>${this.name}</b><br/>Start: ${start}<br/>End: ${end}<br/>Progress: ${progress}`;
                     }
                 },
@@ -464,7 +499,14 @@
                     lineColor: '#dde5e2',
                     tickColor: '#dde5e2',
                     labels: {
-                        format: '{value:%b %Y}',
+                        formatter: function() {
+                            const date = new Date(this.value);
+                            const monthNames = options.isBurmese 
+                                ? ["ဇန်", "ဖေ", "မတ်", "ဧပြီ", "မေ", "ဇွန်", "ဇူလိုင်", "သြဂုတ်", "စက်", "အောက်", "နို", "ဒီ"]
+                                : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                            const formatted = monthNames[date.getUTCMonth()] + ' ' + date.getUTCFullYear();
+                            return options.isBurmese ? window.convertDigitsToBurmese(formatted) : formatted;
+                        },
                         style: {
                             color: '#64706d',
                             fontSize: '11px'
@@ -475,7 +517,7 @@
                         dashStyle: 'ShortDash',
                         width: 2,
                         label: {
-                            format: 'Today',
+                            format: options.isBurmese ? 'ယနေ့' : 'Today',
                             style: {
                                 color: '#0f766e',
                                 fontWeight: 'bold'
@@ -502,9 +544,10 @@
                             enabled: true,
                             formatter: function() {
                                 if (this.point.completed && this.point.completed.amount !== undefined) {
-                                    return Math.round(this.point.completed.amount * 100) + '%';
+                                    const percent = Math.round(this.point.completed.amount * 100) + '%';
+                                    return options.isBurmese ? window.convertDigitsToBurmese(percent) : percent;
                                 }
-                                return '0%';
+                                return options.isBurmese ? '၀%' : '0%';
                             },
                             style: {
                                 cursor: 'default',

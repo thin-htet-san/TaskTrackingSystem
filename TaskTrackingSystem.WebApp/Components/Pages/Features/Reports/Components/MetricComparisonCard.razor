@@ -10,16 +10,16 @@
                 <div class="mt-1 text-2xl font-bold tabular-nums text-slate-950">@SecondaryValue</div>
             </div>
         </div>
-        <StackedProgressBar Segments="Segments" EmptyText="No comparison data available." />
+        <StackedProgressBar Segments="Segments" EmptyText="@AppLocalization.Text("report.noComparisonData", "No comparison data available.")" />
     </div>
 </ReportChartCard>
 
 @code {
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter] public string? Subtitle { get; set; }
-    [Parameter] public string PrimaryLabel { get; set; } = "Actual";
+    [Parameter] public string PrimaryLabel { get; set; } = AppLocalization.Text("report.actual", "Actual");
     [Parameter] public string PrimaryValue { get; set; } = "0";
-    [Parameter] public string SecondaryLabel { get; set; } = "Target";
+    [Parameter] public string SecondaryLabel { get; set; } = AppLocalization.Text("report.estimated", "Estimated");
     [Parameter] public string SecondaryValue { get; set; } = "0";
     [Parameter] public string? Insight { get; set; }
     [Parameter] public IReadOnlyList<StackedSegment> Segments { get; set; } = Array.Empty<StackedSegment>();

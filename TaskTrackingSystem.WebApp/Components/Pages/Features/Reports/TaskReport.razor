@@ -167,9 +167,9 @@
     else
     {
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            @TaskMetricCard(AppLocalization.Text("report.total", "Total"), AppLocalization.Number(FilteredList.Count()), "file-text", "violet")
+             @TaskMetricCard(AppLocalization.Text("report.total", "Total"), AppLocalization.Number(FilteredList.Count()), "file-text", "violet")
             @TaskMetricCard(AppLocalization.Text("status.done", "Completed"), AppLocalization.Number(FilteredList.Count(t => t.StatusId == AppTaskStatus.Done)), "check-circle-2", "emerald")
-            @TaskMetricCard(AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress).ToString(), "timer", "blue")
+            @TaskMetricCard(AppLocalization.StatusLabel(AppTaskStatus.InProgress), AppLocalization.Number(FilteredList.Count(t => t.StatusId == AppTaskStatus.InProgress)), "timer", "blue")
             @TaskMetricCard(AppLocalization.Text("status.overdue", "Overdue"), AppLocalization.Number(FilteredList.Count(t => t.DueDate.Date < DateTime.Today && t.StatusId != AppTaskStatus.Done)), "alarm-clock", "rose")
         </div>
 
@@ -184,12 +184,12 @@
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-4">
-                    <ReportChartCard Title="@AppLocalization.Text("report.priorityDistribution", "Priority distribution")" Subtitle="@AppLocalization.Text("report.priorityDistributionDesc", "Planning pressure by task priority.")" Value="@HighPriorityCount.ToString()" ValueLabel="@AppLocalization.Text("priority.high", "high priority")" Insight="@PriorityInsight">
+                    <ReportChartCard Title="@AppLocalization.Text("report.priorityDistribution", "Priority distribution")" Subtitle="@AppLocalization.Text("report.priorityDistributionDesc", "Planning pressure by task priority.")" Value="@AppLocalization.Number(HighPriorityCount)" ValueLabel="@AppLocalization.Text("priority.high", "high priority")" Insight="@PriorityInsight">
                         <StackedProgressBar Segments="PrioritySegments" AriaLabel="Task priority distribution" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-3">
-                    <TrendSparklineCard Title="@AppLocalization.Text("report.completionMovement", "Completion movement")" Subtitle="@AppLocalization.Text("report.completionMovementDesc", "Recently completed tasks by creation month.")" Value="@($"{CompletionRate:0}%")" ValueLabel="@AppLocalization.Text("report.completion", "completion")" Points="CompletionSparkline" Color="#10b981" Insight="@CompletionInsight" />
+                    <TrendSparklineCard Title="@AppLocalization.Text("report.completionMovement", "Completion movement")" Subtitle="@AppLocalization.Text("report.completionMovementDesc", "Recently completed tasks by creation month.")" Value="@($"{AppLocalization.Number(CompletionRate, "0")}%")" ValueLabel="@AppLocalization.Text("report.completion", "completion")" Points="CompletionSparkline" Color="#10b981" Insight="@CompletionInsight" />
                 </div>
                 <div class="xl:col-span-6">
                     <ReportChartCard Title="@AppLocalization.Text("report.topProjectRisk", "Top project risk")" Subtitle="@AppLocalization.Text("report.topProjectRiskDesc", "Projects with the highest task and issue pressure.")" Insight="@AppLocalization.Text("report.topProjectRiskInsight", "Score combines task volume, open issues, overdue issues, and critical task health.")">
@@ -240,7 +240,16 @@
                                     <td class="px-6 py-3">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold @GetHealthBadge(t.TaskHealth)">@GetHealthLabel(t.TaskHealth)</span>
                                     </td>
-                                    <td class="px-6 py-3 text-sm text-slate-600">@t.IssueSummary</td>
+                                    <td class="px-6 py-3 text-sm text-slate-600 font-sans">
+                                        @if (t.OpenIssues == 0 && t.OverdueIssues == 0 && t.BlockedIssues == 0)
+                                        {
+                                            @AppLocalization.Text("report.noIssues", "No issues")
+                                        }
+                                        else
+                                        {
+                                            @($"{AppLocalization.Number(t.OpenIssues)} {AppLocalization.Text("report.open", "open")}, {AppLocalization.Number(t.OverdueIssues)} {AppLocalization.Text("status.overdue", "overdue")}, {AppLocalization.Number(t.BlockedIssues)} {AppLocalization.Text("status.blocked", "blocked")}")
+                                        }
+                                    </td>
                                 </tr>
                                 @if (expandedTasks.Contains(t.TaskId))
                                 {
@@ -371,9 +380,9 @@
 
     private IEnumerable<string> TaskInsights => new[]
     {
-        $"{FilteredList.Count(t => t.TaskHealth == "Critical")} {AppLocalization.Text("report.criticalTasksNeedAttention", "critical tasks need attention.")}",
-        $"{FilteredList.Sum(t => t.OpenIssues)} {AppLocalization.Text("report.openIssuesAttached", "open issues are attached to reported tasks.")}",
-        $"{FilteredList.Count(t => t.OverdueIssues > 0)} {AppLocalization.Text("report.tasksHaveOverdueIssues", "tasks have overdue issues.")}"
+        $"{AppLocalization.Number(FilteredList.Count(t => t.TaskHealth == "Critical"))} {AppLocalization.Text("report.criticalTasksNeedAttention", "critical tasks need attention.")}",
+        $"{AppLocalization.Number(FilteredList.Sum(t => t.OpenIssues))} {AppLocalization.Text("report.openIssuesAttached", "open issues are attached to reported tasks.")}",
+        $"{AppLocalization.Number(FilteredList.Count(t => t.OverdueIssues > 0))} {AppLocalization.Text("report.tasksHaveOverdueIssues", "tasks have overdue issues.")}"
     };
 
     private int FilteredTaskCount => FilteredList.Count();
@@ -383,11 +392,11 @@
     private double CompletionRate => FilteredTaskCount > 0 ? CompletedTaskCount / (double)FilteredTaskCount * 100 : 0;
 
     private string TaskStatusInsight => OpenTaskCount > CompletedTaskCount
-        ? $"{OpenTaskCount} {AppLocalization.Text("report.tasksStillMoving", "tasks are still moving through execution.")}"
+        ? $"{AppLocalization.Number(OpenTaskCount)} {AppLocalization.Text("report.tasksStillMoving", "tasks are still moving through execution.")}"
         : AppLocalization.Text("report.completedWorkLeading", "Completed work is leading the current filtered set.");
 
     private string PriorityInsight => HighPriorityCount > 0
-        ? $"{HighPriorityCount} {AppLocalization.Text("report.highPriorityVisible", "high-priority tasks should stay visible during planning review.")}"
+        ? $"{AppLocalization.Number(HighPriorityCount)} {AppLocalization.Text("report.highPriorityVisible", "high-priority tasks should stay visible during planning review.")}"
         : AppLocalization.Text("report.noHighPriority", "No high-priority tasks in the current filter.");
 
     private string CompletionInsight => CompletionRate >= 70

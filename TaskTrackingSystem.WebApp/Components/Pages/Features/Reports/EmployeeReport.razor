@@ -121,7 +121,7 @@
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-5">
-                    <ReportChartCard Title="@AppLocalization.Text("report.completedVsOpenIssues", "Completed vs open issues")" Subtitle="@AppLocalization.Text("report.teamExecutionBalance", "Team execution balance by issue state.")" Value="@CompletedIssueTotal.ToString()" ValueLabel="@AppLocalization.Text("report.completedTasks", "completed tasks")">
+                    <ReportChartCard Title="@AppLocalization.Text("report.completedVsOpenIssues", "Completed vs open issues")" Subtitle="@AppLocalization.Text("report.teamExecutionBalance", "Team execution balance by issue state.")" Value="@AppLocalization.Number(CompletedIssueTotal)" ValueLabel="@AppLocalization.Text("report.completedTasks", "completed tasks")">
                         <StackedProgressBar Segments="EmployeeCompletionSegments" AriaLabel="Completed versus open employee workload" />
                     </ReportChartCard>
                 </div>
@@ -131,7 +131,7 @@
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-3">
-                    <TrendSparklineCard Title="@AppLocalization.Text("report.completionPattern", "Completion pattern")" Subtitle="@AppLocalization.Text("report.completionPatternDesc", "Completion rate across visible employees.")" Value="@($"{AverageCompletionRate:0}%")" ValueLabel="@AppLocalization.Text("report.avgRate", "avg rate")" Points="EmployeeCompletionSparkline" Color="#3b82f6" Insight="@AppLocalization.Text("report.completionPatternInsight", "A quick view of whether completion is clustered or balanced.")" />
+                    <TrendSparklineCard Title="@AppLocalization.Text("report.completionPattern", "Completion pattern")" Subtitle="@AppLocalization.Text("report.completionPatternDesc", "Completion rate across visible employees.")" Value="@($"{AppLocalization.Number(AverageCompletionRate, "0")}%")" ValueLabel="@AppLocalization.Text("report.avgRate", "avg rate")" Points="EmployeeCompletionSparkline" Color="#3b82f6" Insight="@AppLocalization.Text("report.completionPatternInsight", "A quick view of whether completion is clustered or balanced.")" />
                 </div>
             </div>
         }
@@ -236,7 +236,8 @@
         {
             var score = Math.Min(100, (emp.OpenIssues * 14) + (emp.OverdueIssues * 24) + (emp.AssignedCount * 4) + (double)emp.ActualHours);
             var tone = score >= 70 ? "rose" : score >= 45 ? "amber" : "blue";
-            return new TopRiskItem(emp.FullName, $"{emp.WorkloadLevel} · {emp.ActualHours:N1}h tracked", score, "needs support", tone, $"{emp.OpenIssues} open · {emp.OverdueIssues} overdue");
+            var workload = AppLocalization.Text($"priority.{emp.WorkloadLevel.ToLower()}", emp.WorkloadLevel);
+            return new TopRiskItem(emp.FullName, $"{workload} · {AppLocalization.Number(emp.ActualHours, "N1")}h {AppLocalization.Text("report.tracked", "tracked")}", score, AppLocalization.Text("report.needsSupport", "needs support"), tone, $"{AppLocalization.Number(emp.OpenIssues)} {AppLocalization.Text("report.open", "open")} · {AppLocalization.Number(emp.OverdueIssues)} {AppLocalization.Text("status.overdue", "overdue")}");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -244,23 +245,23 @@
 
     private List<StackedSegment> EmployeeCompletionSegments => new()
     {
-        new("Completed tasks", allEmployees.Sum(emp => emp.CompletedCount), "#10b981"),
-        new("Assigned tasks", allEmployees.Sum(emp => Math.Max(0, emp.AssignedCount - emp.CompletedCount)), "#3b82f6"),
-        new("Open issues", allEmployees.Sum(emp => emp.OpenIssues), "#f59e0b")
+        new(AppLocalization.Text("report.completedTasks", "Completed tasks"), allEmployees.Sum(emp => emp.CompletedCount), "#10b981"),
+        new(AppLocalization.Text("report.assignedTasks", "Assigned tasks"), allEmployees.Sum(emp => Math.Max(0, emp.AssignedCount - emp.CompletedCount)), "#3b82f6"),
+        new(AppLocalization.Text("report.openIssuesSegment", "Open issues"), allEmployees.Sum(emp => emp.OpenIssues), "#f59e0b")
     };
 
     private List<TopRiskItem> EmployeeOverdueItems => allEmployees
         .Where(emp => emp.OverdueIssues > 0)
         .OrderByDescending(emp => emp.OverdueIssues)
         .Take(5)
-        .Select(emp => new TopRiskItem(emp.FullName, $"{emp.OpenIssues} open issues", Math.Min(100, emp.OverdueIssues * 25), $"{emp.OverdueIssues} overdue", "rose", "Capacity risk"))
+        .Select(emp => new TopRiskItem(emp.FullName, $"{AppLocalization.Number(emp.OpenIssues)} {AppLocalization.Text("report.openIssuesSegment", "open issues")}", Math.Min(100, emp.OverdueIssues * 25), $"{AppLocalization.Number(emp.OverdueIssues)} {AppLocalization.Text("status.overdue", "overdue")}", "rose", AppLocalization.Text("report.capacityRisk", "Capacity risk")))
         .ToList();
 
     private List<SparklinePoint> EmployeeCompletionSparkline => allEmployees
         .OrderByDescending(emp => emp.AssignedCount)
         .Take(8)
         .Select(emp => new SparklinePoint(BuildShortName(emp.FullName), emp.CompletionRate))
-        .DefaultIfEmpty(new SparklinePoint("No data", 0))
+        .DefaultIfEmpty(new SparklinePoint(AppLocalization.Text("common.noDataYet", "No data"), 0))
         .ToList();
 
     // Search and Pagination

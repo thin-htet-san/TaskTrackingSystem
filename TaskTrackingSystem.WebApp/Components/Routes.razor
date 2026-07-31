@@ -3,7 +3,7 @@
         <Navigating>
             <LayoutView Layout="typeof(Layout.MainLayout)">
                 <div class="surface-panel mx-auto flex min-h-64 w-full max-w-3xl items-center justify-center p-8 text-sm font-semibold text-slate-500 dark:text-slate-300">
-                    Loading page...
+                    @AppLocalization.Text("page.loadingPage", "Loading page...")
                 </div>
             </LayoutView>
         </Navigating>
@@ -17,7 +17,7 @@
         </Found>
         <NotFound>
             <LayoutView Layout="typeof(Layout.MainLayout)">
-                <p class="p-8 text-center text-slate-500">Page not found.</p>
+                <p class="p-8 text-center text-slate-500 font-sans">@AppLocalization.Text("page.notFound", "Page not found.")</p>
             </LayoutView>
         </NotFound>
     </Router>

@@ -13,7 +13,7 @@
         @if (UnreadCount > 0)
         {
             <span class="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
-                @(UnreadCount > 99 ? "99+" : UnreadCount.ToString())
+                @AppLocalization.LocalizeDigits(UnreadCount > 99 ? "99+" : UnreadCount.ToString())
             </span>
         }
     </button>
@@ -24,7 +24,7 @@
             <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/80">
                 <div>
                     <p class="text-sm font-semibold text-slate-900">@AppLocalization.Text("notification.notifications", "Notifications")</p>
-                    <p class="text-xs text-slate-500">@UnreadCount @AppLocalization.Text("notification.unread", "unread")</p>
+                    <p class="text-xs text-slate-500">@AppLocalization.Number(UnreadCount) @AppLocalization.Text("notification.unread", "unread")</p>
                 </div>
                 <div class="flex items-center gap-2">
                     @if (Notifications.Any(item => item.IsRead))
@@ -70,13 +70,13 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-start justify-between gap-3">
-                                        <p class="text-sm font-semibold text-slate-900 truncate">@item.Title</p>
+                                        <p class="text-sm font-semibold text-slate-900 truncate">@AppLocalization.LocalizeNotificationTitle(item.Title)</p>
                                         @if (!item.IsRead)
                                         {
                                             <span class="mt-1 h-2.5 w-2.5 rounded-full bg-violet-600 shrink-0"></span>
                                         }
                                     </div>
-                                    <p class="mt-1 text-xs text-slate-600 leading-5">@item.Body</p>
+                                    <p class="mt-1 text-xs text-slate-600 leading-5">@AppLocalization.LocalizeNotificationBody(item.Body)</p>
                                     <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
                                         <span>@FormatSender(item.SenderName)</span>
                                         <span>@FormatTime(item.CreatedAt)</span>
@@ -265,7 +265,7 @@
 
     private static string FormatSender(string? senderName)
     {
-        return string.IsNullOrWhiteSpace(senderName) ? "System" : senderName;
+        return string.IsNullOrWhiteSpace(senderName) ? AppLocalization.Text("notification.system", "System") : senderName;
     }
 
     private static string FormatTime(DateTime? createdAt)
@@ -276,6 +276,12 @@
         }
 
         var value = createdAt.Value.ToLocalTime();
+        if (AppLocalization.IsBurmeseCulture)
+        {
+            var monthName = value.ToString("MMM");
+            var formatted = $"{value.Day} {monthName}၊ {value:HH:mm}";
+            return AppLocalization.LocalizeDigits(formatted);
+        }
         return value.ToString("dd MMM, HH:mm");
     }
 

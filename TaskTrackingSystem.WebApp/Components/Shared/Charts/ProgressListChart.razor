@@ -17,20 +17,20 @@
                     @if (!string.IsNullOrWhiteSpace(item.LeadingText))
                     {
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white text-sm font-bold text-white shadow-sm" style="background-color: @item.Color;">
-                            @item.LeadingText
+                            @AppLocalization.LocalizeDigits(item.LeadingText)
                         </div>
                     }
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center justify-between gap-3">
                             <div class="truncate text-sm font-semibold text-slate-950">@item.Label</div>
-                            <div class="shrink-0 text-sm text-slate-500">@item.ValueLabel</div>
+                            <div class="shrink-0 text-sm text-slate-500">@AppLocalization.LocalizeDigits(item.ValueLabel)</div>
                         </div>
                         <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
                             <div class="h-full rounded-full" style="width: @width%; background-color: @item.Color;"></div>
                         </div>
                         @if (!string.IsNullOrWhiteSpace(item.Detail))
                         {
-                            <div class="mt-2 text-xs text-slate-500">@item.Detail</div>
+                            <div class="mt-2 text-xs text-slate-500">@AppLocalization.LocalizeDigits(item.Detail)</div>
                         }
                     </div>
                 </div>

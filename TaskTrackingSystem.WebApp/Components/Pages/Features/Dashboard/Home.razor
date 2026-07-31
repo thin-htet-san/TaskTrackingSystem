@@ -99,8 +99,8 @@
                         <div class="pointer-events-none absolute z-20 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-lg shadow-slate-200/70"
                              style="@HoveredActivityStyle">
                             <div class="text-sm font-semibold text-slate-900">@hoveredActivity.Value.Label</div>
-                            <div class="mt-2 text-sm text-emerald-600">@AppLocalization.Text("dashboard.completedCount", "Completed: {count}").Replace("{count}", hoveredActivity.Value.Completed.ToString())</div>
-                            <div class="mt-1 text-sm text-violet-600">@AppLocalization.Text("dashboard.activeCount", "Active: {count}").Replace("{count}", hoveredActivity.Value.Active.ToString())</div>
+                            <div class="mt-2 text-sm text-emerald-600">@AppLocalization.Text("dashboard.completedCount", "Completed: {count}").Replace("{count}", AppLocalization.Number(hoveredActivity.Value.Completed))</div>
+                            <div class="mt-1 text-sm text-violet-600">@AppLocalization.Text("dashboard.activeCount", "Active: {count}").Replace("{count}", AppLocalization.Number(hoveredActivity.Value.Active))</div>
                         </div>
                     }
                 </div>
@@ -114,7 +114,7 @@
             </div>
         </div>
 
-        <ChartCard Title="@AppLocalization.Text("dashboard.taskDistribution", "Task Distribution")" Subtitle="@AppLocalization.Text("dashboard.totalTasks", "{count} total tasks").Replace("{count}", TotalTasksCount.ToString())">
+        <ChartCard Title="@AppLocalization.Text("dashboard.taskDistribution", "Task Distribution")" Subtitle="@AppLocalization.Text("dashboard.totalTasks", "{count} total tasks").Replace("{count}", AppLocalization.Number(TotalTasksCount))">
             <ChildContent>
                 <DonutChart Items="DistributionChartItems" />
             </ChildContent>
@@ -147,8 +147,8 @@
                                 <p class="mt-1 text-xs text-slate-500">@DisplayFormats.Date(project.StartDate) - @DisplayFormats.Date(project.EndDate)</p>
                             </div>
                             <div class="text-right">
-                                <div class="text-sm font-semibold text-slate-900">@progress.CompletedTasksCount/@progress.TotalTasksCount @AppLocalization.Text("dashboard.tasksUnit", "tasks")</div>
-                                <div class="text-xs text-slate-500">@progress.CompletionPercentage%</div>
+                                <div class="text-sm font-semibold text-slate-900">@AppLocalization.Number(progress.CompletedTasksCount)/@AppLocalization.Number(progress.TotalTasksCount) @AppLocalization.Text("dashboard.tasksUnit", "tasks")</div>
+                                <div class="text-xs text-slate-500">@AppLocalization.Number(progress.CompletionPercentage)%</div>
                             </div>
                         </div>
 
@@ -183,7 +183,7 @@
                 {
                     <div class="@GetCalendarCellClasses(cell)">
                         <div class="flex h-full flex-col justify-between">
-                            <div class="text-sm font-semibold @(cell.IsCurrentMonth ? "text-slate-900" : "text-slate-400")">@cell.Date.Day</div>
+                            <div class="text-sm font-semibold @(cell.IsCurrentMonth ? "text-slate-900" : "text-slate-400")">@AppLocalization.Number(cell.Date.Day)</div>
                             <div class="flex items-center gap-1">
                                 @foreach (var dot in cell.ProjectDots)
                                 {
@@ -299,10 +299,10 @@
     private string CompletionDeltaText => BuildCompletionDeltaText();
     private List<DashboardMetric> SummaryMetrics => new()
     {
-        new("users", UsersDeltaText, summary.TotalUsers.ToString(), AppLocalization.Text("dashboard.totalUsers", "Total users"), "flex h-12 w-12 items-center justify-center rounded-lg bg-teal-700 text-white dark:bg-teal-600", "text-sm font-semibold text-emerald-600 dark:text-emerald-300"),
-        new("folder-kanban", ProjectsDeltaText, projectsList.Count.ToString(), AppLocalization.Text("dashboard.totalProjects", "Total projects"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white", "text-sm font-semibold text-emerald-500"),
-        new("check-square", TasksDeltaText, ActiveTasksCount.ToString(), AppLocalization.Text("dashboard.activeTasks", "Active tasks"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white", "text-sm font-semibold text-emerald-500"),
-        new("trending-up", CompletionDeltaText, $"{CompletionRate}%", AppLocalization.Text("dashboard.completionRate", "Completion rate"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white", "text-sm font-semibold text-emerald-500")
+        new("users", UsersDeltaText, AppLocalization.Number(summary.TotalUsers), AppLocalization.Text("dashboard.totalUsers", "Total users"), "flex h-12 w-12 items-center justify-center rounded-lg bg-teal-700 text-white dark:bg-teal-600", "text-sm font-semibold text-emerald-600 dark:text-emerald-300"),
+        new("folder-kanban", ProjectsDeltaText, AppLocalization.Number(projectsList.Count), AppLocalization.Text("dashboard.totalProjects", "Total projects"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white", "text-sm font-semibold text-emerald-500"),
+        new("check-square", TasksDeltaText, AppLocalization.Number(ActiveTasksCount), AppLocalization.Text("dashboard.activeTasks", "Active tasks"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white", "text-sm font-semibold text-emerald-500"),
+        new("trending-up", CompletionDeltaText, $"{AppLocalization.Number(CompletionRate)}%", AppLocalization.Text("dashboard.completionRate", "Completion rate"), "flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white", "text-sm font-semibold text-emerald-500")
     };
     private string CalendarMonthLabel => GetMonthYearLabel(DateTime.Today);
     private List<CalendarCell> CalendarCells => BuildCalendarCells();
@@ -411,7 +411,8 @@
                     height = 420,
                     minWidth = Math.Max(900, GetTimelineMonthSpan(timelineRange.Start, timelineRange.End) * 110),
                     xAxisMin = ToUnixMilliseconds(timelineRange.Start),
-                    xAxisMax = ToUnixMilliseconds(timelineRange.End)
+                    xAxisMax = ToUnixMilliseconds(timelineRange.End),
+                    isBurmese = AppLocalization.IsBurmeseCulture
                 });
             }
         }
@@ -926,17 +927,18 @@
 
     private string BuildDeltaText(int delta)
     {
+        var localizedDelta = AppLocalization.Number(Math.Abs(delta));
         if (delta > 0)
         {
-            return $"+{delta} {AppLocalization.Text("dashboard.thisMonth", "this month")}";
+            return $"+{localizedDelta} {AppLocalization.Text("dashboard.thisMonth", "this month")}";
         }
 
         if (delta < 0)
         {
-            return $"{delta} {AppLocalization.Text("dashboard.thisMonth", "this month")}";
+            return $"-{localizedDelta} {AppLocalization.Text("dashboard.thisMonth", "this month")}";
         }
 
-        return $"0 {AppLocalization.Text("dashboard.thisMonth", "this month")}";
+        return $"{AppLocalization.Number(0)} {AppLocalization.Text("dashboard.thisMonth", "this month")}";
     }
 
     private string BuildCompletionDeltaText()
@@ -944,18 +946,19 @@
         var current = GetCompletionRateForMonth(DateTime.Today);
         var previous = GetCompletionRateForMonth(DateTime.Today.AddMonths(-1));
         var delta = current - previous;
+        var localizedDelta = AppLocalization.Number(Math.Abs(delta));
 
         if (delta > 0)
         {
-            return $"+{delta}% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
+            return $"+{localizedDelta}% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
         }
 
         if (delta < 0)
         {
-            return $"{delta}% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
+            return $"-{localizedDelta}% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
         }
 
-        return $"0% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
+        return $"{AppLocalization.Number(0)}% {AppLocalization.Text("dashboard.vsLastMonth", "vs last mo")}";
     }
 
     private int GetUsersThisMonth() =>
@@ -997,15 +1000,15 @@
     }
 
     private string GetMonthLabel(DateTime date) => AppLocalization.IsBurmeseCulture
-        ? $"{date.Month}လ"
+        ? $"{AppLocalization.Number(date.Month)}လ"
         : date.ToString("MMM");
-
+ 
     private string GetDisplayDateLabel(DateTime date) => AppLocalization.IsBurmeseCulture
-        ? $"{date.Month}လ {date.Day}ရက်"
+        ? $"{AppLocalization.Number(date.Month)}လ {AppLocalization.Number(date.Day)}ရက်"
         : date.ToString("MMM d");
-
+ 
     private string GetMonthYearLabel(DateTime date) => AppLocalization.IsBurmeseCulture
-        ? $"{date.Year} ခုနှစ် {date.Month}လ"
+        ? $"{AppLocalization.Number(date.Year)} ခုနှစ် {AppLocalization.Number(date.Month)}လ"
         : date.ToString("MMMM yyyy");
 
     private readonly record struct ActivityMonthStat(string Label, int Active, int Completed);

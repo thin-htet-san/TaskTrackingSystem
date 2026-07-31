@@ -147,40 +147,40 @@
     {
         @if (isChartView)
         {
-            <div class="grid grid-cols-1 gap-5 xl:grid-cols-12">
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-12 font-sans">
                 <div class="xl:col-span-5">
-                    <MetricComparisonCard Title="Estimated vs actual effort"
-                                          Subtitle="Are plans matching delivery effort?"
-                                          PrimaryLabel="Actual"
-                                          PrimaryValue="@($"{actualHours:N1}h")"
-                                          SecondaryLabel="Estimated"
-                                          SecondaryValue="@($"{totalHours:N1}h")"
+                    <MetricComparisonCard Title="@AppLocalization.Text("report.estVsActualEffort", "Estimated vs actual effort")"
+                                          Subtitle="@AppLocalization.Text("report.estVsActualEffortDesc", "Are plans matching delivery effort?")"
+                                          PrimaryLabel="@AppLocalization.Text("report.actual", "Actual")"
+                                          PrimaryValue="@($"{AppLocalization.Number(actualHours)}h")"
+                                          SecondaryLabel="@AppLocalization.Text("report.estimated", "Estimated")"
+                                          SecondaryValue="@($"{AppLocalization.Number(totalHours)}h")"
                                           Segments="EffortComparisonSegments"
                                           Insight="@EffortVarianceInsight" />
                 </div>
                 <div class="xl:col-span-3">
-                    <RadialMetricCard Title="Utilization gauge"
-                                      Subtitle="Actual hours as a share of estimated effort."
+                    <RadialMetricCard Title="@AppLocalization.Text("report.utilizationGauge", "Utilization gauge")"
+                                      Subtitle="@AppLocalization.Text("report.utilizationGaugeDesc", "Actual hours as a share of estimated effort.")"
                                       Percent="@utilizationPercent"
-                                      Value="@($"{varianceHours:N1}h")"
-                                      ValueLabel="variance"
-                                      CenterLabel="used"
+                                      Value="@($"{AppLocalization.Number(varianceHours)}h")"
+                                      ValueLabel="@AppLocalization.Text("report.varianceLabel", "variance")"
+                                      CenterLabel="@AppLocalization.Text("report.usedLabel", "used")"
                                       Color="@UtilizationColor"
                                       Insight="@UtilizationInsight" />
                 </div>
                 <div class="xl:col-span-4">
-                    <ReportChartCard Title="Estimate accuracy" Subtitle="How many items stayed within estimate?" Value="@OnOrUnderEstimateCount.ToString()" ValueLabel="on / under" Insight="@EstimateAccuracyInsight">
-                        <DonutStatusChart Items="EstimateAccuracyDonutItems" CenterLabel="issues" />
+                    <ReportChartCard Title="@AppLocalization.Text("report.estimateAccuracy", "Estimate accuracy")" Subtitle="@AppLocalization.Text("report.estimateAccuracyDesc", "How many items stayed within estimate?")" Value="@AppLocalization.Number(OnOrUnderEstimateCount)" ValueLabel="@AppLocalization.Text("report.onOrUnder", "on / under")" Insight="@EstimateAccuracyInsight">
+                        <DonutStatusChart Items="EstimateAccuracyDonutItems" CenterLabel="@AppLocalization.Text("report.issuesLabel", "issues")" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-7">
-                    <ReportChartCard Title="Effort by project" Subtitle="Actual hours distributed across active projects." Insight="Use this to spot projects consuming more delivery capacity than expected.">
+                    <ReportChartCard Title="@AppLocalization.Text("report.effortByProject", "Effort by project")" Subtitle="@AppLocalization.Text("report.effortByProjectDesc", "Actual hours distributed across active projects.")" Insight="@AppLocalization.Text("report.effortByProjectInsight", "Use this to spot projects consuming more delivery capacity than expected.")">
                         <StackedProgressBar Segments="ProjectEffortSegments" AriaLabel="Effort by project" />
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-5">
-                    <ReportChartCard Title="Effort leaderboard" Subtitle="People carrying the most tracked effort." Insight="Names highlight capacity allocation, not performance judgement.">
-                        <TopRiskList Items="EmployeeEffortLeaders" EmptyText="No employee effort data available." />
+                    <ReportChartCard Title="@AppLocalization.Text("report.effortLeaderboard", "Effort leaderboard")" Subtitle="@AppLocalization.Text("report.effortLeaderboardDesc", "People carrying the most tracked effort.")" Insight="@AppLocalization.Text("report.effortLeaderboardInsight", "Names highlight capacity allocation, not performance judgement.")">
+                        <TopRiskList Items="EmployeeEffortLeaders" EmptyText="@AppLocalization.Text("report.noEmployeeEffort", "No employee effort data available.")" />
                     </ReportChartCard>
                 </div>
             </div>
@@ -430,25 +430,25 @@
     private int OverEstimateCount => FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0));
     private string UtilizationColor => utilizationPercent > 115 ? "#ef4444" : utilizationPercent > 95 ? "#f59e0b" : "#10b981";
     private string EffortVarianceInsight => varianceHours > 0
-        ? $"Actual effort is {varianceHours:N1}h above estimate."
-        : $"Actual effort is {Math.Abs(varianceHours):N1}h under estimate.";
+        ? AppLocalization.Text("report.actualEffortAboveEstimate", "Actual effort is {hours}h above estimate.").Replace("{hours}", AppLocalization.Number(varianceHours))
+        : AppLocalization.Text("report.actualEffortUnderEstimate", "Actual effort is {hours}h under estimate.").Replace("{hours}", AppLocalization.Number(Math.Abs(varianceHours)));
     private string UtilizationInsight => utilizationPercent > 115
-        ? "Utilization is above plan; review estimates and blockers."
-        : utilizationPercent < 70 ? "Tracked actual effort is below plan; confirm work is being logged." : "Utilization is close to the planning range.";
+        ? AppLocalization.Text("report.utilizationAbovePlan", "Utilization is above plan; review estimates and blockers.")
+        : utilizationPercent < 70 ? AppLocalization.Text("report.utilizationBelowPlan", "Tracked actual effort is below plan; confirm work is being logged.") : AppLocalization.Text("report.utilizationCloseToPlan", "Utilization is close to the planning range.");
     private string EstimateAccuracyInsight => OverEstimateCount > OnOrUnderEstimateCount
-        ? "More issues are exceeding estimate than staying within it."
-        : "Most issues are within or under their estimates.";
+        ? AppLocalization.Text("report.accuracyExceedingEstimate", "More issues are exceeding estimate than staying within it.")
+        : AppLocalization.Text("report.accuracyWithinEstimate", "Most issues are within or under their estimates.");
 
     private List<StackedSegment> EffortComparisonSegments => new()
     {
-        new("Actual", (double)Math.Max(0, actualHours), "#3b82f6"),
-        new("Remaining estimate", (double)Math.Max(0, totalHours - actualHours), "#dbeafe")
+        new(AppLocalization.Text("report.actual", "Actual"), (double)Math.Max(0, actualHours), "#3b82f6"),
+        new(AppLocalization.Text("report.remainingEstimate", "Remaining estimate"), (double)Math.Max(0, totalHours - actualHours), "#dbeafe")
     };
 
     private List<ReportChartItem> EstimateAccuracyDonutItems => new()
     {
-        new("On / Under", OnOrUnderEstimateCount, "#10b981"),
-        new("Over", OverEstimateCount, "#ef4444")
+        new(AppLocalization.Text("report.onOrUnder", "On / Under"), OnOrUnderEstimateCount, "#10b981"),
+        new(AppLocalization.Text("report.overLabel", "Over"), OverEstimateCount, "#ef4444")
     };
 
     private List<StackedSegment> ProjectEffortSegments => FilteredIssues
@@ -459,7 +459,7 @@
         .ToList();
 
     private List<TopRiskItem> EmployeeEffortLeaders => FilteredIssues
-        .GroupBy(i => i.AssignedToName ?? "Unassigned")
+        .GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))
         .Select(g =>
         {
             var actual = g.Sum(i => i.ActualHours ?? 0);
@@ -469,11 +469,11 @@
 
             return new TopRiskItem(
                 g.Key,
-                $"{actual:N1}h actual · {estimated:N1}h estimated",
+                $"{AppLocalization.Number(actual)}h {AppLocalization.Text("report.actual", "actual").ToLowerInvariant()} · {AppLocalization.Number(estimated)}h {AppLocalization.Text("report.estimated", "estimated").ToLowerInvariant()}",
                 score,
-                $"{g.Count()} issues",
+                $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("report.issuesLabel", "issues")}",
                 tone,
-                $"{g.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0))} over estimate");
+                $"{AppLocalization.Number(g.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0)))} {AppLocalization.Text("report.overEstimateDesc", "over estimate")}");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -483,8 +483,8 @@
 
     private List<ProgressListChartItem> EstimatedVsActualItems => new[]
     {
-        new ProgressListChartItem("Estimated", (double)totalHours, $"{totalHours:N1}", "#7c3aed"),
-        new ProgressListChartItem("Actual", (double)actualHours, $"{actualHours:N1}", "#06b6d4")
+        new ProgressListChartItem(AppLocalization.Text("report.estimated", "Estimated"), (double)totalHours, $"{AppLocalization.Number(totalHours)}", "#7c3aed"),
+        new ProgressListChartItem(AppLocalization.Text("report.actual", "Actual"), (double)actualHours, $"{AppLocalization.Number(actualHours)}", "#06b6d4")
     }.ToList();
 
     private double EstimatedVsActualMax => GetMax(EstimatedVsActualItems);
@@ -496,20 +496,20 @@
         .Select(g =>
         {
             var hours = (double)g.Sum(i => i.ActualHours ?? 0);
-            return new ProgressListChartItem(g.Key, hours, $"{hours:N1}", "#7c3aed");
+            return new ProgressListChartItem(g.Key, hours, $"{AppLocalization.Number(hours, "N1")}", "#7c3aed");
         })
         .ToList();
 
     private double EffortByProjectMax => GetMax(EffortByProjectItems);
 
     private List<ProgressListChartItem> EffortByEmployeeItems => FilteredIssues
-        .GroupBy(i => i.AssignedToName ?? "Unassigned")
+        .GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))
         .OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0))
         .Take(5)
         .Select(g =>
         {
             var hours = (double)g.Sum(i => i.ActualHours ?? 0);
-            return new ProgressListChartItem(g.Key, hours, $"{hours:N1}", "#7c3aed");
+            return new ProgressListChartItem(g.Key, hours, $"{AppLocalization.Number(hours)}", "#7c3aed");
         })
         .ToList();
 
@@ -517,8 +517,8 @@
 
     private List<ProgressListChartItem> EstimateAccuracyItems => new[]
     {
-        new ProgressListChartItem("On / Under", FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0)), FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0)).ToString(), "#10b981"),
-        new ProgressListChartItem("Over", FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0)), FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0)).ToString(), "#ef4444")
+        new ProgressListChartItem(AppLocalization.Text("report.onOrUnder", "On / Under"), FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0)), AppLocalization.Number(FilteredIssues.Count(i => (i.ActualHours ?? 0) <= (i.EstimatedHours ?? 0))), "#10b981"),
+        new ProgressListChartItem(AppLocalization.Text("report.overLabel", "Over"), FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0)), AppLocalization.Number(FilteredIssues.Count(i => (i.ActualHours ?? 0) > (i.EstimatedHours ?? 0))), "#ef4444")
     }.ToList();
 
     private double EstimateAccuracyMax => GetMax(EstimateAccuracyItems);

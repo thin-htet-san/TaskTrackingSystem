@@ -16,7 +16,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>Task Details</PageTitle>
+<PageTitle>@AppLocalization.Text("page.taskDetails", "Task Details")</PageTitle>
 
 <div class="space-y-6">
     @if (ViewMode != "Embedded")
@@ -24,29 +24,29 @@
         <!-- Breadcrumbs & Actions -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center space-x-2 text-sm text-slate-500">
-                <a href="/dashboard" class="hover:text-violet-600 transition-colors">Workspace</a>
+                <a href="/dashboard" class="hover:text-violet-600 transition-colors">@AppLocalization.Text("common.workspace", "Workspace")</a>
                 <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                <a href="/tasks" class="hover:text-violet-600 transition-colors">Tasks</a>
+                <a href="/tasks" class="hover:text-violet-600 transition-colors">@AppLocalization.Text("common.task", "Tasks")</a>
                 <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                <span class="text-slate-800 font-medium">Task Details</span>
+                <span class="text-slate-800 font-medium">@AppLocalization.Text("page.taskDetails", "Task Details")</span>
             </div>
             <a href="/tasks" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                 <i data-lucide="arrow-left" class="h-4 w-4 mr-2 text-slate-500"></i>
-                Back to Tasks
+                @AppLocalization.Text("task.backToBoard", "Back to Board")
             </a>
         </div>
     }
 
     @if (isLoading)
     {
-        <LoadingSpinner Message="Loading task details..." />
+        <LoadingSpinner Message="@AppLocalization.Text("task.loadingDetails", "Loading task details...")" />
     }
     else if (task == null)
     {
         <div class="rounded-2xl border border-slate-200 bg-white p-12 text-center">
             <i data-lucide="alert-circle" class="h-10 w-10 mx-auto text-red-500 mb-3"></i>
-            <h4 class="text-lg font-bold text-slate-800">Task Not Found</h4>
-            <p class="text-sm text-slate-400 mt-1">The task you are looking for does not exist or has been deleted.</p>
+            <h4 class="text-lg font-bold text-slate-800">@AppLocalization.Text("task.notFound", "Task Not Found")</h4>
+            <p class="text-sm text-slate-400 mt-1">@AppLocalization.Text("task.notFoundDesc", "The task you are looking for does not exist or has been deleted.")</p>
         </div>
     }
     else
@@ -75,8 +75,8 @@
                     {
                         <div class="flex items-center gap-2 max-w-xl mt-1">
                             <input @bind="tempTitle" type="text" class="flex-1 rounded-lg border border-slate-200 px-3 py-1 text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
-                            <button @onclick="CancelEditTitle" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
-                            <button @onclick="SaveTitle" disabled="@isSavingTitle" class="px-2.5 py-1 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">Save</button>
+                            <button @onclick="CancelEditTitle" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">@AppLocalization.Text("common.cancel", "Cancel")</button>
+                            <button @onclick="SaveTitle" disabled="@isSavingTitle" class="px-2.5 py-1 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">@AppLocalization.Text("common.save", "Save")</button>
                         </div>
                     }
                     else
@@ -85,7 +85,7 @@
                             @task.Title
                             @if (hasTaskManagePermission)
                             {
-                                <button @onclick="StartEditTitle" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-violet-600 transition-all rounded-lg hover:bg-slate-50" title="Edit title">
+                                <button @onclick="StartEditTitle" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-violet-600 transition-all rounded-lg hover:bg-slate-50" title="@AppLocalization.Text("task.editTitle", "Edit title")">
                                     <i data-lucide="pencil" class="h-4 w-4"></i>
                                 </button>
                             }
@@ -102,12 +102,12 @@
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                            <i data-lucide="align-left" class="h-4 w-4"></i> Description
+                            <i data-lucide="align-left" class="h-4 w-4"></i> @AppLocalization.Text("common.description", "Description")
                         </h3>
                         @if (hasTaskManagePermission && !isEditingDescription)
                         {
                             <button @onclick="StartEditDescription" class="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 transition-colors">
-                                <i data-lucide="pencil" class="h-3 w-3 mr-1"></i> Edit
+                                <i data-lucide="pencil" class="h-3 w-3 mr-1"></i> @AppLocalization.Text("action.edit", "Edit")
                             </button>
                         }
                     </div>
@@ -116,9 +116,9 @@
                         <div class="space-y-3">
                             <textarea @bind="tempDescription" rows="4" class="w-full text-sm rounded-xl border border-slate-200 p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
                             <div class="flex items-center gap-2 justify-end">
-                                <button @onclick="CancelEditDescription" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+                                <button @onclick="CancelEditDescription" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">@AppLocalization.Text("common.cancel", "Cancel")</button>
                                 <button @onclick="SaveDescription" disabled="@isSavingDescription" class="px-3 py-1.5 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">
-                                    @(isSavingDescription ? "Saving..." : "Save")
+                                    @(isSavingDescription ? AppLocalization.Text("task.saving", "Saving...") : AppLocalization.Text("common.save", "Save"))
                                 </button>
                             </div>
                         </div>
@@ -126,7 +126,7 @@
                     else
                     {
                         <div class="text-sm text-slate-700 leading-relaxed min-h-[120px] whitespace-pre-wrap">
-                            @(string.IsNullOrWhiteSpace(task.Description) ? "No description provided for this task." : task.Description)
+                            @(string.IsNullOrWhiteSpace(task.Description) ? AppLocalization.Text("common.noDescription", "No description") : task.Description)
                         </div>
                     }
                 </div>
@@ -134,28 +134,28 @@
                 <!-- Properties Grid (Pristine grid alignment in uniform 2-column layout) -->
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-5">
-                        <i data-lucide="info" class="h-4 w-4"></i> Properties
+                        <i data-lucide="info" class="h-4 w-4"></i> @AppLocalization.Text("task.properties", "Properties")
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 text-sm font-sans">
                         <!-- Status Property (Free for everyone) -->
                         <div class="flex flex-col gap-1.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Status</span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 font-sans">@AppLocalization.Text("common.status", "Status")</span>
                             <select value="@task.StatusId" @onchange="OnStatusChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
-                                <option value="@AppTaskStatus.Todo">To Do</option>
-                                <option value="@AppTaskStatus.InProgress">In Progress</option>
-                                <option value="@AppTaskStatus.Done">Done</option>
+                                <option value="@AppTaskStatus.Todo">@AppLocalization.StatusLabel(AppTaskStatus.Todo)</option>
+                                <option value="@AppTaskStatus.InProgress">@AppLocalization.StatusLabel(AppTaskStatus.InProgress)</option>
+                                <option value="@AppTaskStatus.Done">@AppLocalization.StatusLabel(AppTaskStatus.Done)</option>
                             </select>
                         </div>
 
                         <!-- Priority Property -->
                         <div class="flex flex-col gap-1.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Priority</span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 font-sans">@AppLocalization.Text("common.priority", "Priority")</span>
                             @if (hasTaskManagePermission)
                             {
                                 <select value="@task.PriorityId" @onchange="OnPriorityChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
-                                    <option value="@TaskPriority.Low">Low</option>
-                                    <option value="@TaskPriority.Medium">Medium</option>
-                                    <option value="@TaskPriority.High">High</option>
+                                    <option value="@TaskPriority.Low">@AppLocalization.PriorityLabel(TaskPriority.Low)</option>
+                                    <option value="@TaskPriority.Medium">@AppLocalization.PriorityLabel(TaskPriority.Medium)</option>
+                                    <option value="@TaskPriority.High">@AppLocalization.PriorityLabel(TaskPriority.High)</option>
                                 </select>
                             }
                             else
@@ -170,11 +170,11 @@
 
                         <!-- Assignee Property -->
                         <div class="flex flex-col gap-1.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Assignee</span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 font-sans">@AppLocalization.Text("common.assignee", "Assignee")</span>
                             @if (hasTaskManagePermission)
                             {
                                 <select value="@(task.AssignedTo ?? 0)" @onchange="OnAssigneeChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm">
-                                    <option value="0">Unassigned</option>
+                                    <option value="0">@AppLocalization.Text("common.unassigned", "Unassigned")</option>
                                     @foreach (var u in allUsers)
                                     {
                                         <option value="@u.Id">@u.FirstName @u.LastName</option>
@@ -193,7 +193,7 @@
                                     }
                                     else
                                     {
-                                        <span class="text-slate-400 italic">Unassigned</span>
+                                        <span class="text-slate-400 italic">@AppLocalization.Text("common.unassigned", "Unassigned")</span>
                                     }
                                 </div>
                             }
@@ -201,7 +201,7 @@
 
                         <!-- Due Date Property -->
                         <div class="flex flex-col gap-1.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Due Date</span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 font-sans">@AppLocalization.Text("common.dueDate", "Due Date")</span>
                             @if (hasTaskManagePermission)
                             {
                                 <input type="date" value="@task.DueDate.ToString("yyyy-MM-dd")" @onchange="OnDueDateChanged" class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent bg-white w-full transition-all cursor-pointer shadow-sm" />
@@ -217,10 +217,10 @@
 
                         <!-- Created At Property -->
                         <div class="flex flex-col gap-1.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Created At</span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 font-sans">@AppLocalization.Text("field.created", "Created At")</span>
                             <div class="h-9 flex items-center px-1 border-b border-transparent text-sm text-slate-800 cursor-default select-none font-medium text-slate-700">
                                 <i data-lucide="calendar-plus" class="h-4 w-4 mr-2 text-slate-400"></i>
-                                @task.CreatedAt.ToString("dd-MM-yyyy HH:mm")
+                                @AppLocalization.LocalizeDigits(task.CreatedAt.ToString("dd-MM-yyyy HH:mm"))
                             </div>
                         </div>
                     </div>
@@ -234,7 +234,7 @@
                     <div class="border-b border-slate-100 bg-slate-50/50 p-4">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                             <i data-lucide="message-square" class="h-4 w-4 text-violet-600"></i>
-                            Comments (@comments.Count)
+                            @AppLocalization.Text("comment.comments", "Comments") (@AppLocalization.Number(comments.Count))
                         </h3>
                     </div>
 
@@ -252,14 +252,14 @@
                                         <div class="flex-1 min-w-0 bg-slate-50 rounded-xl p-3 border border-slate-100">
                                             <div class="flex items-center justify-between gap-2">
                                                 <span class="text-xs font-bold text-slate-800 truncate">@c.UserFullName</span>
-                                                <span class="text-[9px] text-slate-400 shrink-0 font-sans">@c.CreatedAt.ToString("g")</span>
+                                                <span class="text-[9px] text-slate-400 shrink-0 font-sans">@AppLocalization.LocalizeDigits(c.CreatedAt.ToString("g"))</span>
                                             </div>
-                                            <p class="text-xs text-slate-400 mt-0.5">@c.UserRoleName</p>
+                                            <p class="text-xs text-slate-400 mt-0.5">@AppLocalization.RoleName(c.UserRoleName)</p>
                                             <div class="text-xs text-slate-700 mt-2 whitespace-pre-wrap break-words">@c.Message</div>
                                         </div>
                                         @if (c.UserId == currentUserId || isAdmin)
                                         {
-                                            <button @onclick="() => ConfirmDeleteComment(c.Id)" class="p-1 text-slate-300 hover:text-rose-500 rounded-lg transition-colors shrink-0" title="Delete comment">
+                                            <button @onclick="() => ConfirmDeleteComment(c.Id)" class="p-1 text-slate-300 hover:text-rose-500 rounded-lg transition-colors shrink-0" title="@AppLocalization.Text("comment.deleteComment", "Delete comment")">
                                                 <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
                                             </button>
                                         }
@@ -270,18 +270,18 @@
                             {
                                 <div class="text-center py-12 text-slate-400 space-y-2">
                                     <i data-lucide="messages-square" class="h-8 w-8 mx-auto text-slate-300"></i>
-                                    <p class="text-xs">No comments posted yet.</p>
-                                    <p class="text-[10px]">Start the conversation below!</p>
+                                    <p class="text-xs font-sans">@AppLocalization.Text("comment.noComments", "No comments posted yet.")</p>
+                                    <p class="text-[10px] font-sans">@AppLocalization.Text("comment.startConversation", "Start the conversation below!")</p>
                                 </div>
                             }
                         </div>
                     </div>
 
                     <!-- Footer (Inputs) -->
-                    <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                    <div class="p-4 border-t border-slate-100 bg-slate-50/50 font-sans">
                         <div class="flex items-start gap-2">
                             <div class="flex-1">
-                                <textarea @bind="newCommentMessage" rows="2" placeholder="Write a comment..." class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" disabled="@isSavingComment"></textarea>
+                                <textarea @bind="newCommentMessage" rows="2" placeholder="@AppLocalization.Text("comment.writeComment", "Write a comment...")" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" disabled="@isSavingComment"></textarea>
                                 @if (!string.IsNullOrEmpty(commentError))
                                 {
                                     <p class="text-[10px] text-red-500 mt-1 font-sans">@commentError</p>
@@ -609,8 +609,8 @@
 
     private void ConfirmDeleteComment(long commentId)
     {
-        confirmTitle = "Delete Comment?";
-        confirmMessage = "Are you sure you want to delete this comment? This action cannot be undone.";
+        confirmTitle = AppLocalization.Text("comment.deleteCommentTitle", "Delete Comment?");
+        confirmMessage = AppLocalization.Text("comment.deleteCommentConfirm", "Are you sure you want to delete this comment? This action cannot be undone.");
         confirmAction = () => DeleteComment(commentId);
         showConfirm = true;
     }
@@ -654,13 +654,7 @@
 
     // --- DISPLAY UTILITIES ----------------------------------------------------
 
-    private string GetStatusLabel(AppTaskStatus statusId) => statusId switch
-    {
-        AppTaskStatus.Todo => "To Do",
-        AppTaskStatus.InProgress => "In Progress",
-        AppTaskStatus.Done => "Done",
-        _ => "Unknown"
-    };
+    private string GetStatusLabel(AppTaskStatus statusId) => AppLocalization.StatusLabel(statusId);
 
     private string GetStatusBadge(AppTaskStatus statusId) => statusId switch
     {
@@ -670,13 +664,7 @@
         _ => "bg-slate-50 text-slate-600"
     };
 
-    private string GetPriorityLabel(TaskPriority priorityId) => priorityId switch
-    {
-        TaskPriority.Low => "Low",
-        TaskPriority.Medium => "Medium",
-        TaskPriority.High => "High",
-        _ => "Unknown"
-    };
+    private string GetPriorityLabel(TaskPriority priorityId) => AppLocalization.PriorityLabel(priorityId);
 
     private string GetPriorityBadge(TaskPriority priorityId) => priorityId switch
     {

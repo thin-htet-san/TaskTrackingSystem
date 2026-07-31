@@ -11,7 +11,7 @@
             <div class="grid gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400" style="@GridStyle">
                 @foreach (var month in Months)
                 {
-                    <span>@month.ToString("MMM")</span>
+                    <span>@(AppLocalization.IsBurmeseCulture ? $"{AppLocalization.Number(month.Month)}လ" : month.ToString("MMM"))</span>
                 }
             </div>
 

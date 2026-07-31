@@ -13,7 +13,7 @@
                 var y = TickToY(tick);
                 <g>
                     <line x1="@PlotLeft" y1="@y" x2="@PlotRight" y2="@y" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" />
-                    <text x="42" y="@(y + 4)" text-anchor="end" font-size="12" fill="#64748b">@tick.ToString("0")</text>
+                    <text x="42" y="@(y + 4)" text-anchor="end" font-size="12" fill="#64748b">@AppLocalization.Number(tick, "0")</text>
                 </g>
             }
 

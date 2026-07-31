@@ -152,7 +152,7 @@
                     </ReportChartCard>
                 </div>
                 <div class="xl:col-span-5">
-                    <RadialMetricCard Title="@AppLocalization.Text("report.highPriorityOverdue", "High-priority overdue")" Subtitle="@AppLocalization.Text("report.highPriorityOverdueDesc", "Critical work that needs immediate support.")" Percent="@HighPriorityOverduePercent" Value="@criticalCount.ToString()" ValueLabel="@AppLocalization.Text("priority.high", "high priority")" CenterLabel="@AppLocalization.Text("report.critical", "critical")" Color="#ef4444" Insight="@AppLocalization.Text("report.overdueInsight", "Phrase these as capacity risks so teams can unblock work, not assign blame.")" />
+                    <RadialMetricCard Title="@AppLocalization.Text("report.highPriorityOverdue", "High-priority overdue")" Subtitle="@AppLocalization.Text("report.highPriorityOverdueDesc", "Critical work that needs immediate support.")" Percent="@HighPriorityOverduePercent" Value="@AppLocalization.Number(criticalCount)" ValueLabel="@AppLocalization.Text("priority.high", "high priority")" CenterLabel="@AppLocalization.Text("report.critical", "critical")" Color="#ef4444" Insight="@AppLocalization.Text("report.overdueInsight", "Phrase these as capacity risks so teams can unblock work, not assign blame.")" />
                 </div>
                 <div class="xl:col-span-6">
                     <ReportChartCard Title="@AppLocalization.Text("report.delaysByProject", "Delays by project")" Subtitle="@AppLocalization.Text("report.delaysByProjectDesc", "Project areas where delay concentration is highest.")" Insight="@AppLocalization.Text("report.delaysByProjectInsight", "Use this to rebalance planning pressure across projects.")">
@@ -254,8 +254,8 @@
                                     <span class="font-semibold text-rose-600">@AppLocalization.Number(task.OverdueIssues)</span> @AppLocalization.Text("common.overdue", "overdue")
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm font-medium text-slate-800">@(string.IsNullOrWhiteSpace(task.DelayReason) ? "No reason recorded" : task.DelayReason)</div>
-                                    <div class="mt-1 text-xs text-slate-500">Blocked by: @(string.IsNullOrWhiteSpace(task.BlockedBy) ? "None" : task.BlockedBy) · Escalation: @GetEscalationLabel(task.EscalationLevel)</div>
+                                    <div class="text-sm font-medium text-slate-800">@(string.IsNullOrWhiteSpace(task.DelayReason) ? AppLocalization.Text("report.noReasonRecorded", "No reason recorded") : task.DelayReason)</div>
+                                    <div class="mt-1 text-xs text-slate-500">@AppLocalization.Text("report.blockedBy", "Blocked by: ")@(string.IsNullOrWhiteSpace(task.BlockedBy) ? AppLocalization.Text("common.none", "None") : task.BlockedBy) · @AppLocalization.Text("report.escalation", "Escalation: ")@GetEscalationLabel(task.EscalationLevel)</div>
                                 </td>
                             </tr>
                         }
@@ -315,10 +315,10 @@
 
     private List<ReportChartItem> AgingBuckets => new()
     {
-        new("Due soon", allOverdue.Count(t => t.DaysOverdue <= 0), "#f59e0b", "not overdue yet"),
-        new("1-3d", allOverdue.Count(t => t.DaysOverdue >= 1 && t.DaysOverdue <= 3), "#3b82f6", "early delay"),
-        new("4-7d", allOverdue.Count(t => t.DaysOverdue >= 4 && t.DaysOverdue <= 7), "#f59e0b", "needs action"),
-        new("8d+", allOverdue.Count(t => t.DaysOverdue >= 8), "#ef4444", "high risk")
+        new(AppLocalization.Text("report.dueSoon", "Due soon"), allOverdue.Count(t => t.DaysOverdue <= 0), "#f59e0b", AppLocalization.Text("report.notOverdueYet", "not overdue yet")),
+        new("1-3d", allOverdue.Count(t => t.DaysOverdue >= 1 && t.DaysOverdue <= 3), "#3b82f6", AppLocalization.Text("report.earlyDelay", "early delay")),
+        new("4-7d", allOverdue.Count(t => t.DaysOverdue >= 4 && t.DaysOverdue <= 7), "#f59e0b", AppLocalization.Text("report.needsAction", "needs action")),
+        new("8d+", allOverdue.Count(t => t.DaysOverdue >= 8), "#ef4444", AppLocalization.Text("report.highRisk", "high risk"))
     };
 
     private List<TopRiskItem> DelayProjectItems => allOverdue
@@ -328,19 +328,19 @@
             var overdue = g.Count(t => t.DaysOverdue > 0);
             var high = g.Count(t => t.PriorityName == "High");
             var score = Math.Min(100, (overdue * 18) + (high * 15) + g.Sum(t => Math.Max(0, t.DaysOverdue)));
-            return new TopRiskItem(g.Key, $"{overdue} overdue · {high} high priority", score, $"{g.Count()} tasks", score >= 70 ? "rose" : "amber", $"{g.Sum(t => t.OverdueIssues)} overdue issues");
+            return new TopRiskItem(g.Key, $"{AppLocalization.Number(overdue)} {AppLocalization.Text("status.overdue", "overdue")} · {AppLocalization.Number(high)} {AppLocalization.Text("priority.high", "high priority")}", score, $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("report.tasks", "tasks")}", score >= 70 ? "rose" : "amber", $"{AppLocalization.Number(g.Sum(t => t.OverdueIssues))} {AppLocalization.Text("report.overdueIssuesSegment", "overdue issues")}");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
         .ToList();
 
     private List<TopRiskItem> DelayAssigneeItems => allOverdue
-        .GroupBy(t => string.IsNullOrWhiteSpace(t.AssignedTo) ? "Unassigned" : t.AssignedTo!)
+        .GroupBy(t => string.IsNullOrWhiteSpace(t.AssignedTo) ? AppLocalization.Text("common.unassigned", "Unassigned") : t.AssignedTo!)
         .Select(g =>
         {
             var overdue = g.Count(t => t.DaysOverdue > 0);
             var score = Math.Min(100, (overdue * 20) + g.Sum(t => Math.Max(0, t.DaysOverdue)));
-            return new TopRiskItem(g.Key, $"{overdue} overdue tasks", score, $"{score:0} risk", score >= 70 ? "rose" : "amber", "Capacity support may be needed");
+            return new TopRiskItem(g.Key, $"{AppLocalization.Number(overdue)} {AppLocalization.Text("report.overdueTasks", "overdue tasks")}", score, $"{AppLocalization.Number(score)} {AppLocalization.Text("report.risk", "risk")}", score >= 70 ? "rose" : "amber", AppLocalization.Text("report.capacitySupportNeeded", "Capacity support may be needed"));
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -348,7 +348,7 @@
 
     private List<RiskMatrixPoint> OverdueRiskMatrix => allOverdue
         .GroupBy(t => new { Severity = GetPrioritySeverity(t.PriorityName), Urgency = GetOverdueUrgency(t.DaysOverdue), t.ProjectName })
-        .Select(g => new RiskMatrixPoint(g.Key.ProjectName, g.Key.Severity, g.Key.Urgency, g.Count(), g.Key.Severity * g.Key.Urgency >= 9 ? "#ef4444" : "#f59e0b", $"{g.Count()} delayed task(s)"))
+        .Select(g => new RiskMatrixPoint(g.Key.ProjectName, g.Key.Severity, g.Key.Urgency, g.Count(), g.Key.Severity * g.Key.Urgency >= 9 ? "#ef4444" : "#f59e0b", $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("report.delayedTasksCount", "delayed task(s)")}"))
         .ToList();
 
     protected override async Task OnInitializedAsync()
