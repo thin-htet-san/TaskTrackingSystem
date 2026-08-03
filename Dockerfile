@@ -9,6 +9,8 @@ COPY TaskTrackingSystem.Database/TaskTrackingSystem.Database.csproj TaskTracking
 COPY TaskTrackingSystem.Shared/TaskTrackingSystem.Shared.csproj TaskTrackingSystem.Shared/
 COPY TaskTrackingSystem.WebApi/TaskTrackingSystem.WebApi.csproj TaskTrackingSystem.WebApi/
 COPY TaskTrackingSystem.WebApp/TaskTrackingSystem.WebApp.csproj TaskTrackingSystem.WebApp/
+COPY Tools/TranslationBackfill/TranslationBackfill.csproj Tools/TranslationBackfill/
+COPY Tests/TaskTrackingSystem.Tests/TaskTrackingSystem.Tests.csproj Tests/TaskTrackingSystem.Tests/
 
 RUN dotnet restore TaskTrackingSystem.sln
 
