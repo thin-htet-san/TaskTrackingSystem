@@ -13,6 +13,8 @@ public partial class Menu
 
     public string MenuName { get; set; } = null!;
 
+    public string? MenuNameMy { get; set; }
+
     public string? MenuUrl { get; set; }
 
     public string? Icon { get; set; }

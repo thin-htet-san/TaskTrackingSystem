@@ -200,17 +200,17 @@
                                 <td class="px-6 py-4 text-sm font-semibold text-slate-500 align-top">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4">
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-900">@task.Title</p>
-                                        @if (!string.IsNullOrEmpty(task.Description))
+                                        <p class="text-sm font-semibold text-slate-900">@Content.GetText(task.Title, task.TitleMy)</p>
+                                        @if (!string.IsNullOrEmpty(Content.GetText(task.Description, task.DescriptionMy)))
                                         {
-                                            <p class="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">@task.Description</p>
+                                            <p class="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">@Content.GetText(task.Description, task.DescriptionMy)</p>
                                         }
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center gap-1 text-sm text-slate-600">
                                         <i data-lucide="folder" class="h-3.5 w-3.5 text-violet-500"></i>
-                                        @task.ProjectName
+                                        @Content.GetText(task.ProjectName, task.ProjectNameMy)
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
@@ -254,8 +254,8 @@
                                     <span class="font-semibold text-rose-600">@AppLocalization.Number(task.OverdueIssues)</span> @AppLocalization.Text("common.overdue", "overdue")
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm font-medium text-slate-800">@(string.IsNullOrWhiteSpace(task.DelayReason) ? AppLocalization.Text("report.noReasonRecorded", "No reason recorded") : task.DelayReason)</div>
-                                    <div class="mt-1 text-xs text-slate-500">@AppLocalization.Text("report.blockedBy", "Blocked by: ")@(string.IsNullOrWhiteSpace(task.BlockedBy) ? AppLocalization.Text("common.none", "None") : task.BlockedBy) · @AppLocalization.Text("report.escalation", "Escalation: ")@GetEscalationLabel(task.EscalationLevel)</div>
+                                    <div class="text-sm font-medium text-slate-800">@(string.IsNullOrWhiteSpace(Content.GetText(task.DelayReason, task.DelayReasonMy)) ? AppLocalization.Text("report.noReasonRecorded", "No reason recorded") : Content.GetText(task.DelayReason, task.DelayReasonMy))</div>
+                                    <div class="mt-1 text-xs text-slate-500">@AppLocalization.Text("report.blockedBy", "Blocked by: ")@(string.IsNullOrWhiteSpace(Content.GetText(task.BlockedBy, task.BlockedByMy)) ? AppLocalization.Text("common.none", "None") : Content.GetText(task.BlockedBy, task.BlockedByMy)) · @AppLocalization.Text("report.escalation", "Escalation: ")@GetEscalationLabel(task.EscalationLevel)</div>
                                 </td>
                             </tr>
                         }
@@ -492,9 +492,9 @@
         {
             return new[]
             {
-                task.Title,
-                task.ProjectName,
-                task.AssignedTo ?? "Unassigned",
+                Content.GetText(task.Title, task.TitleMy),
+                Content.GetText(task.ProjectName, task.ProjectNameMy),
+                string.IsNullOrWhiteSpace(Content.GetText(task.AssignedTo, task.AssignedToMy)) ? "Unassigned" : Content.GetText(task.AssignedTo, task.AssignedToMy),
                 DisplayFormats.Date(task.DueDate),
                 task.DaysOverdue.ToString(),
                 task.PriorityName,

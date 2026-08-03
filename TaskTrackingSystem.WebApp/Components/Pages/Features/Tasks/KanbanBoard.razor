@@ -10,7 +10,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>@AppLocalization.PageTitle("kanbanBoard", "Kanban Board")</PageTitle>
+<PageTitle>@AppLocalization.PageTitle("kanbanBoard", "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်")</PageTitle>
 
 <SuccessAlert Message="@successMessage" />
 
@@ -25,8 +25,8 @@
                 </button>
             }
             <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.PageTitle("kanbanBoard", "Kanban Board")</h2>
-                <p class="text-slate-500 mt-1 font-medium">@(project != null ? project.Name : (ProjectId > 0 ? $"{AppLocalization.Text("common.project", "Project")} #{ProjectId}" : AppLocalization.Text("common.allProjects", "All Projects")))</p>
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900">@AppLocalization.PageTitle("kanbanBoard", "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်")</h2>
+                <p class="text-slate-500 mt-1 font-medium">@(project != null ? Content.GetProjectName(project) : (ProjectId > 0 ? $"{AppLocalization.Text("common.project", "Project")} #{ProjectId}" : AppLocalization.Text("common.allProjects", "All Projects")))</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -34,7 +34,7 @@
                 <option value="0">@AppLocalization.Text("common.allProjects", "All Projects")</option>
                 @foreach (var p in projects)
                 {
-                    <option value="@p.Id">@p.Name</option>
+                    <option value="@p.Id">@Content.GetProjectName(p)</option>
                 }
             </select>
             <button @onclick="ToggleArchivedView" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
@@ -117,12 +117,12 @@
                                      @ondragstart="() => HandleDragStart(task)"
                                      @ondragend="HandleDragEnd">
                                     <div class="flex items-start justify-between">
-                                        <h4 class="text-sm font-semibold text-slate-900">@task.Title</h4>
+                                        <h4 class="text-sm font-semibold text-slate-900">@Content.GetTaskTitle(task)</h4>
                                         <span class="text-xs px-2 py-0.5 rounded-full font-medium @GetPriorityBadge(task.PriorityId)">@GetPriorityLabel(task.PriorityId)</span>
                                     </div>
-                                    @if (!string.IsNullOrEmpty(task.Description))
+                                    @if (!string.IsNullOrEmpty(Content.GetTaskDescription(task)))
                                     {
-                                        <p class="text-xs text-slate-500 mt-1.5 line-clamp-2">@task.Description</p>
+                                        <p class="text-xs text-slate-500 mt-1.5 line-clamp-2">@Content.GetTaskDescription(task)</p>
                                     }
                                     <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
                                         <span class="text-xs text-slate-400">@AppLocalization.Text("task.due", "Due") @DisplayFormats.Date(task.DueDate)</span>
@@ -204,17 +204,19 @@
                         <option value="0">@AppLocalization.Text("task.selectProject", "Select project...")</option>
                         @foreach (var p in projects)
                         {
-                            <option value="@p.Id">@p.Name</option>
+                    <option value="@p.Id">@Content.GetProjectName(p)</option>
                         }
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("field.title", "Title")</label>
-                    <input @bind="taskTitle" type="text" placeholder="@AppLocalization.Text("task.taskTitle", "Task title")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                    <input @bind="taskTitleMy" type="text" placeholder="ခေါင်းစဉ်" class="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
+                    <input @bind="taskTitle" type="text" placeholder="@AppLocalization.Text("task.taskTitle", "Task title")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.description", "Description")</label>
-                    <textarea @bind="taskDescription" rows="3" placeholder="@AppLocalization.Text("task.taskDescription", "Task description")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"></textarea>
+                    <textarea @bind="taskDescriptionMy" rows="2" placeholder="ဖော်ပြချက်" class="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all"></textarea>
+                    <textarea @bind="taskDescription" rows="3" placeholder="@AppLocalization.Text("task.taskDescription", "Task description")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all"></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -295,7 +297,9 @@
     // Task form
     private long taskProjectId;
     private string taskTitle = "";
+    private string? taskTitleMy;
     private string? taskDescription;
+    private string? taskDescriptionMy;
     private TaskPriority taskPriorityId = TaskPriority.Medium;
     private DateTime taskDueDate = DateTime.Today.AddDays(7);
 
@@ -532,7 +536,9 @@
     {
         taskProjectId = selectedProjectId > 0 ? selectedProjectId : projects.FirstOrDefault()?.Id ?? 0;
         taskTitle = "";
+        taskTitleMy = null;
         taskDescription = null;
+        taskDescriptionMy = null;
         taskPriorityId = TaskPriority.Medium;
         taskDueDate = DateTime.Today.AddDays(7);
         taskError = null;
@@ -547,7 +553,7 @@
 
     private void RequestCreateConfirmation()
     {
-        if (string.IsNullOrWhiteSpace(taskTitle))
+        if (string.IsNullOrWhiteSpace(taskTitle) && string.IsNullOrWhiteSpace(taskTitleMy))
         {
             taskError = AppLocalization.Text("validation.taskTitleRequired", "Task title is required.");
             return;
@@ -583,7 +589,7 @@
 
     private async Task CreateTask()
     {
-        if (string.IsNullOrWhiteSpace(taskTitle))
+        if (string.IsNullOrWhiteSpace(taskTitle) && string.IsNullOrWhiteSpace(taskTitleMy))
         {
             taskError = AppLocalization.Text("validation.taskTitleRequired", "Task title is required.");
             return;
@@ -598,7 +604,9 @@
             var dto = new CreateTaskDto
             {
                 Title = taskTitle,
+                TitleMy = taskTitleMy,
                 Description = taskDescription,
+                DescriptionMy = taskDescriptionMy,
                 ProjectId = taskProjectId,
                 StatusId = AppTaskStatus.Todo,
                 PriorityId = taskPriorityId,

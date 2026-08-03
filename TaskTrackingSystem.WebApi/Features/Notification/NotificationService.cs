@@ -29,14 +29,17 @@ public class NotificationService
             {
                 Id = n.Id,
                 Title = n.Title,
+                TitleMy = n.TitleMy,
                 Body = n.Body,
+                BodyMy = n.BodyMy,
                 NotificationType = n.NotificationType,
                 SourceType = n.SourceType,
                 SourceId = n.SourceId,
                 IsRead = n.IsRead,
                 CreatedAt = n.CreatedAt,
                 ReadAt = n.ReadAt,
-                SenderName = sender == null ? null : $"{sender.FirstName} {sender.LastName}"
+                SenderName = sender == null ? null : $"{sender.FirstName} {sender.LastName}",
+                SenderNameMy = sender == null ? null : $"{sender.FirstNameMy} {sender.LastNameMy}"
             })
             .Take(take)
             .ToListAsync();

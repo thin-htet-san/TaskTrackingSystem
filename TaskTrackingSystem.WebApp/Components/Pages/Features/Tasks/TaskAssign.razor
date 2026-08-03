@@ -40,7 +40,7 @@
                         <option value="0">@AppLocalization.Text("common.allProjects", "All Projects")</option>
                         @foreach (var p in projects)
                         {
-                            <option value="@p.Id">@p.Name</option>
+                            <option value="@p.Id">@Content.GetProjectName(p)</option>
                         }
                     </select>
                 </div>
@@ -87,13 +87,13 @@
                                         @GetStatusLabel(task.StatusId)
                                     </span>
                                 </div>
-                                <span class="text-sm font-semibold text-slate-900 @(isSelected ? "text-violet-700" : "")">@task.Title</span>
+                                <span class="text-sm font-semibold text-slate-900 @(isSelected ? "text-violet-700" : "")">@Content.GetTaskTitle(task)</span>
                                 <div class="flex items-center justify-between text-[10px] text-slate-500">
-                                    <span>@(proj?.Name ?? AppLocalization.Text("common.noProject", "No Project"))</span>
+                                    <span>@(proj != null ? Content.GetProjectName(proj) : AppLocalization.Text("common.noProject", "No Project"))</span>
                                     <span class="flex items-center">
                                         <i data-lucide="user" class="h-3 w-3 mr-1"></i>
                                         @{ var assignee = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo); }
-                                        @(assignee != null ? $"{assignee.FirstName} {assignee.LastName}" : AppLocalization.Text("common.unassigned", "Unassigned"))
+                                        @(assignee != null ? Content.GetUserFullName(assignee) : AppLocalization.Text("common.unassigned", "Unassigned"))
                                     </span>
                                 </div>
                             </button>
@@ -126,10 +126,10 @@
                             <span class="text-[10px] font-bold text-violet-600 uppercase tracking-wider">@AppLocalization.Text("common.currentlyAssigningTask", "Currently Assigning Task")</span>
                             <span class="text-[10px] font-mono font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">TSK-@AppLocalization.Number(SelectedTask.Id)</span>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-900">@SelectedTask.Title</h3>
-                        @if (!string.IsNullOrEmpty(SelectedTask.Description))
+                        <h3 class="text-xl font-bold text-slate-900">@Content.GetTaskTitle(SelectedTask)</h3>
+                        @if (!string.IsNullOrEmpty(Content.GetTaskDescription(SelectedTask)))
                         {
-                            <p class="text-xs text-slate-500 mt-1 line-clamp-2">@SelectedTask.Description</p>
+                            <p class="text-xs text-slate-500 mt-1 line-clamp-2">@Content.GetTaskDescription(SelectedTask)</p>
                         }
                         
                         <div class="flex flex-wrap items-center gap-3 mt-4">
@@ -160,7 +160,7 @@
                                             <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
                                                 @(targetAssignee.FirstName.Length > 0 ? targetAssignee.FirstName[0].ToString().ToUpper() : "")@(targetAssignee.LastName.Length > 0 ? targetAssignee.LastName[0].ToString().ToUpper() : "")
                                             </span>
-                                            <span>@targetAssignee.FirstName @targetAssignee.LastName</span>
+                                            <span>@Content.GetUserFullName(targetAssignee)</span>
                                             <span class="text-slate-400">@@@targetAssignee.Username</span>
                                         </span>
                                     }
@@ -198,7 +198,7 @@
                                     <option value="0">@AppLocalization.Text("common.allRoles", "All Roles")</option>
                                     @foreach (var r in roles)
                                     {
-                                        <option value="@r.Id">@r.Name</option>
+                                        <option value="@r.Id">@Content.GetRoleName(r)</option>
                                     }
                                 </select>
                             </div>
@@ -242,7 +242,7 @@
                                         @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
                                     </span>
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-semibold text-slate-800 truncate">@user.FirstName @user.LastName</p>
+                                        <p class="text-sm font-semibold text-slate-800 truncate">@Content.GetUserFullName(user)</p>
                                         <p class="text-xs text-slate-400 truncate">@@@user.Username</p>
                                     </div>
                                 </label>
@@ -368,8 +368,8 @@
             }
             if (!string.IsNullOrWhiteSpace(taskSearch))
             {
-                result = result.Where(t => t.Title.Contains(taskSearch, StringComparison.OrdinalIgnoreCase)
-                    || (t.Description != null && t.Description.Contains(taskSearch, StringComparison.OrdinalIgnoreCase)));
+                result = result.Where(t => Content.GetTaskTitle(t).Contains(taskSearch, StringComparison.OrdinalIgnoreCase)
+                    || Content.GetTaskDescription(t).Contains(taskSearch, StringComparison.OrdinalIgnoreCase));
             }
             return result;
         }
@@ -394,7 +394,8 @@
             }
             if (!string.IsNullOrWhiteSpace(userSearch))
             {
-                result = result.Where(u => $"{u.FirstName} {u.LastName}".Contains(userSearch, StringComparison.OrdinalIgnoreCase)
+                result = result.Where(u => Content.GetUserFullName(u).Contains(userSearch, StringComparison.OrdinalIgnoreCase)
+                    || $"{u.FirstName} {u.LastName} {u.FirstNameMy} {u.LastNameMy}".Contains(userSearch, StringComparison.OrdinalIgnoreCase)
                     || u.Username.Contains(userSearch, StringComparison.OrdinalIgnoreCase));
             }
             return result;

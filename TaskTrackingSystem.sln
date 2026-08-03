@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskTrackingSystem.Shared",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskTrackingSystem.WebApp", "TaskTrackingSystem.WebApp\TaskTrackingSystem.WebApp.csproj", "{6C65AAE1-991F-4E42-AFB9-B8BBA9D80A88}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TranslationBackfill", "Tools\TranslationBackfill\TranslationBackfill.csproj", "{B7AA11E7-26A2-4C8E-A8C9-4DAB6C8F27F1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskTrackingSystem.Tests", "Tests\TaskTrackingSystem.Tests\TaskTrackingSystem.Tests.csproj", "{E2D8F45A-6FCA-4A6B-8B30-AD7140A6EE52}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{020D852B-0CDE-4177-87A2-6804A3043186}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
@@ -38,6 +42,14 @@ Global
 		{6C65AAE1-991F-4E42-AFB9-B8BBA9D80A88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C65AAE1-991F-4E42-AFB9-B8BBA9D80A88}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6C65AAE1-991F-4E42-AFB9-B8BBA9D80A88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7AA11E7-26A2-4C8E-A8C9-4DAB6C8F27F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7AA11E7-26A2-4C8E-A8C9-4DAB6C8F27F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7AA11E7-26A2-4C8E-A8C9-4DAB6C8F27F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7AA11E7-26A2-4C8E-A8C9-4DAB6C8F27F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2D8F45A-6FCA-4A6B-8B30-AD7140A6EE52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2D8F45A-6FCA-4A6B-8B30-AD7140A6EE52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2D8F45A-6FCA-4A6B-8B30-AD7140A6EE52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2D8F45A-6FCA-4A6B-8B30-AD7140A6EE52}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

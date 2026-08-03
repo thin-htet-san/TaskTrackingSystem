@@ -13,11 +13,17 @@ namespace TaskTrackingSystem.Shared.Models.Issue
         [Range(1, long.MaxValue)]
         public long TaskId { get; set; }
 
-        [Required, MaxLength(200)]
+        [MaxLength(200)]
         public string Title { get; set; } = string.Empty;
+
+        [MaxLength(200)]
+        public string? TitleMy { get; set; }
 
         [MaxLength(1000)]
         public string? Description { get; set; }
+
+        [MaxLength(1000)]
+        public string? DescriptionMy { get; set; }
 
         [Range(0, long.MaxValue)]
         public long? AssignedTo { get; set; }
@@ -31,10 +37,16 @@ namespace TaskTrackingSystem.Shared.Models.Issue
         [MaxLength(300)]
         public string? DelayReason { get; set; }
 
+        [MaxLength(300)]
+        public string? DelayReasonMy { get; set; }
+
         public bool IsBlocked { get; set; }
 
         [MaxLength(200)]
         public string? BlockedBy { get; set; }
+
+        [MaxLength(200)]
+        public string? BlockedByMy { get; set; }
 
         [Range(0, 3)]
         public int EscalationLevel { get; set; }
@@ -53,6 +65,11 @@ namespace TaskTrackingSystem.Shared.Models.Issue
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
+            if (string.IsNullOrWhiteSpace(Title) && string.IsNullOrWhiteSpace(TitleMy))
+            {
+                yield return new ValidationResult("At least one issue title is required.", new[] { nameof(Title), nameof(TitleMy) });
+            }
+
             if (StartDate == default)
             {
                 yield return new ValidationResult(AppLocalization.Text("validation.startDateRequired", "Start date is required."), new[] { nameof(StartDate) });

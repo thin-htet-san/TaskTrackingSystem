@@ -259,7 +259,7 @@
                                 var proj = entry.proj;
                                 <tr class="hover:bg-slate-50/50 transition-colors">
                                     <td class="px-6 py-4 text-sm font-semibold text-slate-500">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
-                                    <td class="px-6 py-4 text-sm font-semibold text-slate-900">@proj.ProjectName</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-slate-900">@Content.GetText(proj.ProjectName, proj.ProjectNameMy)</td>
                                     <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(proj.StartDate)</td>
                                     <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(proj.EndDate)</td>
                                     <td class="px-6 py-4 text-sm text-slate-900">@AppLocalization.Number(proj.OpenIssues)</td>
@@ -330,8 +330,9 @@
                 : project.IsAtRisk
                     ? "#f59e0b"
                     : risk > 35 ? "#3b82f6" : "#10b981";
-            var tooltip = $"{project.ProjectName}\n{AppLocalization.Text("report.percentComplete", "{percent}% complete").Replace("{percent}", AppLocalization.Number(project.Progress, "0"))}\n{AppLocalization.Text("report.riskScore", "Risk score")}: {AppLocalization.Number(risk, "0")}\n{AppLocalization.Number(project.BlockedIssues)} {AppLocalization.Text("common.blocked", "blocked")}, {AppLocalization.Number(project.OverdueIssues)} {AppLocalization.Text("common.overdue", "overdue")}, {AppLocalization.Number(project.OpenIssues)} {AppLocalization.Text("report.open", "open")}";
-            return new ProjectQuadrantPoint(project.ProjectName, left, top, color, tooltip);
+            var projectName = Content.GetText(project.ProjectName, project.ProjectNameMy);
+            var tooltip = $"{projectName}\n{AppLocalization.Text("report.percentComplete", "{percent}% complete").Replace("{percent}", AppLocalization.Number(project.Progress, "0"))}\n{AppLocalization.Text("report.riskScore", "Risk score")}: {AppLocalization.Number(risk, "0")}\n{AppLocalization.Number(project.BlockedIssues)} {AppLocalization.Text("common.blocked", "blocked")}, {AppLocalization.Number(project.OverdueIssues)} {AppLocalization.Text("common.overdue", "overdue")}, {AppLocalization.Number(project.OpenIssues)} {AppLocalization.Text("report.open", "open")}";
+            return new ProjectQuadrantPoint(projectName, left, top, color, tooltip);
         })
         .ToList();
 
@@ -340,7 +341,7 @@
         {
             var score = GetProjectRiskScore(project);
             var tone = project.ProjectHealth == "Critical" || project.BlockedIssues > 0 ? "rose" : project.IsAtRisk ? "amber" : "blue";
-            return new TopRiskItem(project.ProjectName, $"{AppLocalization.Text("report.percentComplete", "{percent}% complete").Replace("{percent}", AppLocalization.Number(project.Progress, "0"))} · {AppLocalization.Number(project.OpenIssues)} {AppLocalization.Text("report.openIssuesSegment", "open issues")}", score, GetProjectHealthLabel(project.ProjectHealth), tone, $"{AppLocalization.Number(project.OverdueIssues)} {AppLocalization.Text("status.overdue", "overdue")} · {AppLocalization.Number(project.BlockedIssues)} {AppLocalization.Text("status.blocked", "blocked")}");
+            return new TopRiskItem(Content.GetText(project.ProjectName, project.ProjectNameMy), $"{AppLocalization.Text("report.percentComplete", "{percent}% complete").Replace("{percent}", AppLocalization.Number(project.Progress, "0"))} · {AppLocalization.Number(project.OpenIssues)} {AppLocalization.Text("report.openIssuesSegment", "open issues")}", score, GetProjectHealthLabel(project.ProjectHealth), tone, $"{AppLocalization.Number(project.OverdueIssues)} {AppLocalization.Text("status.overdue", "overdue")} · {AppLocalization.Number(project.BlockedIssues)} {AppLocalization.Text("status.blocked", "blocked")}");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -349,7 +350,7 @@
     private List<TimelineChartItem> ProjectTimelineItems => allProjects
         .OrderBy(project => project.StartDate)
         .Take(8)
-        .Select(project => new TimelineChartItem(project.ProjectName, project.StartDate, project.EndDate, project.Progress, project.IsAtRisk ? "#f59e0b" : "#3b82f6"))
+        .Select(project => new TimelineChartItem(Content.GetText(project.ProjectName, project.ProjectNameMy), project.StartDate, project.EndDate, project.Progress, project.IsAtRisk ? "#f59e0b" : "#3b82f6"))
         .ToList();
 
     private List<StackedSegment> ProjectIssueSegments => new()
@@ -498,7 +499,7 @@
     {
         var rows = allProjects.Select(proj => new object?[]
         {
-            proj.ProjectName,
+            Content.GetText(proj.ProjectName, proj.ProjectNameMy),
             proj.StartDate,
             proj.EndDate,
             proj.OpenIssues,
@@ -540,7 +541,7 @@
 
         var rows = allProjects.Select(proj => new[]
         {
-            proj.ProjectName,
+            Content.GetText(proj.ProjectName, proj.ProjectNameMy),
             DisplayFormats.Date(proj.StartDate),
             DisplayFormats.Date(proj.EndDate),
             proj.OpenIssues.ToString(),

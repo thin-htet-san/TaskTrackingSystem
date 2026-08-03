@@ -9,7 +9,11 @@ public partial class Role
 
     public string Name { get; set; } = null!;
 
+    public string? NameMy { get; set; }
+
     public string? Description { get; set; }
+
+    public string? DescriptionMy { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

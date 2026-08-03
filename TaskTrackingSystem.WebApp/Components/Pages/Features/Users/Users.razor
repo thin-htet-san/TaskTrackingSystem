@@ -41,7 +41,7 @@
                     <option value="0">@AppLocalization.Text("common.all", "All Roles")</option>
                     @foreach (var r in roles)
                     {
-                        <option value="@r.Id">@AppLocalization.RoleName(r.Name)</option>
+                        <option value="@r.Id">@Content.GetRoleName(r)</option>
                     }
                 </select>
             </div>
@@ -95,10 +95,10 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center space-x-3">
                                         <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-semibold text-xs">
-                                            @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                            @(Content.GetUserFullName(user) is var displayName && displayName.Length > 0 ? displayName[0].ToString().ToUpper() : "")
                                         </span>
                                         <div>
-                                            <p class="text-sm font-semibold text-slate-900">@user.FirstName @user.LastName</p>
+                                            <p class="text-sm font-semibold text-slate-900">@Content.GetUserFullName(user)</p>
                                             <p class="text-xs text-slate-400">@@@user.Username</p>
                                         </div>
                                     </div>
@@ -108,7 +108,7 @@
                                 <td class="px-6 py-4">
                                     @{ var role = roles.FirstOrDefault(r => r.Id == user.RoleId); }
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
-                                        @(role != null ? AppLocalization.RoleName(role.Name) : $"{AppLocalization.Text("common.role", "Role")} #{user.RoleId}")
+                                        @(role != null ? Content.GetRoleName(role) : $"{AppLocalization.Text("common.role", "Role")} #{user.RoleId}")
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
@@ -165,24 +165,33 @@
                 </button>
             </div>
             <div class="p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("user.firstName", "First Name") <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input @bind="formFirstName" type="text" placeholder="@AppLocalization.Text("user.firstName", "First name")" class="w-full rounded-lg border @(isFirstNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
-                            @if (isFirstNameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
+                <BilingualEditorTabs BurmeseComplete="@(!string.IsNullOrWhiteSpace(formFirstNameMy) && !string.IsNullOrWhiteSpace(formLastNameMy))"
+                                     EnglishComplete="@(!string.IsNullOrWhiteSpace(formFirstName) && !string.IsNullOrWhiteSpace(formLastName))"
+                                     BurmeseAiGenerated="@burmeseGenerated"
+                                     EnglishAiGenerated="@englishGenerated"
+                                     BurmeseNeedsReview="@burmeseNeedsReview"
+                                     EnglishNeedsReview="@englishNeedsReview">
+                    <BurmeseContent>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">အမည် <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input @bind="formFirstNameMy" type="text" placeholder="ရှေ့အမည်" class="w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+                            <input @bind="formLastNameMy" type="text" placeholder="နောက်အမည်" class="w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
                         </div>
-                        @if (isFirstNameError) { <p class="mt-1 text-xs text-red-500">@firstNameErrorMsg</p> }
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("user.lastName", "Last Name") <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                            <input @bind="formLastName" type="text" placeholder="@AppLocalization.Text("user.lastName", "Last name")" class="w-full rounded-lg border @(isLastNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
-                            @if (isLastNameError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
+                        <BilingualFieldWarning Text="@($"{formFirstNameMy} {formLastNameMy}")" ExpectedBurmese="true" MoveToOtherLanguage="MoveUserNameToEnglish" />
+                        <BilingualTranslationAction SourceText="@($"{formFirstNameMy} {formLastNameMy}")" SourceLanguage="my" TargetLanguage="en" IsName="true" TargetHasText="@(!string.IsNullOrWhiteSpace(formFirstName) || !string.IsNullOrWhiteSpace(formLastName))" Generated="GenerateUserEnglishName" />
+                    </BurmeseContent>
+                    <EnglishContent>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.name", "Name") <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input @bind="formFirstName" type="text" placeholder="@AppLocalization.Text("common.firstName", "First name")" class="w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+                            <input @bind="formLastName" type="text" placeholder="@AppLocalization.Text("common.lastName", "Last name")" class="w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
                         </div>
-                        @if (isLastNameError) { <p class="mt-1 text-xs text-red-500">@lastNameErrorMsg</p> }
-                    </div>
-                </div>
+                        <BilingualFieldWarning Text="@($"{formFirstName} {formLastName}")" ExpectedBurmese="false" MoveToOtherLanguage="MoveUserNameToBurmese" />
+                        <BilingualTranslationAction SourceText="@($"{formFirstName} {formLastName}")" SourceLanguage="en" TargetLanguage="my" IsName="true" TargetHasText="@(!string.IsNullOrWhiteSpace(formFirstNameMy) || !string.IsNullOrWhiteSpace(formLastNameMy))" Generated="GenerateUserBurmeseName" />
+                    </EnglishContent>
+                </BilingualEditorTabs>
+                @if (isFirstNameError) { <p class="mt-1 text-xs text-red-500">@firstNameErrorMsg</p> }
+                @if (isLastNameError) { <p class="mt-1 text-xs text-red-500">@lastNameErrorMsg</p> }
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.username", "Username") <span class="text-red-500">*</span></label>
                     <div class="relative">
@@ -192,7 +201,7 @@
                     @if (isUsernameError) { <p class="mt-1 text-xs text-red-500">@usernameErrorMsg</p> }
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Email <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.email", "Email") <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <input @bind="formEmail" type="email" placeholder="user@example.com" class="w-full rounded-lg border @(isEmailError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
                         @if (isEmailError) { <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> }
@@ -202,7 +211,7 @@
                 @if (!isEditing)
                 {
                     <div class="relative">
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Password <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.password", "Password") <span class="text-red-500">*</span></label>
                         <input @bind="formPassword" type="@(showPassword ? "text" : "password")" placeholder="@AppLocalization.Text("validation.passwordMinLengthRule", "Min 8 characters (A-Z, a-z, 0-9, special)")" class="w-full rounded-lg border @(isPasswordError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
                         <button type="button" @onclick="TogglePassword" class="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none">
                             @if (showPassword)
@@ -227,7 +236,7 @@
                         <select @bind="formRoleId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
                             @foreach (var r in roles)
                             {
-                                <option value="@r.Id">@r.Name</option>
+                                <option value="@r.Id">@Content.GetRoleName(r)</option>
                             }
                         </select>
                     </div>
@@ -324,11 +333,50 @@
     private string formUsername = "";
     private string formFirstName = "";
     private string formLastName = "";
+    private string? formFirstNameMy;
+    private string? formLastNameMy;
+    private bool burmeseGenerated;
+    private bool englishGenerated;
+    private bool burmeseNeedsReview;
+    private bool englishNeedsReview;
     private string formEmail = "";
     private string formPassword = "";
     private string? formPhone;
     private long formRoleId;
     private bool formIsActive = true;
+
+    private void MoveUserNameToEnglish()
+    {
+        formFirstName = formFirstNameMy ?? string.Empty;
+        formLastName = formLastNameMy ?? string.Empty;
+    }
+    private void MoveUserNameToBurmese()
+    {
+        formFirstNameMy = formFirstName;
+        formLastNameMy = formLastName;
+    }
+    private void MarkGenerated(bool english)
+    {
+        if (english) { englishGenerated = true; englishNeedsReview = true; }
+        else { burmeseGenerated = true; burmeseNeedsReview = true; }
+    }
+    private void SetGeneratedUserName(string? value, bool english)
+    {
+        var parts = (value ?? string.Empty).Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        if (english)
+        {
+            formFirstName = parts.ElementAtOrDefault(0) ?? string.Empty;
+            formLastName = parts.ElementAtOrDefault(1) ?? string.Empty;
+        }
+        else
+        {
+            formFirstNameMy = parts.ElementAtOrDefault(0);
+            formLastNameMy = parts.ElementAtOrDefault(1);
+        }
+        MarkGenerated(english);
+    }
+    private Task GenerateUserEnglishName(TranslationResult result) { SetGeneratedUserName(result.TranslatedText, true); return Task.CompletedTask; }
+    private Task GenerateUserBurmeseName(TranslationResult result) { SetGeneratedUserName(result.TranslatedText, false); return Task.CompletedTask; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -446,6 +494,9 @@
         formUsername = "";
         formFirstName = "";
         formLastName = "";
+        formFirstNameMy = null;
+        formLastNameMy = null;
+        burmeseGenerated = englishGenerated = burmeseNeedsReview = englishNeedsReview = false;
         formEmail = "";
         formPassword = "";
         formPhone = null;
@@ -467,6 +518,9 @@
         formUsername = user.Username;
         formFirstName = user.FirstName;
         formLastName = user.LastName;
+        formFirstNameMy = user.FirstNameMy;
+        formLastNameMy = user.LastNameMy;
+        burmeseGenerated = englishGenerated = burmeseNeedsReview = englishNeedsReview = false;
         formEmail = user.Email;
         formPhone = user.Phone;
         formRoleId = user.RoleId;
@@ -497,12 +551,20 @@
         isPasswordError = false;  passwordErrorMsg = "";
         bool hasError = false;
 
-        if (string.IsNullOrWhiteSpace(formFirstName)) { isFirstNameError = true; firstNameErrorMsg = AppLocalization.Text("validation.firstNameRequired", "First name is required."); hasError = true; }
-        if (string.IsNullOrWhiteSpace(formLastName))  { isLastNameError = true;  lastNameErrorMsg = AppLocalization.Text("validation.lastNameRequired", "Last name is required.");  hasError = true; }
+        var englishNameComplete = !string.IsNullOrWhiteSpace(formFirstName) && !string.IsNullOrWhiteSpace(formLastName);
+        var burmeseNameComplete = !string.IsNullOrWhiteSpace(formFirstNameMy) && !string.IsNullOrWhiteSpace(formLastNameMy);
+        if (!englishNameComplete && !burmeseNameComplete)
+        {
+            isFirstNameError = true;
+            isLastNameError = true;
+            firstNameErrorMsg = AppLocalization.Text("validation.completeNameRequired", "Enter a complete name in Burmese or English.");
+            lastNameErrorMsg = firstNameErrorMsg;
+            hasError = true;
+        }
 
         if (string.IsNullOrWhiteSpace(formUsername))  { isUsernameError = true;  usernameErrorMsg = AppLocalization.Text("validation.usernameRequired", "Username is required.");   hasError = true; }
-        else if (formUsername.Length < 3) { isUsernameError = true; usernameErrorMsg = ResultMessages.UsernameMinLength; hasError = true; }
-        else if (!System.Text.RegularExpressions.Regex.IsMatch(formUsername, @"^[a-zA-Z0-9._]+$")) { isUsernameError = true; usernameErrorMsg = ResultMessages.UsernameInvalidCharacters; hasError = true; }
+        else if (formUsername.Length < 3) { isUsernameError = true; usernameErrorMsg = AppLocalization.Text("validation.usernameMinLength", "Username must be at least 3 characters long."); hasError = true; }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(formUsername, @"^[a-zA-Z0-9._]+$")) { isUsernameError = true; usernameErrorMsg = AppLocalization.Text("validation.usernameInvalidCharacters", "Username cannot contain spaces, and can only contain letters, numbers, underscores (_), and periods (.)"); hasError = true; }
 
         if (string.IsNullOrWhiteSpace(formEmail))     { isEmailError = true;     emailErrorMsg = AppLocalization.Text("validation.emailRequired", "Email is required.");         hasError = true; }
         
@@ -517,13 +579,13 @@
             else if (formPassword.Length < 8)
             {
                 isPasswordError = true;
-                passwordErrorMsg = ResultMessages.PasswordMinLengthRule;
+                passwordErrorMsg = AppLocalization.Text("validation.passwordMinLengthRule", "Password must be at least 8 characters long.");
                 hasError = true;
             }
             else if (!System.Text.RegularExpressions.Regex.IsMatch(formPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$"))
             {
                 isPasswordError = true;
-                passwordErrorMsg = ResultMessages.PasswordComplexityRule;
+                passwordErrorMsg = AppLocalization.Text("validation.passwordComplexityRule", "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
                 hasError = true;
             }
         }
@@ -580,9 +642,11 @@
 
     private async Task SaveUser()
     {
-        if (string.IsNullOrWhiteSpace(formUsername) || string.IsNullOrWhiteSpace(formFirstName) || string.IsNullOrWhiteSpace(formLastName) || string.IsNullOrWhiteSpace(formEmail))
+        var englishNameComplete = !string.IsNullOrWhiteSpace(formFirstName) && !string.IsNullOrWhiteSpace(formLastName);
+        var burmeseNameComplete = !string.IsNullOrWhiteSpace(formFirstNameMy) && !string.IsNullOrWhiteSpace(formLastNameMy);
+        if (string.IsNullOrWhiteSpace(formUsername) || (!englishNameComplete && !burmeseNameComplete) || string.IsNullOrWhiteSpace(formEmail))
         {
-            errorMessage = ResultMessages.FillAllFields;
+            errorMessage = AppLocalization.Text("validation.fillAllFields", "Please fill in all required fields.");
             return;
         }
 
@@ -599,6 +663,8 @@
                     Username = formUsername,
                     FirstName = formFirstName,
                     LastName = formLastName,
+                    FirstNameMy = formFirstNameMy,
+                    LastNameMy = formLastNameMy,
                     Phone = formPhone,
                     RoleId = formRoleId,
                     IsActive = formIsActive
@@ -607,7 +673,7 @@
                 var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
                 if (res == null || !res.IsSuccess)
                 {
-                    errorMessage = res?.ErrorMessage ?? ResultMessages.FailedToUpdateUser;
+                    errorMessage = AppLocalization.Text("result.userSaveFailed", "Unable to save the user. Please try again.");
                     return;
                 }
             }
@@ -621,13 +687,13 @@
                 }
                 if (formPassword.Length < 8)
                 {
-                    errorMessage = ResultMessages.PasswordMinLengthRule;
+                    errorMessage = AppLocalization.Text("validation.passwordMinLengthRule", "Password must be at least 8 characters long.");
                     isSaving = false;
                     return;
                 }
                 if (!System.Text.RegularExpressions.Regex.IsMatch(formPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$"))
                 {
-                    errorMessage = ResultMessages.PasswordComplexityRule;
+                    errorMessage = AppLocalization.Text("validation.passwordComplexityRule", "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
                     isSaving = false;
                     return;
                 }
@@ -636,6 +702,8 @@
                     Username = formUsername,
                     FirstName = formFirstName,
                     LastName = formLastName,
+                    FirstNameMy = formFirstNameMy,
+                    LastNameMy = formLastNameMy,
                     Email = formEmail,
                     Password = formPassword,
                     Phone = formPhone,
@@ -645,7 +713,7 @@
                 var res = await response.Content.ReadFromJsonAsync<Result<UserDto>>(Serialization.CaseInsensitive);
                 if (res == null || !res.IsSuccess)
                 {
-                    errorMessage = res?.ErrorMessage ?? ResultMessages.FailedToCreateUser;
+                    errorMessage = AppLocalization.Text("result.userSaveFailed", "Unable to save the user. Please try again.");
                     return;
                 }
             }
@@ -656,7 +724,8 @@
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            Console.WriteLine($"Save user error: {ex.Message}");
+            errorMessage = AppLocalization.Text("result.userSaveFailed", "Unable to save the user. Please try again.");
         }
         finally
         {
@@ -692,6 +761,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Delete error: {ex.Message}");
+            errorMessage = AppLocalization.Text("result.failedToDeleteUser", "Failed to delete user.");
         }
     }
 

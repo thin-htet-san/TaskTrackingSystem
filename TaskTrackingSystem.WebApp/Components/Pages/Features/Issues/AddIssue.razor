@@ -17,8 +17,6 @@
 
 <PageTitle>@AppLocalization.PageTitle("addIssue", "Add Issue")</PageTitle>
 
-<SuccessAlert Message="@successMessage" />
-
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -41,7 +39,7 @@
                         <option value="0">@AppLocalization.Text("common.selectTask", "Select task...")</option>
                         @foreach (var task in tasks)
                         {
-                            <option value="@task.Id">@task.Title</option>
+                            <option value="@task.Id">@Content.GetTaskTitle(task)</option>
                         }
                     </select>
                     @if (isTaskError)
@@ -51,19 +49,50 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.issueTitle", "Issue Title") <span class="text-red-500">*</span></label>
-                    <input @bind="formTitle" type="text" placeholder="@AppLocalization.Text("issue.whatDidYouWorkOn", "What did you work on?")"
-                           class="w-full rounded-lg border @(isTitleError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-violet-600") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all" />
-                    @if (isTitleError)
-                    {
-                        <p class="mt-1 text-xs text-red-500">@titleErrorMessage</p>
-                    }
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.description", "Description")</label>
-                    <textarea @bind="formDescription" rows="4" placeholder="@AppLocalization.Text("issue.addShortNote", "Add a short note about the work you did...")"
-                              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                    <BilingualEditorTabs BurmeseComplete="@(!string.IsNullOrWhiteSpace(formTitleMy))"
+                                         EnglishComplete="@(!string.IsNullOrWhiteSpace(formTitle))"
+                                         BurmeseAiGenerated="@burmeseGenerated"
+                                         EnglishAiGenerated="@englishGenerated"
+                                         BurmeseNeedsReview="@burmeseNeedsReview"
+                                         EnglishNeedsReview="@englishNeedsReview">
+                        <BurmeseContent>
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5">ခေါင်းစဉ် <span class="text-red-500">*</span></label>
+                            <input @bind="formTitleMy" type="text" placeholder="ခေါင်းစဉ်" class="w-full rounded-lg border @(isTitleError && string.IsNullOrWhiteSpace(formTitle) ? "border-red-500" : "border-slate-200") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                            <BilingualFieldWarning Text="@formTitleMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveIssueTitleToEnglish" />
+                            <BilingualTranslationAction SourceText="@formTitleMy" SourceLanguage="my" TargetLanguage="en" TargetHasText="@(!string.IsNullOrWhiteSpace(formTitle))" Generated="GenerateIssueEnglishTitle" />
+                            <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">ဖော်ပြချက်</label>
+                            <textarea @bind="formDescriptionMy" rows="3" placeholder="ဖော်ပြချက်" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                            <BilingualFieldWarning Text="@formDescriptionMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveIssueDescriptionToEnglish" />
+                            <BilingualTranslationAction SourceText="@formDescriptionMy" SourceLanguage="my" TargetLanguage="en" TargetHasText="@(!string.IsNullOrWhiteSpace(formDescription))" Generated="GenerateIssueEnglishDescription" />
+                            <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">နှောင့်နှေးရခြင်းအကြောင်း</label>
+                            <input @bind="formDelayReasonMy" type="text" placeholder="နှောင့်နှေးရခြင်းအကြောင်း" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                            <BilingualFieldWarning Text="@formDelayReasonMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveIssueDelayToEnglish" />
+                            <BilingualTranslationAction SourceText="@formDelayReasonMy" SourceLanguage="my" TargetLanguage="en" TargetHasText="@(!string.IsNullOrWhiteSpace(formDelayReason))" Generated="GenerateIssueEnglishDelay" />
+                            <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">ပိတ်ဆို့ထားသူ / မှီခိုမှု</label>
+                            <input @bind="formBlockedByMy" type="text" placeholder="ပိတ်ဆို့ထားသူ / မှီခိုမှု" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                            <BilingualFieldWarning Text="@formBlockedByMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveIssueBlockedByToEnglish" />
+                            <BilingualTranslationAction SourceText="@formBlockedByMy" SourceLanguage="my" TargetLanguage="en" TargetHasText="@(!string.IsNullOrWhiteSpace(formBlockedBy))" Generated="GenerateIssueEnglishBlockedBy" />
+                        </BurmeseContent>
+                        <EnglishContent>
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("field.title", "Title") <span class="text-red-500">*</span></label>
+                            <input @bind="formTitle" type="text" placeholder="@AppLocalization.Text("issue.whatDidYouWorkOn", "What did you work on?")" class="w-full rounded-lg border @(isTitleError && string.IsNullOrWhiteSpace(formTitleMy) ? "border-red-500" : "border-slate-200") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                            <BilingualFieldWarning Text="@formTitle" ExpectedBurmese="false" MoveToOtherLanguage="MoveIssueTitleToBurmese" />
+                            <BilingualTranslationAction SourceText="@formTitle" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formTitleMy))" Generated="GenerateIssueBurmeseTitle" />
+                            <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.description", "Description")</label>
+                            <textarea @bind="formDescription" rows="3" placeholder="@AppLocalization.Text("issue.addShortNote", "Add a short note about the work you did...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                            <BilingualFieldWarning Text="@formDescription" ExpectedBurmese="false" MoveToOtherLanguage="MoveIssueDescriptionToBurmese" />
+                            <BilingualTranslationAction SourceText="@formDescription" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formDescriptionMy))" Generated="GenerateIssueBurmeseDescription" />
+                            <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.delayReason", "Delay Reason")</label>
+                            <input @bind="formDelayReason" type="text" placeholder="@AppLocalization.Text("issue.delayReasonPlaceholder", "Why is this issue delayed?")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                            <BilingualFieldWarning Text="@formDelayReason" ExpectedBurmese="false" MoveToOtherLanguage="MoveIssueDelayToBurmese" />
+                            <BilingualTranslationAction SourceText="@formDelayReason" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formDelayReasonMy))" Generated="GenerateIssueBurmeseDelay" />
+                            <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.blockedBy", "Blocked By")</label>
+                            <input @bind="formBlockedBy" type="text" placeholder="@AppLocalization.Text("issue.blockedByPlaceholder", "Dependency, person, or team")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                            <BilingualFieldWarning Text="@formBlockedBy" ExpectedBurmese="false" MoveToOtherLanguage="MoveIssueBlockedByToBurmese" />
+                            <BilingualTranslationAction SourceText="@formBlockedBy" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formBlockedByMy))" Generated="GenerateIssueBurmeseBlockedBy" />
+                        </EnglishContent>
+                    </BilingualEditorTabs>
+                    @if (isTitleError) { <p class="mt-1 text-xs text-red-500">@titleErrorMessage</p> }
                 </div>
 
                 <div>
@@ -127,18 +156,6 @@
                         <option value="2">@AppLocalization.Text("issue.pm", "PM")</option>
                         <option value="3">@AppLocalization.Text("issue.manager", "Manager")</option>
                     </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.blockedBy", "Blocked By")</label>
-                    <input @bind="formBlockedBy" type="text" placeholder="@AppLocalization.Text("issue.blockedByPlaceholder", "Dependency, person, or team")"
-                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.delayReason", "Delay Reason")</label>
-                    <input @bind="formDelayReason" type="text" placeholder="@AppLocalization.Text("issue.delayReasonPlaceholder", "Why is this issue delayed?")"
-                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
 
                 <div>
@@ -207,7 +224,7 @@
                                                     @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
                                                 </span>
                                                 <div class="min-w-0 flex-1">
-                                                    <p class="truncate text-sm font-semibold text-slate-900">@user.FirstName @user.LastName</p>
+                                                    <p class="truncate text-sm font-semibold text-slate-900">@Content.GetUserFullName(user)</p>
                                                     <p class="truncate text-xs text-slate-500">@@@user.Username</p>
                                                 </div>
                                             </button>
@@ -264,7 +281,6 @@
     private string taskErrorMessage = "";
     private string titleErrorMessage = "";
     private string? errorMessage;
-    private string? successMessage;
 
     private List<TaskDto> tasks = new();
     private List<ProjectDto> projects = new();
@@ -273,7 +289,13 @@
 
     private long formTaskId;
     private string formTitle = "";
+    private string? formTitleMy;
     private string? formDescription;
+    private string? formDescriptionMy;
+    private bool burmeseGenerated;
+    private bool englishGenerated;
+    private bool burmeseNeedsReview;
+    private bool englishNeedsReview;
     private long? formAssignedTo;
     private decimal? formEstimatedHours;
     private decimal? formActualHours = 7m;
@@ -282,20 +304,44 @@
     private AppTaskStatus formStatusId = AppTaskStatus.Todo;
     private TaskPriority formPriorityId = TaskPriority.Medium;
     private string? formDelayReason;
+    private string? formDelayReasonMy;
     private bool formIsBlocked;
     private string? formBlockedBy;
+    private string? formBlockedByMy;
     private int formEscalationLevel;
     private string assigneeSearchInput = "";
     private bool isAssigneeDropdownOpen;
     private bool isLoadingProjectMembers;
 
+    private void MoveIssueTitleToEnglish() { formTitle = formTitleMy ?? string.Empty; }
+    private void MoveIssueTitleToBurmese() { formTitleMy = formTitle; }
+    private void MoveIssueDescriptionToEnglish() { formDescription = formDescriptionMy; }
+    private void MoveIssueDescriptionToBurmese() { formDescriptionMy = formDescription; }
+    private void MoveIssueDelayToEnglish() { formDelayReason = formDelayReasonMy; }
+    private void MoveIssueDelayToBurmese() { formDelayReasonMy = formDelayReason; }
+    private void MoveIssueBlockedByToEnglish() { formBlockedBy = formBlockedByMy; }
+    private void MoveIssueBlockedByToBurmese() { formBlockedByMy = formBlockedBy; }
+    private void MarkGenerated(bool english)
+    {
+        if (english) { englishGenerated = true; englishNeedsReview = true; }
+        else { burmeseGenerated = true; burmeseNeedsReview = true; }
+    }
+    private Task GenerateIssueEnglishTitle(TranslationResult result) { formTitle = result.TranslatedText ?? string.Empty; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateIssueBurmeseTitle(TranslationResult result) { formTitleMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
+    private Task GenerateIssueEnglishDescription(TranslationResult result) { formDescription = result.TranslatedText ?? string.Empty; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateIssueBurmeseDescription(TranslationResult result) { formDescriptionMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
+    private Task GenerateIssueEnglishDelay(TranslationResult result) { formDelayReason = result.TranslatedText; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateIssueBurmeseDelay(TranslationResult result) { formDelayReasonMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
+    private Task GenerateIssueEnglishBlockedBy(TranslationResult result) { formBlockedBy = result.TranslatedText; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateIssueBurmeseBlockedBy(TranslationResult result) { formBlockedByMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
+
     private TaskDto? SelectedTask => tasks.FirstOrDefault(t => t.Id == formTaskId);
-    private string SelectedTaskLabel => SelectedTask == null ? AppLocalization.Text("common.noTaskSelectedForIssue", "No task selected") : SelectedTask.Title;
+    private string SelectedTaskLabel => SelectedTask == null ? AppLocalization.Text("common.noTaskSelectedForIssue", "No task selected") : Content.GetTaskTitle(SelectedTask);
     private string SelectedProjectLabel => SelectedTask == null
         ? AppLocalization.Text("common.noProject", "No project")
-        : (projects.FirstOrDefault(p => p.Id == SelectedTask.ProjectId)?.Name ?? $"{AppLocalization.Text("common.project", "Project")} #{AppLocalization.Number(SelectedTask.ProjectId)}");
+        : (projects.FirstOrDefault(p => p.Id == SelectedTask.ProjectId) is { } project ? Content.GetProjectName(project) : $"{AppLocalization.Text("common.project", "Project")} #{AppLocalization.Number(SelectedTask.ProjectId)}");
     private string SelectedAssigneeLabel => formAssignedTo.HasValue
-        ? (projectMembers.FirstOrDefault(u => u.Id == formAssignedTo.Value) is { } user ? $"{user.FirstName} {user.LastName}" : AppLocalization.Text("common.selectedMember", "Selected member"))
+        ? (projectMembers.FirstOrDefault(u => u.Id == formAssignedTo.Value) is { } user ? Content.GetUserFullName(user) : AppLocalization.Text("common.selectedMember", "Selected member"))
         : AppLocalization.Text("common.unassigned", "Unassigned");
 
     private IEnumerable<UserDto> FilteredProjectMembers
@@ -355,7 +401,8 @@
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            Console.WriteLine($"Load issue data error: {ex.Message}");
+            errorMessage = AppLocalization.Text("common.loadFailed", "Unable to load the requested data. Please try again.");
         }
         finally
         {
@@ -456,10 +503,16 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(formTitle))
+        if (string.IsNullOrWhiteSpace(formTitle) && string.IsNullOrWhiteSpace(formTitleMy))
         {
             isTitleError = true;
             titleErrorMessage = AppLocalization.Text("validation.issueTitleRequired", "Issue title is required.");
+            return;
+        }
+
+        if (formDueDate.Date < formStartDate.Date)
+        {
+            errorMessage = AppLocalization.Text("issue.dateRangeInvalid", "The due date cannot be earlier than the start date.");
             return;
         }
 
@@ -479,15 +532,26 @@
 
     private async Task SaveIssueAsync()
     {
+        if (isSaving)
+        {
+            return;
+        }
+
         if (formTaskId <= 0)
         {
             errorMessage = AppLocalization.Text("validation.selectTaskRequired", "Please select a task.");
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(formTitle))
+        if (string.IsNullOrWhiteSpace(formTitle) && string.IsNullOrWhiteSpace(formTitleMy))
         {
             errorMessage = AppLocalization.Text("validation.issueTitleRequired", "Issue title is required.");
+            return;
+        }
+
+        if (formDueDate.Date < formStartDate.Date)
+        {
+            errorMessage = AppLocalization.Text("issue.dateRangeInvalid", "The due date cannot be earlier than the start date.");
             return;
         }
 
@@ -501,13 +565,17 @@
             {
                 TaskId = formTaskId,
                 Title = formTitle.Trim(),
+                TitleMy = formTitleMy,
                 Description = formDescription,
+                DescriptionMy = formDescriptionMy,
                 AssignedTo = formAssignedTo,
                 EstimatedHours = formEstimatedHours,
                 ActualHours = formActualHours,
                 DelayReason = formDelayReason,
+                DelayReasonMy = formDelayReasonMy,
                 IsBlocked = formIsBlocked,
                 BlockedBy = formBlockedBy,
+                BlockedByMy = formBlockedByMy,
                 EscalationLevel = formEscalationLevel,
                 StartDate = formStartDate,
                 DueDate = formDueDate,
@@ -518,19 +586,20 @@
             var response = await client.PostAsJsonAsync("Issue", dto);
             var result = await response.Content.ReadFromJsonAsync<Result<IssueDto>>(Serialization.CaseInsensitive);
 
-            if (result?.IsSuccess == true)
+            if (response.IsSuccessStatusCode && result?.IsSuccess == true)
             {
-                successMessage = AppLocalization.Text("issue.created", "Issue created successfully!");
-                ResetForm();
+                Navigation.NavigateTo("/issues/all?created=true");
             }
             else
             {
-                errorMessage = result?.ErrorMessage ?? AppLocalization.Text("issue.failedCreate", "Failed to create issue.");
+                errorMessage = AppLocalization.Text("issue.failedCreate", "Failed to create issue. Please try again.");
+                Console.WriteLine($"Create issue rejected: {result?.ErrorMessage ?? response.ReasonPhrase}");
             }
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            errorMessage = AppLocalization.Text("issue.failedCreate", "Failed to create issue. Please try again.");
+            Console.WriteLine($"Create issue error: {ex.Message}");
         }
         finally
         {
@@ -542,7 +611,10 @@
     {
         formTaskId = tasks.FirstOrDefault()?.Id ?? 0;
         formTitle = "";
+        formTitleMy = null;
         formDescription = null;
+        formDescriptionMy = null;
+        burmeseGenerated = englishGenerated = burmeseNeedsReview = englishNeedsReview = false;
         formAssignedTo = currentUserId;
         formEstimatedHours = null;
         formActualHours = 7m;
@@ -551,8 +623,10 @@
         formStatusId = AppTaskStatus.Todo;
         formPriorityId = TaskPriority.Medium;
         formDelayReason = null;
+        formDelayReasonMy = null;
         formIsBlocked = false;
         formBlockedBy = null;
+        formBlockedByMy = null;
         formEscalationLevel = 0;
         taskErrorMessage = "";
         titleErrorMessage = "";

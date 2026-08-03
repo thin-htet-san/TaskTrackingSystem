@@ -50,7 +50,22 @@ public static class AppLocalization
         ["common.issue"] = "Issue",
         ["common.user"] = "User",
         ["common.role"] = "Role",
-        ["common.module"] = "Module",
+        ["common.module"] = "အပိုင်း",
+        ["common.name"] = "Name",
+        ["common.firstName"] = "First name",
+        ["common.lastName"] = "Last name",
+        ["common.username"] = "Username",
+        ["common.phone"] = "Phone",
+        ["common.phoneNumber"] = "Phone number",
+        ["common.keepHere"] = "Keep here",
+        ["common.moveToEnglish"] = "Move to English",
+        ["common.generating"] = "Generating...",
+        ["common.translationNotConfigured"] = "Translation is not configured.",
+        ["common.complete"] = "Complete",
+        ["common.aiGenerated"] = "AI generated",
+        ["common.needsReview"] = "Needs review",
+        ["common.missing"] = "Missing",
+        ["common.translationReview"] = "AI-generated content is ready for review. Check it before saving.",
         ["common.description"] = "Description",
         ["common.date"] = "Date",
         ["common.startDate"] = "Start Date",
@@ -129,6 +144,7 @@ public static class AppLocalization
         ["common.noTeamMembersFound"] = "No team members match your search criteria.",
         ["common.noMembersMatchSearch"] = "No members match the current search.",
         ["common.noTaskSelected"] = "No Task Selected",
+        ["task.selectTaskPrompt"] = "Select a task from the left panel to assign it to a team member.",
         ["common.noProjectSelected"] = "No Project Selected",
         ["common.noProject"] = "No Project",
         ["common.currentlyAssigningTask"] = "Currently Assigning Task",
@@ -137,6 +153,15 @@ public static class AppLocalization
         ["common.selectTask"] = "Select task...",
         ["common.issueTitle"] = "Issue Title",
         ["common.issueDescription"] = "Description",
+        ["error.title"] = "Error",
+        ["error.heading"] = "Error",
+        ["error.processingRequest"] = "An error occurred while processing your request.",
+        ["error.requestId"] = "Request ID",
+        ["error.developmentMode"] = "Development Mode",
+        ["error.developmentDetails"] = "Switching to the Development environment will display more detailed information about the error that occurred.",
+        ["error.developmentWarning"] = "The Development environment should not be enabled for deployed applications.",
+        ["error.developmentSensitive"] = "It can expose sensitive exception details to end users.",
+        ["error.developmentInstructions"] = "For local debugging, set the ASPNETCORE_ENVIRONMENT environment variable to Development and restart the application.",
         ["common.blockedStatus"] = "Blocked Status",
         ["common.escalationLevel"] = "Escalation Level",
         ["common.blockedBy"] = "Blocked By",
@@ -146,6 +171,9 @@ public static class AppLocalization
         ["common.assignedToMeOnly"] = "Assigned to me only",
         ["common.saveAssignment"] = "Save Assignment",
         ["common.saveAssignmentChanges"] = "Save Assignment Changes",
+        ["project.saveAssignmentTitle"] = "Save Assignment?",
+        ["project.saveAssignmentConfirm"] = "Are you sure you want to save these project member assignments?",
+        ["issue.yesSave"] = "Yes, Save",
         ["common.saveChanges"] = "Save Changes",
         ["common.addIssue"] = "Add Issue",
         ["common.addIssueTitle"] = "Add Issue?",
@@ -158,9 +186,10 @@ public static class AppLocalization
         ["page.managerDashboard"] = "Manager Dashboard",
         ["page.employeeDashboard"] = "Employee Dashboard",
         ["page.projects"] = "Projects",
+        ["page.reports"] = "Reports",
         ["page.projectAssignment"] = "Project Assignment",
         ["page.tasks"] = "Tasks",
-        ["page.kanbanBoard"] = "Kanban Board",
+        ["page.kanbanBoard"] = "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်",
         ["page.taskAssignment"] = "Task Assignment",
         ["page.taskDetails"] = "Task Details",
         ["page.issues"] = "Issues",
@@ -284,31 +313,6 @@ public static class AppLocalization
         ["dashboard.daysLeft"] = "{count}d left",
         ["dashboard.dueToday"] = "Due today",
 
-        ["menu.DASHBOARD"] = "Dashboard",
-        ["menu.DASHBOARD_ADMIN"] = "Dashboard",
-        ["menu.DASHBOARD_MANAGER"] = "Dashboard",
-        ["menu.DASHBOARD_EMPLOYEE"] = "Dashboard",
-        ["menu.PROJECTS"] = "Projects",
-        ["menu.PROJECTS_LIST"] = "Project List",
-        ["menu.PROJECTS_ASSIGN"] = "Project Assign",
-        ["menu.TASKS"] = "Tasks",
-        ["menu.TASKS_LIST"] = "Task List",
-        ["menu.TASKS_BOARD"] = "Kanban Board",
-        ["menu.TASKS_ASSIGN"] = "Task Assign",
-        ["menu.TASKS_BACKLOG"] = "Task Backlog",
-        ["menu.ISSUES_ADD"] = "Add Issue",
-        ["menu.ISSUES_LIST"] = "Issue List",
-        ["menu.REPORTS"] = "Reports",
-        ["menu.REPORTS_TASKS"] = "Task Report",
-        ["menu.REPORTS_TIMESHEET"] = "Time Tracking",
-        ["menu.REPORTS_OVERDUE"] = "Overdue Tasks",
-        ["menu.REPORTS_EMPLOYEES"] = "Employee Report",
-        ["menu.REPORTS_PROJECTS"] = "Project Progress",
-        ["menu.REPORTS_ISSUES"] = "Issue Report",
-        ["menu.AUDIT_LOGS"] = "Audit Logs",
-        ["menu.USERS"] = "Users",
-        ["menu.ROLES"] = "Roles",
-        ["menu.DASHBOARD_WIDGETS"] = "Role Layouts",
 
         ["status.todo"] = "To Do",
         ["status.inprogress"] = "In Progress",
@@ -323,9 +327,6 @@ public static class AppLocalization
         ["priority.high"] = "High",
         ["status.active"] = "Active",
         ["status.inactive"] = "Inactive",
-        ["role.admin"] = "Admin",
-        ["role.manager"] = "Manager",
-        ["role.employee"] = "Employee",
         ["field.name"] = "Name",
         ["field.title"] = "Title",
         ["field.email"] = "Email",
@@ -403,6 +404,10 @@ public static class AppLocalization
         ["role.editRole"] = "Edit Role",
         ["role.createNewRole"] = "Create New Role",
         ["role.roleName"] = "Role Name",
+        ["role.roleNameBurmese"] = "Burmese Name",
+        ["role.roleNameEnglish"] = "English Name",
+        ["role.descriptionBurmese"] = "Burmese Description",
+        ["role.descriptionEnglish"] = "English Description",
         ["role.searchByName"] = "Search roles by name...",
         ["role.loadingRoles"] = "Loading roles...",
         ["role.noRolesYet"] = "No roles yet",
@@ -541,6 +546,7 @@ public static class AppLocalization
         ["validation.selectProjectRequired"] = "Please select a project.",
         ["validation.selectTaskRequired"] = "Please select a task.",
         ["validation.issueTitleRequired"] = "Issue title is required.",
+        ["validation.completeNameRequired"] = "Enter a complete name in Burmese or English.",
         ["validation.roleNameRequired"] = "Role name is required.",
         ["validation.passwordMinLength"] = "Password must be at least 6 characters.",
         ["validation.usernameMinLength"] = "Username must be at least 3 characters long.",
@@ -548,6 +554,7 @@ public static class AppLocalization
         ["validation.usernameInvalidCharacters"] = "Username cannot contain spaces, and can only contain letters, numbers, underscores (_), and periods (.)",
         ["validation.passwordMinLengthRule"] = "Password must be at least 8 characters long.",
         ["validation.passwordComplexityRule"] = "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+        ["validation.fillAllFields"] = "Please fill in all required fields.",
 
         ["common.password"] = "Password",
         ["common.usernameOrEmail"] = "Username or Email",
@@ -723,6 +730,34 @@ public static class AppLocalization
         ["issue.teamLead"] = "Team Lead",
         ["issue.pm"] = "PM",
         ["issue.manager"] = "Manager",
+        ["translation.generateEnglishSpelling"] = "Generate English spelling",
+        ["translation.generateBurmeseName"] = "မြန်မာအမည် ရေးသားပေးရန်",
+        ["translation.generateEnglish"] = "Generate English",
+        ["translation.generateBurmese"] = "မြန်မာဘာသာ ပြန်ဆိုရန်",
+        ["translation.englishDetected"] = "This text appears to be English. Move it to the English field?",
+        ["issue.failedCreate"] = "Failed to create issue. Please try again.",
+        ["issue.dateRangeInvalid"] = "The due date cannot be earlier than the start date.",
+        ["issue.loadFailed"] = "Unable to load issues. Please try again.",
+        ["issue.updateFailed"] = "Unable to update the issue. Please try again.",
+        ["issue.deleteFailed"] = "Unable to delete the issue. Please try again.",
+        ["common.loadFailed"] = "Unable to load the requested data. Please try again.",
+        ["issue.titlePlaceholder"] = "Issue title",
+        ["issue.descriptionPlaceholder"] = "Describe the work...",
+        ["role.namePlaceholder"] = "e.g. Manager, Viewer",
+        ["role.descriptionPlaceholder"] = "What can this role do?",
+        ["user.editUser"] = "Edit User",
+        ["user.createUser"] = "Create User?",
+        ["user.updateUser"] = "Update User?",
+        ["user.deleteUser"] = "Delete User?",
+        ["user.updateUserConfirm"] = "Are you sure you want to update this user?",
+        ["user.createUserConfirm"] = "Are you sure you want to create this user?",
+        ["user.deleteUserConfirm"] = "Are you sure you want to delete this user? This action cannot be undone.",
+        ["user.cannotDeleteSelf"] = "You cannot delete your own account.",
+        ["result.userCreated"] = "User created successfully!",
+        ["result.userUpdated"] = "User updated successfully!",
+        ["result.userDeleted"] = "User deleted successfully!",
+        ["result.failedToDeleteUser"] = "Failed to delete user.",
+        ["result.userSaveFailed"] = "Unable to save the user. Please try again.",
         ["report.assignedToMe"] = "Assigned to me",
         ["report.assignedToMyTeam"] = "Assigned to my team",
         ["report.total"] = "Total",
@@ -878,7 +913,39 @@ public static class AppLocalization
         ["common.issue"] = "ပြဿနာ",
         ["common.user"] = "အသုံးပြုသူ",
         ["common.role"] = "အခန်းကဏ္ဍ",
-        ["common.module"] = "မော်ဂျူး",
+        ["common.module"] = "အပိုင်း",
+        ["common.name"] = "အမည်",
+        ["error.title"] = "အမှား",
+        ["error.heading"] = "အမှား",
+        ["error.processingRequest"] = "တောင်းဆိုချက်ကို လုပ်ဆောင်နေစဉ် အမှားတစ်ခု ဖြစ်ပွားခဲ့ပါသည်။",
+        ["error.requestId"] = "တောင်းဆိုချက်အမှတ်",
+        ["error.developmentMode"] = "ဖွံ့ဖြိုးရေးမုဒ်",
+        ["error.developmentDetails"] = "ဖွံ့ဖြိုးရေးပတ်ဝန်းကျင်သို့ ပြောင်းလဲပါက အမှားအသေးစိတ်များကို ပိုမိုပြသပါမည်။",
+        ["error.developmentWarning"] = "ဖြန့်ချိထားသော အက်ပ်များတွင် ဖွံ့ဖြိုးရေးပတ်ဝန်းကျင်ကို မဖွင့်ထားသင့်ပါ။",
+        ["error.developmentSensitive"] = "ထိုသို့ပြုလုပ်ပါက အသုံးပြုသူများထံ အထိခိုက်လွယ်သော အမှားအသေးစိတ်များ ပေါ်လာနိုင်ပါသည်။",
+        ["error.developmentInstructions"] = "ဒေသတွင်း စမ်းသပ်ရန် ASPNETCORE_ENVIRONMENT ကို Development ဟု သတ်မှတ်ပြီး အက်ပ်ကို ပြန်လည်စတင်ပါ။",
+        ["issue.titlePlaceholder"] = "ပြဿနာခေါင်းစဉ်",
+        ["issue.descriptionPlaceholder"] = "လုပ်ဆောင်ချက်ကို ဖော်ပြပါ...",
+        ["role.namePlaceholder"] = "ဥပမာ - မန်နေဂျာ၊ ကြည့်ရှုသူ",
+        ["role.descriptionPlaceholder"] = "ဤအခန်းကဏ္ဍက ဘာများ လုပ်ဆောင်နိုင်ပါသလဲ။",
+        ["issue.loadFailed"] = "ပြဿနာများကို ဖတ်၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
+        ["issue.updateFailed"] = "ပြဿနာကို ပြင်ဆင်၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
+        ["issue.deleteFailed"] = "ပြဿနာကို ဖျက်၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
+        ["common.loadFailed"] = "တောင်းဆိုထားသော အချက်အလက်များကို ဖတ်၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
+        ["common.firstName"] = "ရှေ့အမည်",
+        ["common.lastName"] = "နောက်အမည်",
+        ["common.username"] = "အသုံးပြုသူအမည်",
+        ["common.phone"] = "ဖုန်း",
+        ["common.phoneNumber"] = "ဖုန်းနံပါတ်",
+        ["common.keepHere"] = "ဤနေရာတွင် ထားမည်",
+        ["common.moveToEnglish"] = "အင်္ဂလိပ်အကွက်သို့ ရွှေ့မည်",
+        ["common.generating"] = "ဖန်တီးနေသည်...",
+        ["common.translationNotConfigured"] = "ဘာသာပြန်ဝန်ဆောင်မှုကို မသတ်မှတ်ရသေးပါ။",
+        ["common.complete"] = "ပြည့်စုံသည်",
+        ["common.aiGenerated"] = "AI ဖြင့် ဖန်တီးထားသည်",
+        ["common.needsReview"] = "ပြန်လည်စစ်ဆေးရန် လိုအပ်သည်",
+        ["common.missing"] = "မပြည့်စုံသေးပါ",
+        ["common.translationReview"] = "AI ဖြင့် ဖန်တီးထားသော စာသားကို ပြန်လည်စစ်ဆေးနိုင်ပါပြီ။ မသိမ်းမီ စစ်ဆေးပါ။",
         ["common.description"] = "ဖော်ပြချက်",
         ["common.date"] = "ရက်စွဲ",
         ["common.startDate"] = "စတင်ရက်",
@@ -914,7 +981,7 @@ public static class AppLocalization
         ["common.searchPlaceholder"] = "အမည်၊ အီးမေးလ်၊ အသုံးပြုသူအမည်ဖြင့် ရှာပါ...",
         ["common.searchTasks"] = "အလုပ်ရှာရန်",
         ["common.searchByTitleOrProject"] = "ခေါင်းစဉ် သို့မဟုတ် စီမံကိန်းဖြင့် ရှာပါ...",
-        ["common.searchByUser"] = "အသုံးပြုသူ၊ လုပ်ဆောင်ချက်၊ မော်ဂျူး သို့မဟုတ် အသေးစိတ်ဖြင့် ရှာပါ...",
+        ["common.searchByUser"] = "အသုံးပြုသူ၊ လုပ်ဆောင်ချက်၊ အပိုင်း သို့မဟုတ် အသေးစိတ်ဖြင့် ရှာပါ...",
         ["common.searchByTitle"] = "ခေါင်းစဉ် သို့မဟုတ် စီမံကိန်းအမည်ဖြင့် ရှာပါ...",
         ["common.searchProjects"] = "စီမံကိန်းများ ရှာပါ...",
         ["common.searchTeamMembers"] = "အဖွဲ့ဝင်များ ရှာပါ...",
@@ -957,6 +1024,7 @@ public static class AppLocalization
         ["common.noTeamMembersFound"] = "သင်ရှာဖွေသည့် အဖွဲ့ဝင် မရှိပါ။",
         ["common.noMembersMatchSearch"] = "လက်ရှိရှာဖွေမှုနှင့် ကိုက်ညီသည့် အဖွဲ့ဝင် မရှိပါ။",
         ["common.noTaskSelected"] = "လုပ်ငန်း မရွေးထားပါ",
+        ["task.selectTaskPrompt"] = "အဖွဲ့ဝင်တစ်ဦးထံ တာဝန်ချထားရန် ဘယ်ဘက်အကန့်မှ လုပ်ငန်းတာဝန်တစ်ခုကို ရွေးချယ်ပါ။",
         ["common.noProjectSelected"] = "စီမံကိန်း မရွေးထားပါ",
         ["common.noProject"] = "စီမံကိန်း မရှိပါ",
         ["common.currentlyAssigningTask"] = "လက်ရှိ ချထားနေသော လုပ်ငန်း",
@@ -974,6 +1042,9 @@ public static class AppLocalization
         ["common.assignedToMeOnly"] = "ကျွန်ုပ်ထံပဲ ချထားထားသည်",
         ["common.saveAssignment"] = "တာဝန်ချမှု သိမ်းမည်",
         ["common.saveAssignmentChanges"] = "တာဝန်ချမှု ပြောင်းလဲချက်များ သိမ်းမည်",
+        ["project.saveAssignmentTitle"] = "တာဝန်ချမှု သိမ်းမည်လား။",
+        ["project.saveAssignmentConfirm"] = "ဤစီမံကိန်းအဖွဲ့ဝင် တာဝန်ချထားမှုများကို သိမ်းဆည်းရန် သေချာပါသလား။",
+        ["issue.yesSave"] = "ဟုတ်ကဲ့၊ သိမ်းမည်",
         ["common.saveChanges"] = "ပြောင်းလဲချက်များ သိမ်းမည်",
         ["common.addIssue"] = "ပြဿနာ ထည့်မည်",
         ["common.addIssueTitle"] = "ပြဿနာ ထည့်မည်လား?",
@@ -984,9 +1055,10 @@ public static class AppLocalization
         ["page.managerDashboard"] = "မန်နေဂျာ ဒက်ရှ်ဘုတ်",
         ["page.employeeDashboard"] = "ဝန်ထမ်း ဒက်ရှ်ဘုတ်",
         ["page.projects"] = "စီမံကိန်းများ",
+        ["page.reports"] = "အစီရင်ခံစာများ",
         ["page.projectAssignment"] = "စီမံကိန်း ခွဲဝေခြင်း",
         ["page.tasks"] = "လုပ်ငန်းများ",
-        ["page.kanbanBoard"] = "ကန်ဘန်းဘုတ်",
+        ["page.kanbanBoard"] = "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်",
         ["page.taskAssignment"] = "လုပ်ငန်း ခွဲဝေခြင်း",
         ["page.taskDetails"] = "လုပ်ငန်း အသေးစိတ်",
         ["page.issues"] = "ပြဿနာများ",
@@ -1110,31 +1182,6 @@ public static class AppLocalization
         ["dashboard.daysLeft"] = "{count} ရက် ကျန်",
         ["dashboard.dueToday"] = "ယနေ့ နောက်ဆုံးရက်",
 
-        ["menu.DASHBOARD"] = "ဒက်ရှ်ဘုတ်",
-        ["menu.DASHBOARD_ADMIN"] = "ဒက်ရှ်ဘုတ်",
-        ["menu.DASHBOARD_MANAGER"] = "ဒက်ရှ်ဘုတ်",
-        ["menu.DASHBOARD_EMPLOYEE"] = "ဒက်ရှ်ဘုတ်",
-        ["menu.PROJECTS"] = "စီမံကိန်းများ",
-        ["menu.PROJECTS_LIST"] = "စီမံကိန်းစာရင်း",
-        ["menu.PROJECTS_ASSIGN"] = "စီမံကိန်း ခွဲဝေခြင်း",
-        ["menu.TASKS"] = "လုပ်ငန်းများ",
-        ["menu.TASKS_LIST"] = "လုပ်ငန်းစာရင်း",
-        ["menu.TASKS_BOARD"] = "ကန်ဘန်းဘုတ်",
-        ["menu.TASKS_ASSIGN"] = "လုပ်ငန်း ခွဲဝေခြင်း",
-        ["menu.TASKS_BACKLOG"] = "လုပ်ငန်း နောက်ခံစာရင်း",
-        ["menu.ISSUES_ADD"] = "ပြဿနာ ထည့်ရန်",
-        ["menu.ISSUES_LIST"] = "ပြဿနာ စာရင်း",
-        ["menu.REPORTS"] = "အစီရင်ခံစာများ",
-        ["menu.REPORTS_TASKS"] = "လုပ်ငန်း အစီရင်ခံစာ",
-        ["menu.REPORTS_TIMESHEET"] = "အချိန်မှတ်တမ်း",
-        ["menu.REPORTS_OVERDUE"] = "နောက်ကျ လုပ်ငန်းများ",
-        ["menu.REPORTS_EMPLOYEES"] = "ဝန်ထမ်း အစီရင်ခံစာ",
-        ["menu.REPORTS_PROJECTS"] = "စီမံကိန်း တိုးတက်မှု",
-        ["menu.REPORTS_ISSUES"] = "ပြဿနာ အစီရင်ခံစာ",
-        ["menu.AUDIT_LOGS"] = "စနစ်မှတ်တမ်းများ",
-        ["menu.USERS"] = "အသုံးပြုသူများ",
-        ["menu.ROLES"] = "အခန်းကဏ္ဍများ",
-        ["menu.DASHBOARD_WIDGETS"] = "အခန်းကဏ္ဍ အပြင်အဆင်များ",
 
         ["status.todo"] = "လုပ်ရန်",
         ["status.inprogress"] = "ဆောင်ရွက်နေသည်",
@@ -1148,9 +1195,6 @@ public static class AppLocalization
         ["priority.high"] = "မြင့်",
         ["status.active"] = "အသုံးပြုနေသည်",
         ["status.inactive"] = "အသုံးမပြုတော့ပါ",
-        ["role.admin"] = "စီမံခန့်ခွဲသူ",
-        ["role.manager"] = "မန်နေဂျာ",
-        ["role.employee"] = "ဝန်ထမ်း",
         ["field.name"] = "အမည်",
         ["field.title"] = "ခေါင်းစဉ်",
         ["field.email"] = "အီးမေးလ်",
@@ -1228,6 +1272,10 @@ public static class AppLocalization
         ["role.editRole"] = "အခန်းကဏ္ဍ ပြင်ရန်",
         ["role.createNewRole"] = "အခန်းကဏ္ဍအသစ် ဖန်တီးရန်",
         ["role.roleName"] = "အခန်းကဏ္ဍအမည်",
+        ["role.roleNameBurmese"] = "မြန်မာအမည်",
+        ["role.roleNameEnglish"] = "အင်္ဂလိပ်အမည်",
+        ["role.descriptionBurmese"] = "မြန်မာဖော်ပြချက်",
+        ["role.descriptionEnglish"] = "အင်္ဂလိပ်ဖော်ပြချက်",
         ["role.searchByName"] = "အခန်းကဏ္ဍအမည်ဖြင့် ရှာပါ...",
         ["role.loadingRoles"] = "အခန်းကဏ္ဍများ ဖွင့်နေသည်...",
         ["role.noRolesYet"] = "အခန်းကဏ္ဍမရှိသေးပါ",
@@ -1346,6 +1394,7 @@ public static class AppLocalization
         ["validation.selectProjectRequired"] = "စီမံကိန်းတစ်ခုကို ရွေးပါ။",
         ["validation.selectTaskRequired"] = "လုပ်ငန်းတစ်ခုကို ရွေးပါ။",
         ["validation.issueTitleRequired"] = "ပြဿနာခေါင်းစဉ် လိုအပ်ပါသည်။",
+        ["validation.completeNameRequired"] = "မြန်မာ သို့မဟုတ် အင်္ဂလိပ်ဘာသာဖြင့် အမည်အပြည့်အစုံ ထည့်ပါ။",
         ["validation.roleNameRequired"] = "အခန်းကဏ္ဍအမည် လိုအပ်ပါသည်။",
         ["validation.passwordMinLength"] = "စကားဝှက်မှာ အနည်းဆုံး ၆ လုံး ရှိရမည်။",
         ["validation.usernameMinLength"] = "အသုံးပြုသူအမည်မှာ အနည်းဆုံး ၃ လုံး ရှိရမည်။",
@@ -1353,6 +1402,7 @@ public static class AppLocalization
         ["validation.usernameInvalidCharacters"] = "အသုံးပြုသူအမည်တွင် space မပါရပါ၊ စာလုံး၊ နံပါတ်၊ underscore (_) နှင့် dot (.) သာ အသုံးပြုနိုင်သည်။",
         ["validation.passwordMinLengthRule"] = "စကားဝှက်မှာ အနည်းဆုံး ၈ လုံး ရှိရမည်။",
         ["validation.passwordComplexityRule"] = "စကားဝှက်တွင် အနည်းဆုံး uppercase တစ်လုံး၊ lowercase တစ်လုံး၊ နံပါတ်တစ်လုံးနှင့် အထူးလက္ခဏာတစ်လုံး ပါရမည်။",
+        ["validation.fillAllFields"] = "လိုအပ်သော အကွက်များအားလုံးကို ဖြည့်ပါ။",
 
         ["common.password"] = "စကားဝှက်",
         ["common.usernameOrEmail"] = "အသုံးပြုသူအမည် သို့မဟုတ် အီးမေးလ်",
@@ -1465,6 +1515,26 @@ public static class AppLocalization
         ["issue.teamLead"] = "အဖွဲ့ခေါင်းဆောင်",
         ["issue.pm"] = "စီမံကိန်းမန်နေဂျာ",
         ["issue.manager"] = "မန်နေဂျာ",
+        ["translation.generateEnglishSpelling"] = "အင်္ဂလိပ်စာလုံးပေါင်း ဖန်တီးပေးရန်",
+        ["translation.generateBurmeseName"] = "မြန်မာအမည် ရေးသားပေးရန်",
+        ["translation.generateEnglish"] = "အင်္ဂလိပ်ဘာသာ ပြန်ဆိုရန်",
+        ["translation.generateBurmese"] = "မြန်မာဘာသာ ပြန်ဆိုရန်",
+        ["translation.englishDetected"] = "ဤစာသားသည် အင်္ဂလိပ်ဘာသာဖြစ်ပုံရသည်။ အင်္ဂလိပ်အကွက်သို့ ရွှေ့မည်လား။",
+        ["issue.failedCreate"] = "ပြဿနာ ဖန်တီး၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
+        ["issue.dateRangeInvalid"] = "ပြီးဆုံးရက်သည် စတင်ရက်ထက် စော၍ မရပါ။",
+        ["user.editUser"] = "အသုံးပြုသူကို ပြင်ဆင်မည်",
+        ["user.createUser"] = "အသုံးပြုသူ ဖန်တီးမည်လား။",
+        ["user.updateUser"] = "အသုံးပြုသူကို အပ်ဒိတ်လုပ်မည်လား။",
+        ["user.deleteUser"] = "အသုံးပြုသူကို ဖျက်မည်လား။",
+        ["user.updateUserConfirm"] = "ဤအသုံးပြုသူကို အပ်ဒိတ်လုပ်ရန် သေချာပါသလား။",
+        ["user.createUserConfirm"] = "ဤအသုံးပြုသူကို ဖန်တီးရန် သေချာပါသလား။",
+        ["user.deleteUserConfirm"] = "ဤအသုံးပြုသူကို ဖျက်ရန် သေချာပါသလား။ ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍ မရပါ။",
+        ["user.cannotDeleteSelf"] = "မိမိ၏အကောင့်ကို မိမိကိုယ်တိုင် ဖျက်၍ မရပါ။",
+        ["result.userCreated"] = "အသုံးပြုသူကို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။",
+        ["result.userUpdated"] = "အသုံးပြုသူကို အောင်မြင်စွာ အပ်ဒိတ်လုပ်ပြီးပါပြီ။",
+        ["result.userDeleted"] = "အသုံးပြုသူကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။",
+        ["result.failedToDeleteUser"] = "အသုံးပြုသူကို ဖျက်၍ မရပါ။",
+        ["result.userSaveFailed"] = "အသုံးပြုသူကို သိမ်းဆည်း၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
         ["status.blocked"] = "ပိတ်ဆို့ထားသည်",
         ["report.assignedToMe"] = "ကျွန်ုပ်ထံ တာဝန်ပေးထားသော",
         ["report.assignedToMyTeam"] = "ကျွန်ုပ်၏အဖွဲ့ထံ တာဝန်ပေးထားသော",
@@ -1676,6 +1746,24 @@ public static class AppLocalization
         return string.IsNullOrWhiteSpace(fallback) ? key : fallback;
     }
 
+    public static LocalizationCatalogValidation ValidateCatalogs(IEnumerable<string>? referencedKeys = null)
+    {
+        var englishKeys = English.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var burmeseKeys = Burmese.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var referenced = referencedKeys?.ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        return new LocalizationCatalogValidation(
+            englishKeys.Except(burmeseKeys, StringComparer.OrdinalIgnoreCase).OrderBy(key => key).ToArray(),
+            burmeseKeys.Except(englishKeys, StringComparer.OrdinalIgnoreCase).OrderBy(key => key).ToArray(),
+            Array.Empty<string>(),
+            referenced.Count == 0
+                ? Array.Empty<string>()
+                : englishKeys.Concat(burmeseKeys).Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Except(referenced, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(key => key)
+                    .ToArray());
+    }
+
     public static string LocalizeDigits(string? value)
     {
         if (!IsBurmeseCulture || string.IsNullOrEmpty(value))
@@ -1718,8 +1806,6 @@ public static class AppLocalization
         return months[value.Month - 1];
     }
 
-    public static string Menu(string menuCode, string fallback = "") => Text($"menu.{menuCode}", fallback);
-
     public static string PageTitle(string key, string fallback = "") => Text($"page.{key}", fallback);
 
     public static string PageDescription(string key, string fallback = "") => Text($"page.{key}.desc", fallback);
@@ -1737,22 +1823,6 @@ public static class AppLocalization
         TaskPriority.Medium => Text("priority.medium", "Medium"),
         _ => Text("priority.low", "Low")
     };
-
-    public static string RoleName(string? roleName)
-    {
-        if (string.IsNullOrWhiteSpace(roleName))
-        {
-            return Text("common.unknown", "Unknown");
-        }
-
-        return roleName.Trim().ToLowerInvariant() switch
-        {
-            "admin" => Text("role.admin", "Admin"),
-            "manager" => Text("role.manager", "Manager"),
-            "employee" => Text("role.employee", "Employee"),
-            _ => roleName
-        };
-    }
 
     public static string StatusName(string? statusName)
     {
@@ -1828,7 +1898,8 @@ public static class AppLocalization
             "issue" or "issues" => Text("page.issues", "Issues"),
             "audit" or "auditlog" or "auditlogs" => Text("page.auditLogs", "Audit Logs"),
             "dashboard" => Text("page.dashboard", "Dashboard"),
-            "report" or "reports" => Text("menu.REPORTS", "Reports"),
+            "report" or "reports" => Text("page.reports", "Reports"),
+            "module" => Text("common.module", "အပိုင်း"),
             _ => moduleName
         };
     }
@@ -1931,4 +2002,10 @@ public static class AppLocalization
         return LocalizeDigits(body);
     }
 }
+
+public sealed record LocalizationCatalogValidation(
+    IReadOnlyList<string> MissingInEnglish,
+    IReadOnlyList<string> MissingInBurmese,
+    IReadOnlyList<string> DuplicateKeys,
+    IReadOnlyList<string> UnreferencedKeys);
 

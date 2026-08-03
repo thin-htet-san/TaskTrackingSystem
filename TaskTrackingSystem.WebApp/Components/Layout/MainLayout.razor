@@ -151,7 +151,7 @@
             if (CurrentRoute.StartsWith("projects/", StringComparison.OrdinalIgnoreCase) &&
                 CurrentRoute.EndsWith("/tasks", StringComparison.OrdinalIgnoreCase))
             {
-                return AppLocalization.PageTitle("kanbanBoard", "Kanban Board");
+                return AppLocalization.PageTitle("kanbanBoard", "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်");
             }
 
             if (CurrentRoute.StartsWith("tasks/", StringComparison.OrdinalIgnoreCase))
@@ -167,7 +167,7 @@
                 "projects" or "projects/all" => AppLocalization.PageTitle("projects", "Projects"),
                 "projects/assign" => AppLocalization.PageTitle("projectAssignment", "Project Assignment"),
                 "tasks" or "tasks/all" => AppLocalization.PageTitle("tasks", "Tasks"),
-                "board" => AppLocalization.PageTitle("kanbanBoard", "Kanban Board"),
+                "board" => AppLocalization.PageTitle("kanbanBoard", "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်"),
                 "tasks/assign" => AppLocalization.PageTitle("taskAssignment", "Task Assignment"),
                 "issues" or "issues/all" => AppLocalization.PageTitle("issues", "Issues"),
                 "issues/add" => AppLocalization.PageTitle("addIssue", "Add Issue"),
@@ -192,7 +192,7 @@
         var title when title == AppLocalization.PageTitle("projects", "Projects") => AppLocalization.PageDescription("projects", "Manage project plans, timelines, and assignments."),
         var title when title == AppLocalization.PageTitle("projectAssignment", "Project Assignment") => AppLocalization.PageDescription("projectAssignment", "Assign team members to the right projects."),
         var title when title == AppLocalization.PageTitle("tasks", "Tasks") => AppLocalization.PageDescription("tasks", "Review, filter, and update work items."),
-        var title when title == AppLocalization.PageTitle("kanbanBoard", "Kanban Board") => AppLocalization.PageDescription("kanbanBoard", "Move work through status columns."),
+        var title when title == AppLocalization.PageTitle("kanbanBoard", "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်") => AppLocalization.PageDescription("kanbanBoard", "Move work through status columns."),
         var title when title == AppLocalization.PageTitle("taskAssignment", "Task Assignment") => AppLocalization.PageDescription("taskAssignment", "Assign tasks to project members."),
         var title when title == AppLocalization.PageTitle("issues", "Issues") => AppLocalization.PageDescription("issues", "Track blockers, notes, and daily work progress."),
         var title when title == AppLocalization.PageTitle("addIssue", "Add Issue") => AppLocalization.PageDescription("addIssue", "Record a new issue against a task."),

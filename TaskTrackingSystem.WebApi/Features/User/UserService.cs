@@ -35,6 +35,8 @@ namespace TaskTrackingSystem.WebApi.Features.User
                     Username = u.Username,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
+                    FirstNameMy = u.FirstNameMy,
+                    LastNameMy = u.LastNameMy,
                     Email = u.Email,
                     Phone = u.Phone,
                     RoleId = u.RoleId,
@@ -53,6 +55,10 @@ namespace TaskTrackingSystem.WebApi.Features.User
                 query = query.Where(u =>
                     (u.FirstName != null && u.FirstName.ToLower().Contains(searchTerm)) ||
                     (u.LastName != null && u.LastName.ToLower().Contains(searchTerm)) ||
+                    ((u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty)).ToLower().Contains(searchTerm) ||
+                    (u.FirstNameMy != null && u.FirstNameMy.ToLower().Contains(searchTerm)) ||
+                    (u.LastNameMy != null && u.LastNameMy.ToLower().Contains(searchTerm)) ||
+                    ((u.FirstNameMy ?? string.Empty) + " " + (u.LastNameMy ?? string.Empty)).ToLower().Contains(searchTerm) ||
                     (u.Username != null && u.Username.ToLower().Contains(searchTerm)) ||
                     (u.Email != null && u.Email.ToLower().Contains(searchTerm)));
             }
@@ -81,6 +87,8 @@ namespace TaskTrackingSystem.WebApi.Features.User
                     Username = u.Username,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
+                    FirstNameMy = u.FirstNameMy,
+                    LastNameMy = u.LastNameMy,
                     Email = u.Email,
                     Phone = u.Phone,
                     RoleId = u.RoleId,
@@ -103,6 +111,8 @@ namespace TaskTrackingSystem.WebApi.Features.User
                 Username = user.Username, 
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                FirstNameMy = user.FirstNameMy,
+                LastNameMy = user.LastNameMy,
                 Email = user.Email,
                 Phone = user.Phone,
                 RoleId = user.RoleId,
@@ -113,7 +123,9 @@ namespace TaskTrackingSystem.WebApi.Features.User
 
         public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto dto, long? currentUserId = null)
         {
-            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.FirstName) || string.IsNullOrWhiteSpace(dto.LastName) || string.IsNullOrWhiteSpace(dto.Email))
+            var englishNameComplete = !string.IsNullOrWhiteSpace(dto.FirstName) && !string.IsNullOrWhiteSpace(dto.LastName);
+            var burmeseNameComplete = !string.IsNullOrWhiteSpace(dto.FirstNameMy) && !string.IsNullOrWhiteSpace(dto.LastNameMy);
+            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Email) || (!englishNameComplete && !burmeseNameComplete))
             {
                 return Result<UserDto>.Failure(ResultMessages.FillAllFields, 400);
             }
@@ -133,8 +145,10 @@ namespace TaskTrackingSystem.WebApi.Features.User
             var user = new TaskTrackingSystem.Database.AppDbContextModels.User
             {
                 Username = dto.Username, 
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
+                FirstName = dto.FirstName ?? string.Empty,
+                LastName = dto.LastName ?? string.Empty,
+                FirstNameMy = dto.FirstNameMy,
+                LastNameMy = dto.LastNameMy,
                 Email = dto.Email,
                 PasswordHash = string.Empty,
                 Phone = dto.Phone,
@@ -158,6 +172,8 @@ namespace TaskTrackingSystem.WebApi.Features.User
                 Username = user.Username, 
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                FirstNameMy = user.FirstNameMy,
+                LastNameMy = user.LastNameMy,
                 Email = user.Email,
                 Phone = user.Phone,
                 RoleId = user.RoleId,
@@ -170,7 +186,9 @@ namespace TaskTrackingSystem.WebApi.Features.User
 
         public async Task<Result> UpdateUserAsync(long id, UpdateUserDto dto, long? currentUserId = null)
         {
-            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.FirstName) || string.IsNullOrWhiteSpace(dto.LastName))
+            var englishNameComplete = !string.IsNullOrWhiteSpace(dto.FirstName) && !string.IsNullOrWhiteSpace(dto.LastName);
+            var burmeseNameComplete = !string.IsNullOrWhiteSpace(dto.FirstNameMy) && !string.IsNullOrWhiteSpace(dto.LastNameMy);
+            if (string.IsNullOrWhiteSpace(dto.Username) || (!englishNameComplete && !burmeseNameComplete))
             {
                 return Result.Failure(ResultMessages.FillAllFields, 400);
             }
@@ -185,8 +203,10 @@ namespace TaskTrackingSystem.WebApi.Features.User
             }
 
             user.Username = dto.Username; 
-            user.FirstName = dto.FirstName;
-            user.LastName = dto.LastName;
+            user.FirstName = dto.FirstName ?? string.Empty;
+            user.LastName = dto.LastName ?? string.Empty;
+            user.FirstNameMy = dto.FirstNameMy;
+            user.LastNameMy = dto.LastNameMy;
             user.Phone = dto.Phone;
             user.RoleId = dto.RoleId;
             user.IsActive = dto.IsActive;

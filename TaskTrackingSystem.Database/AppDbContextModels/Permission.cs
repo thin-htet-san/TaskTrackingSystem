@@ -13,6 +13,8 @@ public partial class Permission
 
     public string ActionName { get; set; } = null!;
 
+    public string? ActionNameMy { get; set; }
+
     public string ApiName { get; set; } = null!;
 
     public string? HttpMethod { get; set; }

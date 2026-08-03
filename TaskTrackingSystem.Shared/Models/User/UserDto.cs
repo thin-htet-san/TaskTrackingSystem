@@ -12,6 +12,8 @@ namespace TaskTrackingSystem.Shared.Models.User
         public string Username { get; set; } = string.Empty; 
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? FirstNameMy { get; set; }
+        public string? LastNameMy { get; set; }
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public long RoleId { get; set; }

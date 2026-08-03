@@ -50,7 +50,7 @@
 
     [Parameter] public IReadOnlyList<LineChartPoint> Points { get; set; } = Array.Empty<LineChartPoint>();
     [Parameter] public string Color { get; set; } = "#2563eb";
-    [Parameter] public string EmptyText { get; set; } = "No data available";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noChartData", "No data available.");
     [Parameter] public string WrapperClass { get; set; } = string.Empty;
 
     private IReadOnlyList<(double X, double Y)> SvgPoints => BuildSvgPoints();

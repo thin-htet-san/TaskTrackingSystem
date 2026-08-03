@@ -46,13 +46,15 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         {
             var query = await BuildAccessibleTaskQueryAsync(roleId, currentUserId);
             return await query
-                .OrderBy(t => t.DueDate)
-                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
+                .OrderByDescending(t => t.CreatedAt ?? DateTime.MinValue)
+                .ThenByDescending(t => t.Id)
                 .Select(t => new TaskDto
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    TitleMy = t.TitleMy,
                     Description = t.Description,
+                    DescriptionMy = t.DescriptionMy,
                     ProjectId = t.ProjectId,
                     StatusId = t.StatusId,
                     PriorityId = t.PriorityId,
@@ -89,7 +91,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 var searchTerm = search.Trim().ToLower();
                 query = query.Where(t =>
                     (t.Title != null && t.Title.ToLower().Contains(searchTerm)) ||
-                    (t.Description != null && t.Description.ToLower().Contains(searchTerm)));
+                    (t.TitleMy != null && t.TitleMy.ToLower().Contains(searchTerm)) ||
+                    (t.Description != null && t.Description.ToLower().Contains(searchTerm)) ||
+                    (t.DescriptionMy != null && t.DescriptionMy.ToLower().Contains(searchTerm)));
             }
 
             if (projectId.HasValue && projectId.Value > 0)
@@ -108,13 +112,15 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             }
 
             return await query
-                .OrderBy(t => t.DueDate)
-                .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
+                .OrderByDescending(t => t.CreatedAt ?? DateTime.MinValue)
+                .ThenByDescending(t => t.Id)
                 .Select(t => new TaskDto
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    TitleMy = t.TitleMy,
                     Description = t.Description,
+                    DescriptionMy = t.DescriptionMy,
                     ProjectId = t.ProjectId,
                     StatusId = t.StatusId,
                     PriorityId = t.PriorityId,
@@ -138,7 +144,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    TitleMy = t.TitleMy,
                     Description = t.Description,
+                    DescriptionMy = t.DescriptionMy,
                     ProjectId = t.ProjectId,
                     StatusId = t.StatusId,
                     PriorityId = t.PriorityId,
@@ -166,7 +174,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             {
                 Id = task.Id,
                 Title = task.Title,
+                TitleMy = task.TitleMy,
                 Description = task.Description,
+                DescriptionMy = task.DescriptionMy,
                 ProjectId = task.ProjectId,
                 StatusId = task.StatusId,
                 PriorityId = task.PriorityId,
@@ -181,7 +191,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
         public async Task<Result<TaskDto>> CreateTaskAsync(CreateTaskDto dto, long roleId, long currentUserId)
         {
-            if (string.IsNullOrWhiteSpace(dto.Title))
+            if (string.IsNullOrWhiteSpace(dto.Title) && string.IsNullOrWhiteSpace(dto.TitleMy))
             {
                 return Result<TaskDto>.Failure(ResultMessages.TaskTitleRequired, 400);
             }
@@ -209,8 +219,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             var task = new TaskTrackingSystem.Database.AppDbContextModels.Task
             {
-                Title = dto.Title,
+                Title = dto.Title ?? string.Empty,
+                TitleMy = dto.TitleMy,
                 Description = dto.Description,
+                DescriptionMy = dto.DescriptionMy,
                 ProjectId = dto.ProjectId,
                 StatusId = dto.StatusId == 0 ? AppTaskStatus.Todo : dto.StatusId,
                 PriorityId = dto.PriorityId == 0 ? TaskPriority.Medium : dto.PriorityId,
@@ -236,7 +248,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             {
                 Id = task.Id,
                 Title = task.Title,
+                TitleMy = task.TitleMy,
                 Description = task.Description,
+                DescriptionMy = task.DescriptionMy,
                 ProjectId = task.ProjectId,
                 StatusId = task.StatusId,
                 PriorityId = task.PriorityId,
@@ -253,7 +267,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
         public async Task<Result> UpdateTaskAsync(long id, UpdateTaskDto dto, long? currentUserId = null)
         {
-            if (string.IsNullOrWhiteSpace(dto.Title))
+            if (string.IsNullOrWhiteSpace(dto.Title) && string.IsNullOrWhiteSpace(dto.TitleMy))
             {
                 return Result.Failure(ResultMessages.TaskTitleRequired, 400);
             }
@@ -272,8 +286,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return Result.Failure("Task assignee must belong to the selected project.", 400);
             }
 
-            task.Title = dto.Title;
+            task.Title = dto.Title ?? string.Empty;
+            task.TitleMy = dto.TitleMy;
             task.Description = dto.Description;
+            task.DescriptionMy = dto.DescriptionMy;
             task.StatusId = dto.StatusId;
             task.PriorityId = dto.PriorityId;
             task.AssignedTo = dto.AssignedTo;
@@ -331,7 +347,9 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    TitleMy = t.TitleMy,
                     Description = t.Description,
+                    DescriptionMy = t.DescriptionMy,
                     ProjectId = t.ProjectId,
                     StatusId = t.StatusId,
                     PriorityId = t.PriorityId,

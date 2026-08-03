@@ -29,7 +29,7 @@
                     </a>
                     <a href="/reports/tasks" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
                         <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
-                        @AppLocalization.Text("menu.REPORTS", "Reports")
+                        @AppLocalization.Text("page.reports", "Reports")
                     </a>
                 </div>
             </div>
@@ -81,7 +81,7 @@
                                     <div class="flex items-center gap-4 px-6 py-5">
                                         <span class="mt-1 h-2.5 w-2.5 rounded-full" style="background-color: @GetStatusColor(task.StatusId);"></span>
                                         <div class="min-w-0 flex-1">
-                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-sm font-semibold text-slate-950">@Content.GetTaskTitle(task)</div>
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right">
@@ -120,7 +120,7 @@
                                     <div class="flex items-center gap-4 px-6 py-5">
                                         <span class="mt-1 h-2.5 w-2.5 rounded-full" style="background-color: @GetStatusColor(task.StatusId);"></span>
                                         <div class="min-w-0 flex-1">
-                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-sm font-semibold text-slate-950">@Content.GetTaskTitle(task)</div>
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right">
@@ -161,7 +161,7 @@
                                             <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
                                         </span>
                                         <div class="min-w-0 flex-1">
-                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-sm font-semibold text-slate-950">@Content.GetTaskTitle(task)</div>
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right">
@@ -239,7 +239,7 @@
                                     <div class="flex items-center gap-4 px-6 py-4">
                                         <span class="mt-1 h-2.5 w-2.5 rounded-full" style="background-color: @GetStatusColor(task.StatusId);"></span>
                                         <div class="min-w-0 flex-1">
-                                            <div class="truncate text-sm font-semibold text-slate-950">@task.Title</div>
+                                            <div class="truncate text-sm font-semibold text-slate-950">@Content.GetTaskTitle(task)</div>
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right text-xs text-slate-500">
@@ -428,7 +428,8 @@
 
     private string GetProjectName(long projectId)
     {
-        return projects.FirstOrDefault(project => project.Id == projectId)?.Name ?? $"Project #{projectId}";
+        var project = projects.FirstOrDefault(project => project.Id == projectId);
+        return project is null ? $"Project #{projectId}" : Content.GetProjectName(project);
     }
 
     private string GetStatusColor(AppTaskStatus statusId) => statusId switch

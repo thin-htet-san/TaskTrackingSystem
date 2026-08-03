@@ -1,0 +1,58 @@
+@using TaskTrackingSystem.Shared.Localization
+
+@if (CanGenerate)
+{
+    <button type="button" @onclick="GenerateAsync" disabled="@isBusy" class="mt-2 inline-flex items-center rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 disabled:opacity-50">
+        @if (isBusy)
+        {
+            <span>@AppLocalization.Text("common.generating", "Generating...")</span>
+        }
+        else
+        {
+            <span>@ButtonLabel</span>
+        }
+    </button>
+}
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <p class="mt-1 text-xs text-rose-600">@errorMessage</p>
+}
+
+@code {
+    [Parameter] public string? SourceText { get; set; }
+    [Parameter] public string SourceLanguage { get; set; } = "my";
+    [Parameter] public string TargetLanguage { get; set; } = "en";
+    [Parameter] public bool IsName { get; set; }
+    [Parameter] public bool TargetHasText { get; set; }
+    [Parameter] public EventCallback<TranslationResult> Generated { get; set; }
+
+    [Inject] private IContentTranslationService TranslationService { get; set; } = null!;
+
+    private bool isBusy;
+    private string? errorMessage;
+
+    private bool CanGenerate => !TargetHasText && !string.IsNullOrWhiteSpace(SourceText);
+    private string ButtonLabel => IsName
+        ? (TargetLanguage == "en" ? AppLocalization.Text("translation.generateEnglishSpelling", "Generate English spelling") : AppLocalization.Text("translation.generateBurmeseName", "မြန်မာအမည် ရေးသားပေးရန်"))
+        : (TargetLanguage == "en" ? AppLocalization.Text("translation.generateEnglish", "Generate English") : AppLocalization.Text("translation.generateBurmese", "မြန်မာဘာသာ ပြန်ဆိုရန်"));
+
+    private async Task GenerateAsync()
+    {
+        if (!CanGenerate) return;
+        isBusy = true;
+        errorMessage = null;
+        var result = IsName
+            ? await TranslationService.TransliterateNameAsync(SourceText!.Trim(), SourceLanguage, TargetLanguage)
+            : await TranslationService.TranslateAsync(SourceText!.Trim(), SourceLanguage, TargetLanguage);
+        isBusy = false;
+
+        if (!result.Success || string.IsNullOrWhiteSpace(result.TranslatedText))
+        {
+            errorMessage = result.ErrorMessage ?? AppLocalization.Text("common.translationNotConfigured", "Translation is not configured.");
+            return;
+        }
+
+        await Generated.InvokeAsync(result);
+    }
+}

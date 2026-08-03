@@ -10,7 +10,11 @@ public partial class Task
 
     public string Title { get; set; } = null!;
 
+    public string? TitleMy { get; set; }
+
     public string? Description { get; set; }
+
+    public string? DescriptionMy { get; set; }
 
     public long ProjectId { get; set; }
 

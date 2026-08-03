@@ -116,7 +116,7 @@
                                 <button type="button"
                                         @onmousedown="() => SelectProject(p)"
                                         class="w-full px-3 py-2 text-left text-sm text-slate-900 hover:bg-slate-50 transition-colors @(filterProjectId == p.Id ? "bg-slate-50 font-medium" : "")">
-                                    @p.Name
+                                    @Content.GetText(p.Name, p.NameMy)
                                 </button>
                             </li>
                         }
@@ -228,9 +228,9 @@
                                 <tr class="hover:bg-slate-50/50 transition-colors">
                                     <td class="px-6 py-3 text-sm font-semibold text-slate-500">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                     <td class="px-6 py-3">
-                                        <button @onclick="() => ToggleExpanded(t.TaskId)" class="text-left text-sm font-medium text-slate-900 hover:text-violet-600">@t.Title</button>
+                                        <button @onclick="() => ToggleExpanded(t.TaskId)" class="text-left text-sm font-medium text-slate-900 hover:text-violet-600">@Content.GetText(t.Title, t.TitleMy)</button>
                                     </td>
-                                    <td class="px-6 py-3 text-sm text-slate-500">@t.ProjectName</td>
+                                    <td class="px-6 py-3 text-sm text-slate-500">@Content.GetText(t.ProjectName, t.ProjectNameMy)</td>
                                     <td class="px-6 py-3">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(t.StatusId)">@AppLocalization.StatusLabel(t.StatusId)</span>
                                     </td>
@@ -256,7 +256,7 @@
                                     <tr class="bg-slate-50/60">
                                         <td colspan="7" class="px-6 py-4">
                                             <div class="grid grid-cols-1 gap-3 text-sm text-slate-600 md:grid-cols-4">
-                                                <div><span class="font-semibold text-slate-800">@AppLocalization.Text("common.assignee", "Assignee"):</span> @(t.AssignedToUser ?? AppLocalization.Text("common.unassigned", "Unassigned"))</div>
+                                                <div><span class="font-semibold text-slate-800">@AppLocalization.Text("common.assignee", "Assignee"):</span> @(string.IsNullOrWhiteSpace(Content.GetText(t.AssignedToUser, t.AssignedToUserMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(t.AssignedToUser, t.AssignedToUserMy))</div>
                                                 <div>@DisplayFormats.Date(t.DueDate)</div>
                                                 <div><span class="font-semibold text-slate-800">@AppLocalization.Text("report.openIssues", "Open issues"):</span> @t.OpenIssues</div>
                                                 <div><span class="font-semibold text-slate-800">@AppLocalization.Text("report.lastActivity", "Last activity"):</span> @DisplayFormats.Date(t.LastActivity)</div>
@@ -332,7 +332,7 @@
         ApplyPeriodPreset();
         searchQuery = searchInput;
         projectSearchQuery = projectSearchInput;
-        var matched = projects.FirstOrDefault(p => p.Name.Equals(projectSearchInput, StringComparison.OrdinalIgnoreCase));
+        var matched = projects.FirstOrDefault(p => Content.GetProjectName(p).Equals(projectSearchInput, StringComparison.OrdinalIgnoreCase));
         if (matched != null)
             filterProjectId = (int)matched.Id;
         else if (string.IsNullOrWhiteSpace(projectSearchInput))
@@ -427,7 +427,7 @@
         .ToList();
 
     private List<TopRiskItem> ProjectRiskItems => FilteredList
-        .GroupBy(t => t.ProjectName)
+        .GroupBy(t => Content.GetText(t.ProjectName, t.ProjectNameMy))
         .Select(g =>
         {
             var score = Math.Min(100, (g.Count() * 8) + (g.Sum(t => t.OpenIssues) * 12) + (g.Sum(t => t.OverdueIssues) * 18) + (g.Count(t => t.TaskHealth == "Critical") * 20));
@@ -455,8 +455,8 @@
             var tone = t.OverdueIssues > 0 ? "rose" : t.OpenIssues > 0 ? "amber" : "emerald";
 
             return new TopRiskItem(
-                t.Title,
-                t.ProjectName,
+                Content.GetText(t.Title, t.TitleMy),
+                Content.GetText(t.ProjectName, t.ProjectNameMy),
                 score,
                 $"{AppLocalization.Number(t.OpenIssues + t.OverdueIssues)} {AppLocalization.Text("common.issue", "issues")}",
                 tone,
@@ -465,7 +465,7 @@
         .ToList();
 
     private List<ProgressListChartItem> TasksByProjectItems => FilteredList
-        .GroupBy(t => t.ProjectName)
+        .GroupBy(t => Content.GetText(t.ProjectName, t.ProjectNameMy))
         .OrderByDescending(g => g.Count())
         .Take(5)
         .Select(g => new ProgressListChartItem(g.Key, g.Count(), AppLocalization.Number(g.Count()), "#7c3aed"))
@@ -476,7 +476,7 @@
     private List<ProgressListChartItem> TasksWithMostIssuesItems => FilteredList
         .OrderByDescending(t => t.OpenIssues + t.OverdueIssues)
         .Take(5)
-        .Select(t => new ProgressListChartItem(t.Title, t.OpenIssues + t.OverdueIssues, AppLocalization.Number(t.OpenIssues + t.OverdueIssues), "#7c3aed"))
+        .Select(t => new ProgressListChartItem(Content.GetText(t.Title, t.TitleMy), t.OpenIssues + t.OverdueIssues, AppLocalization.Number(t.OpenIssues + t.OverdueIssues), "#7c3aed"))
         .ToList();
 
     private double TasksWithMostIssuesMax => Math.Max(1, TasksWithMostIssuesItems.Select(item => item.Value).DefaultIfEmpty(0).Max());
@@ -501,7 +501,7 @@
     private IEnumerable<ProjectDto> FilteredProjects =>
         string.IsNullOrWhiteSpace(projectSearchQuery)
             ? projects
-            : projects.Where(p => p.Name.Contains(projectSearchQuery.Trim(), StringComparison.OrdinalIgnoreCase));
+            : projects.Where(p => Content.GetProjectName(p).Contains(projectSearchQuery.Trim(), StringComparison.OrdinalIgnoreCase));
 
     private void SetView(bool chartView)
     {
@@ -532,8 +532,8 @@
     private void SelectProject(ProjectDto project)
     {
         filterProjectId = (int)project.Id;
-        projectSearchInput = project.Name;
-        projectSearchQuery = project.Name;
+        projectSearchInput = Content.GetProjectName(project);
+        projectSearchQuery = Content.GetProjectName(project);
         showProjectSuggestions = false;
     }
 
@@ -636,11 +636,11 @@
     {
             var rows = FilteredList.Select(t => new object?[]
             {
-                t.Title,
-                t.ProjectName,
+                Content.GetText(t.Title, t.TitleMy),
+                Content.GetText(t.ProjectName, t.ProjectNameMy),
                 AppLocalization.StatusLabel(t.StatusId),
                 AppLocalization.PriorityLabel(t.PriorityId),
-                t.AssignedToUser ?? AppLocalization.Text("common.na", "Unassigned"),
+                string.IsNullOrWhiteSpace(Content.GetText(t.AssignedToUser, t.AssignedToUserMy)) ? AppLocalization.Text("common.na", "Unassigned") : Content.GetText(t.AssignedToUser, t.AssignedToUserMy),
                 t.DueDate
             });
 
@@ -654,7 +654,7 @@
                 $"{AppLocalization.Text("common.search", "Search")}: {(string.IsNullOrWhiteSpace(searchQuery) ? AppLocalization.Text("common.all", "All tasks") : searchQuery)}",
                 $"{AppLocalization.Text("report.periodFilter", "Period")}: {GetPeriodLabel(filterPeriod)}",
                 $"{AppLocalization.Text("common.status", "Status")}: {filterStatus switch { "0" => AppLocalization.Text("common.all", "All"), "1" => AppLocalization.StatusLabel(AppTaskStatus.Todo), "2" => AppLocalization.StatusLabel(AppTaskStatus.InProgress), "3" => AppLocalization.StatusLabel(AppTaskStatus.Done), "overdue" => AppLocalization.Text("status.overdue", "Overdue"), "uncompleted" => AppLocalization.Text("status.uncompleted", "Uncompleted"), _ => filterStatus }}",
-                $"{AppLocalization.Text("common.project", "Project")}: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? AppLocalization.Text("report.selectedProject", "Selected project") : AppLocalization.Text("common.all", "All projects"))}",
+                $"{AppLocalization.Text("common.project", "Project")}: {(filterProjectId > 0 && projects.FirstOrDefault(p => p.Id == filterProjectId) is { } project ? Content.GetProjectName(project) : AppLocalization.Text("common.all", "All projects"))}",
                 $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}"
             });
 
@@ -672,17 +672,17 @@
             $"{AppLocalization.Text("common.search", "Search")}: {(string.IsNullOrWhiteSpace(searchQuery) ? AppLocalization.Text("common.all", "All tasks") : searchQuery)}",
             $"{AppLocalization.Text("report.periodFilter", "Period")}: {GetPeriodLabel(filterPeriod)}",
             $"{AppLocalization.Text("common.status", "Status")}: {filterStatus switch { "0" => AppLocalization.Text("common.all", "All"), "1" => AppLocalization.StatusLabel(AppTaskStatus.Todo), "2" => AppLocalization.StatusLabel(AppTaskStatus.InProgress), "3" => AppLocalization.StatusLabel(AppTaskStatus.Done), "overdue" => AppLocalization.Text("status.overdue", "Overdue"), "uncompleted" => AppLocalization.Text("status.uncompleted", "Uncompleted"), _ => filterStatus }}",
-            $"{AppLocalization.Text("common.project", "Project")}: {(filterProjectId > 0 ? projects.FirstOrDefault(p => p.Id == filterProjectId)?.Name ?? AppLocalization.Text("report.selectedProject", "Selected project") : AppLocalization.Text("common.all", "All projects"))}",
+            $"{AppLocalization.Text("common.project", "Project")}: {(filterProjectId > 0 && projects.FirstOrDefault(p => p.Id == filterProjectId) is { } project ? Content.GetProjectName(project) : AppLocalization.Text("common.all", "All projects"))}",
             $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}"
             };
 
             var rows = FilteredList.Select(t => new[]
             {
-                t.Title,
-                t.ProjectName,
+                Content.GetText(t.Title, t.TitleMy),
+                Content.GetText(t.ProjectName, t.ProjectNameMy),
                 AppLocalization.StatusLabel(t.StatusId),
                 AppLocalization.PriorityLabel(t.PriorityId),
-                t.AssignedToUser ?? AppLocalization.Text("common.na", "Unassigned"),
+                string.IsNullOrWhiteSpace(Content.GetText(t.AssignedToUser, t.AssignedToUserMy)) ? AppLocalization.Text("common.na", "Unassigned") : Content.GetText(t.AssignedToUser, t.AssignedToUserMy),
                 DisplayFormats.Date(t.DueDate)
             });
 

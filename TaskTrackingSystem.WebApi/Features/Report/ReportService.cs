@@ -40,19 +40,28 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     Id = i.Id,
                     TaskId = i.TaskId,
                     TaskTitle = i.Task.Title,
+                    TaskTitleMy = i.Task.TitleMy,
                     ProjectId = i.Task.ProjectId,
                     ProjectName = i.Task.Project.Name,
+                    ProjectNameMy = i.Task.Project.NameMy,
                     Title = i.Title,
+                    TitleMy = i.TitleMy,
                     Description = i.Description,
+                    DescriptionMy = i.DescriptionMy,
                     AssignedTo = i.AssignedTo,
                     AssignedToName = i.AssignedToNavigation != null
                         ? i.AssignedToNavigation.FirstName + " " + i.AssignedToNavigation.LastName
                         : null,
+                    AssignedToNameMy = i.AssignedToNavigation != null
+                        ? i.AssignedToNavigation.FirstNameMy + " " + i.AssignedToNavigation.LastNameMy
+                        : null,
                     EstimatedHours = i.EstimatedHours,
                     ActualHours = i.ActualHours,
                     DelayReason = i.DelayReason,
+                    DelayReasonMy = i.DelayReasonMy,
                     IsBlocked = i.IsBlocked,
                     BlockedBy = i.BlockedBy,
+                    BlockedByMy = i.BlockedByMy,
                     EscalationLevel = i.EscalationLevel,
                     StartDate = i.StartDate,
                     DueDate = i.DueDate,
@@ -205,16 +214,21 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             {
                 TaskId = t.Id,
                 Title = t.Title,
+                TitleMy = t.TitleMy,
                 Description = t.Description,
+                DescriptionMy = t.DescriptionMy,
                 ProjectId = t.ProjectId,
                 ProjectName = t.Project?.Name ?? string.Empty,
+                ProjectNameMy = t.Project?.NameMy,
                 StatusId = t.StatusId,
                 StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
                 PriorityId = t.PriorityId,
                 PriorityName = PriorityMap.TryGetValue(t.PriorityId, out var p) ? p : $"Priority {t.PriorityId}",
                 AssignedToUserId = t.AssignedTo,
                 AssignedToUser = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}" : null,
+                AssignedToUserMy = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstNameMy} {t.AssignedToNavigation.LastNameMy}" : null,
                 AssignedByUser = t.AssignedByNavigation != null ? $"{t.AssignedByNavigation.FirstName} {t.AssignedByNavigation.LastName}" : null,
+                AssignedByUserMy = t.AssignedByNavigation != null ? $"{t.AssignedByNavigation.FirstNameMy} {t.AssignedByNavigation.LastNameMy}" : null,
                 DueDate = t.DueDate,
                 CreatedAt = t.CreatedAt ?? DateTime.UtcNow,
                 LastActivity = t.UpdatedAt ?? t.CreatedAt ?? DateTime.UtcNow
@@ -286,8 +300,10 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     i.StatusId,
                     i.DueDate,
                     i.DelayReason,
+                    i.DelayReasonMy,
                     i.IsBlocked,
                     i.BlockedBy,
+                    i.BlockedByMy,
                     i.EscalationLevel
                 })
                 .ToListAsync();
@@ -302,7 +318,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     .ThenBy(i => i.DueDate)
                     .FirstOrDefault();
                 report.DelayReason = riskIssue?.DelayReason ?? (report.DaysOverdue > 0 ? "Past due date" : "High priority due soon");
+                report.DelayReasonMy = riskIssue?.DelayReasonMy;
                 report.BlockedBy = riskIssue?.BlockedBy ?? string.Empty;
+                report.BlockedByMy = riskIssue?.BlockedByMy;
                 report.EscalationLevel = riskIssue?.EscalationLevel ?? 0;
             }
         }
@@ -401,7 +419,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 var s = search.Trim().ToLower();
                 tasks = tasks.Where(t =>
                     t.Title.ToLower().Contains(s) ||
+                    (t.TitleMy?.ToLower().Contains(s) == true) ||
                     (t.Project?.Name.ToLower().Contains(s) == true) ||
+                    (t.Project?.NameMy?.ToLower().Contains(s) == true) ||
                     (t.AssignedToNavigation != null &&
                      ($"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}").ToLower().Contains(s))
                 ).ToList();
@@ -411,10 +431,13 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             {
                 TaskId = t.Id,
                 Title = t.Title,
+                TitleMy = t.TitleMy,
                 ProjectName = t.Project?.Name ?? "-",
+                ProjectNameMy = t.Project?.NameMy,
                 StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
                 PriorityName = PriorityMap.TryGetValue(t.PriorityId, out var p) ? p : $"Priority {t.PriorityId}",
                 AssignedTo = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}" : null,
+                AssignedToMy = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstNameMy} {t.AssignedToNavigation.LastNameMy}" : null,
                 DueDate = t.DueDate,
                 CreatedAt = t.CreatedAt ?? DateTime.UtcNow
             }).ToList();
@@ -612,7 +635,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 var s = search.Trim().ToLower();
                 tasks = tasks.Where(t =>
                     t.Title.ToLower().Contains(s) ||
-                    (t.Project?.Name.ToLower().Contains(s) == true)
+                    (t.TitleMy?.ToLower().Contains(s) == true) ||
+                    (t.Project?.Name.ToLower().Contains(s) == true) ||
+                    (t.Project?.NameMy?.ToLower().Contains(s) == true)
                 ).ToList();
             }
 
@@ -620,11 +645,15 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             {
                 TaskId = t.Id,
                 Title = t.Title,
+                TitleMy = t.TitleMy,
                 Description = t.Description,
+                DescriptionMy = t.DescriptionMy,
                 ProjectName = t.Project?.Name ?? "-",
+                ProjectNameMy = t.Project?.NameMy,
                 StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
                 PriorityName = PriorityMap.TryGetValue(t.PriorityId, out var p) ? p : $"Priority {t.PriorityId}",
                 AssignedTo = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}" : null,
+                AssignedToMy = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstNameMy} {t.AssignedToNavigation.LastNameMy}" : null,
                 AssignedToUserId = t.AssignedTo,
                 DueDate = t.DueDate,
                 DaysOverdue = t.DueDate < now ? (int)(now - t.DueDate).TotalDays : 0,

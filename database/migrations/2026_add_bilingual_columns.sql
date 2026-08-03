@@ -1,0 +1,21 @@
+BEGIN;
+
+ALTER TABLE "Menus" ADD COLUMN IF NOT EXISTS "MenuNameMy" text;
+ALTER TABLE "Permissions" ADD COLUMN IF NOT EXISTS "ActionNameMy" text;
+ALTER TABLE "Roles" ADD COLUMN IF NOT EXISTS "NameMy" text;
+ALTER TABLE "Roles" ADD COLUMN IF NOT EXISTS "DescriptionMy" text;
+ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "FirstNameMy" text;
+ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "LastNameMy" text;
+ALTER TABLE "Projects" ADD COLUMN IF NOT EXISTS "NameMy" text;
+ALTER TABLE "Projects" ADD COLUMN IF NOT EXISTS "DescriptionMy" text;
+ALTER TABLE "Tasks" ADD COLUMN IF NOT EXISTS "TitleMy" text;
+ALTER TABLE "Tasks" ADD COLUMN IF NOT EXISTS "DescriptionMy" text;
+ALTER TABLE "Issues" ADD COLUMN IF NOT EXISTS "TitleMy" text;
+ALTER TABLE "Issues" ADD COLUMN IF NOT EXISTS "DescriptionMy" text;
+ALTER TABLE "Issues" ADD COLUMN IF NOT EXISTS "DelayReasonMy" text;
+ALTER TABLE "Issues" ADD COLUMN IF NOT EXISTS "BlockedByMy" text;
+ALTER TABLE "Comments" ADD COLUMN IF NOT EXISTS "MessageMy" text;
+ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "TitleMy" text;
+ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "BodyMy" text;
+
+COMMIT;

@@ -47,13 +47,15 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         {
             var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
             return await BuildAccessibleProjectQuery(isAdmin, currentUserId)
-                .OrderBy(p => p.EndDate)
-                .ThenByDescending(p => p.CreatedAt ?? DateTime.UtcNow)
+                .OrderByDescending(p => p.CreatedAt ?? DateTime.MinValue)
+                .ThenByDescending(p => p.Id)
                 .Select(p => new ProjectDto
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    NameMy = p.NameMy,
                     Description = p.Description,
+                    DescriptionMy = p.DescriptionMy,
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
                     CreatedById = p.CreatedById,
@@ -72,17 +74,21 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 var searchTerm = search.Trim().ToLower();
                 query = query.Where(p =>
                     (p.Name != null && p.Name.ToLower().Contains(searchTerm)) ||
-                    (p.Description != null && p.Description.ToLower().Contains(searchTerm)));
+                    (p.NameMy != null && p.NameMy.ToLower().Contains(searchTerm)) ||
+                    (p.Description != null && p.Description.ToLower().Contains(searchTerm)) ||
+                    (p.DescriptionMy != null && p.DescriptionMy.ToLower().Contains(searchTerm)));
             }
 
             return await query
-                .OrderBy(p => p.EndDate)
-                .ThenByDescending(p => p.CreatedAt ?? DateTime.UtcNow)
+                .OrderByDescending(p => p.CreatedAt ?? DateTime.MinValue)
+                .ThenByDescending(p => p.Id)
                 .Select(p => new ProjectDto
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    NameMy = p.NameMy,
                     Description = p.Description,
+                    DescriptionMy = p.DescriptionMy,
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
                     CreatedById = p.CreatedById,
@@ -107,7 +113,9 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             {
                 Id = project.Id,
                 Name = project.Name,
+                NameMy = project.NameMy,
                 Description = project.Description,
+                DescriptionMy = project.DescriptionMy,
                 StartDate = project.StartDate,
                 EndDate = project.EndDate,
                 CreatedById = project.CreatedById,
@@ -118,15 +126,17 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
         public async Task<Result<ProjectDto>> CreateProjectAsync(CreateProjectDto dto, long? currentUserId = null)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
+            if (string.IsNullOrWhiteSpace(dto.Name) && string.IsNullOrWhiteSpace(dto.NameMy))
             {
                 return Result<ProjectDto>.Failure(ResultMessages.ProjectNameRequired, 400);
             }
 
             var project = new TaskTrackingSystem.Database.AppDbContextModels.Project
             {
-                Name = dto.Name,
+                Name = dto.Name ?? string.Empty,
+                NameMy = dto.NameMy,
                 Description = dto.Description,
+                DescriptionMy = dto.DescriptionMy,
                 StartDate = ToUtcDate(dto.StartDate),
                 EndDate = ToUtcDate(dto.EndDate),
                 CreatedById = dto.CreatedById,
@@ -144,7 +154,9 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             {
                 Id = project.Id,
                 Name = project.Name,
+                NameMy = project.NameMy,
                 Description = project.Description,
+                DescriptionMy = project.DescriptionMy,
                 StartDate = project.StartDate,
                 EndDate = project.EndDate,
                 CreatedById = project.CreatedById,
@@ -157,7 +169,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
         public async Task<Result> UpdateProjectAsync(long id, UpdateProjectDto dto, long roleId, long currentUserId)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
+            if (string.IsNullOrWhiteSpace(dto.Name) && string.IsNullOrWhiteSpace(dto.NameMy))
             {
                 return Result.Failure(ResultMessages.ProjectNameRequired, 400);
             }
@@ -174,8 +186,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 return Result.Failure("You do not have access to this project.", 403);
             }
 
-            project.Name = dto.Name;
+            project.Name = dto.Name ?? string.Empty;
+            project.NameMy = dto.NameMy;
             project.Description = dto.Description;
+            project.DescriptionMy = dto.DescriptionMy;
             project.StartDate = ToUtcDate(dto.StartDate);
             project.EndDate = ToUtcDate(dto.EndDate);
             project.BudgetedHours = dto.BudgetedHours;
@@ -244,6 +258,8 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                           Username = u.Username,
                           FirstName = u.FirstName,
                           LastName = u.LastName,
+                          FirstNameMy = u.FirstNameMy,
+                          LastNameMy = u.LastNameMy,
                           Email = u.Email,
                           Phone = u.Phone,
                           RoleId = u.RoleId,

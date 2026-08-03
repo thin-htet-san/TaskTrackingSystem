@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Models\Task\" />
     <Folder Include="Models\Project\" />
     <Folder Include="Models\Role\" />

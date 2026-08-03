@@ -6,11 +6,17 @@ namespace TaskTrackingSystem.Shared.Models.Project
 {
     public class CreateProjectDto : IValidatableObject
     {
-        [Required, MaxLength(150)]
+        [MaxLength(150)]
         public string Name { get; set; } = string.Empty;
+
+        [MaxLength(150)]
+        public string? NameMy { get; set; }
 
         [MaxLength(500)]
         public string? Description { get; set; }
+
+        [MaxLength(500)]
+        public string? DescriptionMy { get; set; }
 
         [Required]
         public DateTime StartDate { get; set; }
@@ -26,6 +32,11 @@ namespace TaskTrackingSystem.Shared.Models.Project
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
+            if (string.IsNullOrWhiteSpace(Name) && string.IsNullOrWhiteSpace(NameMy))
+            {
+                yield return new ValidationResult("At least one project name is required.", new[] { nameof(Name), nameof(NameMy) });
+            }
+
             if (EndDate < StartDate)
             {
                 yield return new ValidationResult(

@@ -6,7 +6,9 @@ namespace TaskTrackingSystem.Shared.Models.Role
     {
         public long Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string? NameMy { get; set; }
         public string? Description { get; set; }
+        public string? DescriptionMy { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

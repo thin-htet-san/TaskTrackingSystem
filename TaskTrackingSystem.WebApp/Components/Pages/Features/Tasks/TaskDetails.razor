@@ -67,22 +67,25 @@
                         {
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-100">
                                 <i data-lucide="folder" class="h-3 w-3 mr-1.5"></i>
-                                @project.Name
+                                @Content.GetProjectName(project)
                             </span>
                         }
                     </div>
                     @if (isEditingTitle)
                     {
-                        <div class="flex items-center gap-2 max-w-xl mt-1">
-                            <input @bind="tempTitle" type="text" class="flex-1 rounded-lg border border-slate-200 px-3 py-1 text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
-                            <button @onclick="CancelEditTitle" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">@AppLocalization.Text("common.cancel", "Cancel")</button>
-                            <button @onclick="SaveTitle" disabled="@isSavingTitle" class="px-2.5 py-1 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">@AppLocalization.Text("common.save", "Save")</button>
+                        <div class="space-y-2 max-w-xl mt-1">
+                            <input @bind="tempTitleMy" type="text" placeholder="ခေါင်းစဉ်" class="w-full rounded-lg border border-slate-200 px-3 py-1 text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+                                <input @bind="tempTitle" type="text" placeholder="@AppLocalization.Text("field.title", "Title")" class="w-full rounded-lg border border-slate-200 px-3 py-1 text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600" />
+                            <div class="flex items-center gap-2">
+                                <button @onclick="CancelEditTitle" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">@AppLocalization.Text("common.cancel", "Cancel")</button>
+                                <button @onclick="SaveTitle" disabled="@isSavingTitle" class="px-2.5 py-1 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">@AppLocalization.Text("common.save", "Save")</button>
+                            </div>
                         </div>
                     }
                     else
                     {
                         <h2 class="text-xl font-bold text-slate-900 leading-tight flex items-center gap-2 group">
-                            @task.Title
+                            @Content.GetTaskTitle(task)
                             @if (hasTaskManagePermission)
                             {
                                 <button @onclick="StartEditTitle" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-violet-600 transition-all rounded-lg hover:bg-slate-50" title="@AppLocalization.Text("task.editTitle", "Edit title")">
@@ -114,7 +117,8 @@
                     @if (isEditingDescription)
                     {
                         <div class="space-y-3">
-                            <textarea @bind="tempDescription" rows="4" class="w-full text-sm rounded-xl border border-slate-200 p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                            <textarea @bind="tempDescriptionMy" rows="4" placeholder="ဖော်ပြချက်" class="w-full text-sm rounded-xl border border-slate-200 p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                                <textarea @bind="tempDescription" rows="4" placeholder="@AppLocalization.Text("common.description", "Description")" class="w-full text-sm rounded-xl border border-slate-200 p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
                             <div class="flex items-center gap-2 justify-end">
                                 <button @onclick="CancelEditDescription" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">@AppLocalization.Text("common.cancel", "Cancel")</button>
                                 <button @onclick="SaveDescription" disabled="@isSavingDescription" class="px-3 py-1.5 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors shadow-sm">
@@ -126,7 +130,7 @@
                     else
                     {
                         <div class="text-sm text-slate-700 leading-relaxed min-h-[120px] whitespace-pre-wrap">
-                            @(string.IsNullOrWhiteSpace(task.Description) ? AppLocalization.Text("common.noDescription", "No description") : task.Description)
+                            @(string.IsNullOrWhiteSpace(Content.GetTaskDescription(task)) ? AppLocalization.Text("common.noDescription", "No description") : Content.GetTaskDescription(task))
                         </div>
                     }
                 </div>
@@ -177,7 +181,7 @@
                                     <option value="0">@AppLocalization.Text("common.unassigned", "Unassigned")</option>
                                     @foreach (var u in allUsers)
                                     {
-                                        <option value="@u.Id">@u.FirstName @u.LastName</option>
+                                        <option value="@u.Id">@Content.GetUserFullName(u)</option>
                                     }
                                 </select>
                             }
@@ -189,7 +193,7 @@
                                         <span class="flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
                                             @(assignee.FirstName.Length > 0 ? assignee.FirstName[0].ToString().ToUpper() : "")
                                         </span>
-                                        <span class="font-medium text-slate-700">@assignee.FirstName @assignee.LastName</span>
+                                        <span class="font-medium text-slate-700">@Content.GetUserFullName(assignee)</span>
                                     }
                                     else
                                     {
@@ -251,11 +255,11 @@
                                         </span>
                                         <div class="flex-1 min-w-0 bg-slate-50 rounded-xl p-3 border border-slate-100">
                                             <div class="flex items-center justify-between gap-2">
-                                                <span class="text-xs font-bold text-slate-800 truncate">@c.UserFullName</span>
+                                                <span class="text-xs font-bold text-slate-800 truncate">@Content.GetText(c.UserFullName, c.UserFullNameMy)</span>
                                                 <span class="text-[9px] text-slate-400 shrink-0 font-sans">@AppLocalization.LocalizeDigits(c.CreatedAt.ToString("g"))</span>
                                             </div>
-                                            <p class="text-xs text-slate-400 mt-0.5">@AppLocalization.RoleName(c.UserRoleName)</p>
-                                            <div class="text-xs text-slate-700 mt-2 whitespace-pre-wrap break-words">@c.Message</div>
+                                            <p class="text-xs text-slate-400 mt-0.5">@Content.GetText(c.UserRoleName, c.UserRoleNameMy)</p>
+                                            <div class="text-xs text-slate-700 mt-2 whitespace-pre-wrap break-words">@Content.GetText(c.Message, c.MessageMy)</div>
                                         </div>
                                         @if (c.UserId == currentUserId || isAdmin)
                                         {
@@ -281,13 +285,14 @@
                     <div class="p-4 border-t border-slate-100 bg-slate-50/50 font-sans">
                         <div class="flex items-start gap-2">
                             <div class="flex-1">
+                                <textarea @bind="newCommentMessageMy" rows="2" placeholder="မြန်မာမှတ်ချက်" class="mb-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" disabled="@isSavingComment"></textarea>
                                 <textarea @bind="newCommentMessage" rows="2" placeholder="@AppLocalization.Text("comment.writeComment", "Write a comment...")" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" disabled="@isSavingComment"></textarea>
                                 @if (!string.IsNullOrEmpty(commentError))
                                 {
                                     <p class="text-[10px] text-red-500 mt-1 font-sans">@commentError</p>
                                 }
                             </div>
-                            <button @onclick="PostComment" disabled="@(isSavingComment || string.IsNullOrWhiteSpace(newCommentMessage))" class="rounded-xl bg-violet-600 text-white p-2.5 hover:bg-violet-700 disabled:opacity-50 transition-all shadow-sm shrink-0">
+                            <button @onclick="PostComment" disabled="@(isSavingComment || (string.IsNullOrWhiteSpace(newCommentMessage) && string.IsNullOrWhiteSpace(newCommentMessageMy)))" class="rounded-xl bg-violet-600 text-white p-2.5 hover:bg-violet-700 disabled:opacity-50 transition-all shadow-sm shrink-0">
                                 <i data-lucide="send" class="h-4 w-4"></i>
                             </button>
                         </div>
@@ -332,6 +337,7 @@
 
     // Comments Form
     private string newCommentMessage = "";
+    private string? newCommentMessageMy;
     private bool isSavingComment = false;
     private string? commentError;
 
@@ -344,10 +350,12 @@
     private bool isEditingDescription = false;
     private bool isSavingDescription = false;
     private string tempDescription = "";
+    private string tempDescriptionMy = "";
 
     private bool isEditingTitle = false;
     private bool isSavingTitle = false;
     private string tempTitle = "";
+    private string tempTitleMy = "";
 
     private long lastLoadedTaskId = 0;
 
@@ -500,7 +508,9 @@
         var dto = new UpdateTaskDto
         {
             Title = task.Title,
+            TitleMy = task.TitleMy,
             Description = task.Description,
+            DescriptionMy = task.DescriptionMy,
             StatusId = task.StatusId,
             PriorityId = task.PriorityId,
             DueDate = task.DueDate,
@@ -517,7 +527,9 @@
             if (response.IsSuccessStatusCode)
             {
                 task.Title = dto.Title;
+                task.TitleMy = dto.TitleMy;
                 task.Description = dto.Description;
+                task.DescriptionMy = dto.DescriptionMy;
                 task.StatusId = dto.StatusId;
                 task.PriorityId = dto.PriorityId;
                 task.DueDate = dto.DueDate;
@@ -537,6 +549,7 @@
     {
         if (task == null) return;
         tempDescription = task.Description ?? "";
+        tempDescriptionMy = task.DescriptionMy ?? "";
         isEditingDescription = true;
     }
 
@@ -548,7 +561,17 @@
     private async Task SaveDescription()
     {
         isSavingDescription = true;
-        await UpdateTaskProperty(dto => dto.Description = tempDescription);
+        if (string.IsNullOrWhiteSpace(tempDescription) && string.IsNullOrWhiteSpace(tempDescriptionMy))
+        {
+            isEditingDescription = false;
+            isSavingDescription = false;
+            return;
+        }
+        await UpdateTaskProperty(dto =>
+        {
+            dto.Description = tempDescription.Trim();
+            dto.DescriptionMy = tempDescriptionMy.Trim();
+        });
         isEditingDescription = false;
         isSavingDescription = false;
     }
@@ -557,6 +580,7 @@
     {
         if (task == null) return;
         tempTitle = task.Title;
+        tempTitleMy = task.TitleMy ?? "";
         isEditingTitle = true;
     }
 
@@ -567,29 +591,34 @@
 
     private async Task SaveTitle()
     {
-        if (string.IsNullOrWhiteSpace(tempTitle)) return;
+        if (string.IsNullOrWhiteSpace(tempTitle) && string.IsNullOrWhiteSpace(tempTitleMy)) return;
         isSavingTitle = true;
-        await UpdateTaskProperty(dto => dto.Title = tempTitle.Trim());
+        await UpdateTaskProperty(dto =>
+        {
+            dto.Title = tempTitle.Trim();
+            dto.TitleMy = tempTitleMy.Trim();
+        });
         isEditingTitle = false;
         isSavingTitle = false;
     }
 
     private async Task PostComment()
     {
-        if (string.IsNullOrWhiteSpace(newCommentMessage)) return;
+        if (string.IsNullOrWhiteSpace(newCommentMessage) && string.IsNullOrWhiteSpace(newCommentMessageMy)) return;
 
         isSavingComment = true;
         commentError = null;
         try
         {
             var client = ApiClient.CreateClient();
-            var response = await client.PostAsJsonAsync($"TaskDetails/tasks/{TaskId}/comments", new CreateCommentDto { Message = newCommentMessage });
+            var response = await client.PostAsJsonAsync($"TaskDetails/tasks/{TaskId}/comments", new CreateCommentDto { Message = newCommentMessage, MessageMy = newCommentMessageMy });
             var res = await response.Content.ReadFromJsonAsync<Result<CommentDto>>(Serialization.CaseInsensitive);
 
             if (response.IsSuccessStatusCode && res != null && res.IsSuccess && res.Value != null)
             {
                 comments.Add(res.Value);
                 newCommentMessage = "";
+                newCommentMessageMy = null;
                 await JS.InvokeVoidAsync("initIcons");
             }
             else

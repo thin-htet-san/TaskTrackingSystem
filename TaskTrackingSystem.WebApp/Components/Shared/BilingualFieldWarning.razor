@@ -1,0 +1,45 @@
+@using TaskTrackingSystem.Shared.Localization
+
+@if (ShouldWarn)
+{
+    <div class="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <div>@Message</div>
+        <div class="mt-2 flex gap-2">
+            <button type="button" @onclick="MoveToOtherLanguageClicked" class="rounded-md bg-amber-600 px-2.5 py-1 font-semibold text-white hover:bg-amber-700">@MoveLabel</button>
+            <button type="button" @onclick="KeepHereClicked" class="rounded-md border border-amber-300 px-2.5 py-1 font-semibold text-amber-800 hover:bg-amber-100">@AppLocalization.Text("common.keepHere", "Keep here")</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public bool ExpectedBurmese { get; set; }
+    [Parameter] public EventCallback MoveToOtherLanguage { get; set; }
+    [Parameter] public EventCallback KeepHere { get; set; }
+
+    [Inject] private LanguageDetectionService Detector { get; set; } = null!;
+
+    private bool dismissed;
+    private LanguageDetectionResult Detection => Detector.Detect(Text);
+    private bool ShouldWarn => !dismissed && (ExpectedBurmese
+        ? Detection.Language == DetectedContentLanguage.English
+        : Detection.Language == DetectedContentLanguage.Burmese);
+    private string Message => ExpectedBurmese
+        ? AppLocalization.Text("translation.englishDetected", "This text appears to be English. Move it to the English field?")
+        : "ဤစာသားသည် မြန်မာဘာသာဖြစ်ပုံရသည်။ မြန်မာအကွက်သို့ ရွှေ့မလား?";
+    private string MoveLabel => ExpectedBurmese ? AppLocalization.Text("common.moveToEnglish", "Move to English") : "မြန်မာအကွက်သို့ ရွှေ့ရန်";
+
+    protected override void OnParametersSet() => dismissed = false;
+
+    private async Task KeepHereClicked()
+    {
+        dismissed = true;
+        await KeepHere.InvokeAsync();
+    }
+
+    private async Task MoveToOtherLanguageClicked()
+    {
+        dismissed = true;
+        await MoveToOtherLanguage.InvokeAsync();
+    }
+}

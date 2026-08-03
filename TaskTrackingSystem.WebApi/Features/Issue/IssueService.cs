@@ -64,7 +64,13 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 var searchTerm = search.Trim().ToLower();
                 query = query.Where(i =>
                     (i.Title != null && i.Title.ToLower().Contains(searchTerm)) ||
-                    (i.Description != null && i.Description.ToLower().Contains(searchTerm)));
+                    (i.TitleMy != null && i.TitleMy.ToLower().Contains(searchTerm)) ||
+                    (i.Description != null && i.Description.ToLower().Contains(searchTerm)) ||
+                    (i.DescriptionMy != null && i.DescriptionMy.ToLower().Contains(searchTerm)) ||
+                    (i.DelayReason != null && i.DelayReason.ToLower().Contains(searchTerm)) ||
+                    (i.DelayReasonMy != null && i.DelayReasonMy.ToLower().Contains(searchTerm)) ||
+                    (i.BlockedBy != null && i.BlockedBy.ToLower().Contains(searchTerm)) ||
+                    (i.BlockedByMy != null && i.BlockedByMy.ToLower().Contains(searchTerm)));
             }
 
             if (taskId.HasValue && taskId.Value > 0)
@@ -131,9 +137,19 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
 
         public async Task<Result<IssueDto>> CreateIssueAsync(CreateIssueDto dto, long roleId, long currentUserId)
         {
-            if (string.IsNullOrWhiteSpace(dto.Title))
+            if (string.IsNullOrWhiteSpace(dto.Title) && string.IsNullOrWhiteSpace(dto.TitleMy))
             {
                 return Result<IssueDto>.Failure("Issue title is required.", 400);
+            }
+
+            if (dto.StartDate == default || dto.DueDate == default)
+            {
+                return Result<IssueDto>.Failure("Issue start and due dates are required.", 400);
+            }
+
+            if (dto.DueDate.Date < dto.StartDate.Date)
+            {
+                return Result<IssueDto>.Failure("Issue due date cannot be earlier than the start date.", 400);
             }
 
             var task = await _db.Tasks
@@ -159,14 +175,18 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
             var issue = new IssueEntity
             {
                 TaskId = dto.TaskId,
-                Title = dto.Title.Trim(),
+                Title = dto.Title?.Trim() ?? string.Empty,
+                TitleMy = dto.TitleMy,
                 Description = dto.Description,
+                DescriptionMy = dto.DescriptionMy,
                 AssignedTo = dto.AssignedTo,
                 EstimatedHours = dto.EstimatedHours,
                 ActualHours = dto.ActualHours,
                 DelayReason = dto.DelayReason,
+                DelayReasonMy = dto.DelayReasonMy,
                 IsBlocked = dto.IsBlocked,
                 BlockedBy = dto.BlockedBy,
+                BlockedByMy = dto.BlockedByMy,
                 EscalationLevel = dto.EscalationLevel,
                 StartDate = ToUtcDate(dto.StartDate),
                 DueDate = ToUtcDate(dto.DueDate),
@@ -186,7 +206,7 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
 
         public async Task<Result> UpdateIssueAsync(long id, UpdateIssueDto dto, long roleId, long currentUserId)
         {
-            if (string.IsNullOrWhiteSpace(dto.Title))
+            if (string.IsNullOrWhiteSpace(dto.Title) && string.IsNullOrWhiteSpace(dto.TitleMy))
             {
                 return Result.Failure("Issue title is required.", 400);
             }
@@ -212,14 +232,18 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 return Result.Failure("Issue assignee must belong to the selected project.", 400);
             }
 
-            issue.Title = dto.Title.Trim();
+            issue.Title = dto.Title?.Trim() ?? string.Empty;
+            issue.TitleMy = dto.TitleMy;
             issue.Description = dto.Description;
+            issue.DescriptionMy = dto.DescriptionMy;
             issue.AssignedTo = dto.AssignedTo;
             issue.EstimatedHours = dto.EstimatedHours;
             issue.ActualHours = dto.ActualHours;
             issue.DelayReason = dto.DelayReason;
+            issue.DelayReasonMy = dto.DelayReasonMy;
             issue.IsBlocked = dto.IsBlocked;
             issue.BlockedBy = dto.BlockedBy;
+            issue.BlockedByMy = dto.BlockedByMy;
             issue.EscalationLevel = dto.EscalationLevel;
             issue.StartDate = ToUtcDate(dto.StartDate);
             issue.DueDate = ToUtcDate(dto.DueDate);
@@ -312,19 +336,28 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
                 Id = i.Id,
                 TaskId = i.TaskId,
                 TaskTitle = i.Task.Title,
+                TaskTitleMy = i.Task.TitleMy,
                 ProjectId = i.Task.ProjectId,
                 ProjectName = i.Task.Project.Name,
+                ProjectNameMy = i.Task.Project.NameMy,
                 Title = i.Title,
+                TitleMy = i.TitleMy,
                 Description = i.Description,
+                DescriptionMy = i.DescriptionMy,
                 AssignedTo = i.AssignedTo,
                 AssignedToName = i.AssignedToNavigation != null
                     ? i.AssignedToNavigation.FirstName + " " + i.AssignedToNavigation.LastName
                     : null,
+                AssignedToNameMy = i.AssignedToNavigation != null
+                    ? i.AssignedToNavigation.FirstNameMy + " " + i.AssignedToNavigation.LastNameMy
+                    : null,
                 EstimatedHours = i.EstimatedHours,
                 ActualHours = i.ActualHours,
                 DelayReason = i.DelayReason,
+                DelayReasonMy = i.DelayReasonMy,
                 IsBlocked = i.IsBlocked,
                 BlockedBy = i.BlockedBy,
+                BlockedByMy = i.BlockedByMy,
                 EscalationLevel = i.EscalationLevel,
                 StartDate = i.StartDate,
                 DueDate = i.DueDate,

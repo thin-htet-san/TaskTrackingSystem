@@ -20,4 +20,10 @@
     <Folder Include="Components\Partial\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+  </ItemGroup>
+
 </Project>

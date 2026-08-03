@@ -4,6 +4,7 @@ public class ProjectProgressReportDto
 {
     public long ProjectId { get; set; }
     public string ProjectName { get; set; } = string.Empty;
+    public string? ProjectNameMy { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int TotalTasks { get; set; }

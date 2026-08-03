@@ -11,7 +11,9 @@ namespace TaskTrackingSystem.Shared.Models.Task
     {
         public long Id { get; set; }
         public string Title { get; set; } = string.Empty;
+        public string? TitleMy { get; set; }
         public string? Description { get; set; }
+        public string? DescriptionMy { get; set; }
         public long ProjectId { get; set; }
         public AppTaskStatus StatusId { get; set; }
         public TaskPriority PriorityId { get; set; }

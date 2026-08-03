@@ -1,0 +1,76 @@
+@using TaskTrackingSystem.Shared.Localization
+
+<div class="space-y-4">
+    <div class="flex items-center gap-2 border-b border-slate-200">
+        <button type="button" @onclick="() => SelectTab(true)" class="relative px-3 py-2 text-sm font-semibold transition-colors @(showBurmese ? "text-violet-700" : "text-slate-500 hover:text-slate-700")">
+            @AppLocalization.Text("common.languageBurmese", "Burmese")
+            <span class="ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium @GetBadgeClass(BurmeseStatus)">@GetStatusLabel(BurmeseStatus)</span>
+            @if (showBurmese) { <span class="absolute inset-x-0 -bottom-px h-0.5 bg-violet-600"></span> }
+        </button>
+        <button type="button" @onclick="() => SelectTab(false)" class="relative px-3 py-2 text-sm font-semibold transition-colors @(!showBurmese ? "text-violet-700" : "text-slate-500 hover:text-slate-700")">
+            @AppLocalization.Text("common.languageEnglish", "English")
+            <span class="ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium @GetBadgeClass(EnglishStatus)">@GetStatusLabel(EnglishStatus)</span>
+            @if (!showBurmese) { <span class="absolute inset-x-0 -bottom-px h-0.5 bg-violet-600"></span> }
+        </button>
+    </div>
+
+    @if (BurmeseAiGenerated || EnglishAiGenerated || BurmeseNeedsReview || EnglishNeedsReview)
+    {
+        <p class="text-xs text-amber-700">
+            @AppLocalization.Text("common.translationReview", "AI-generated content is ready for review. Check it before saving.")
+        </p>
+    }
+
+    @if (showBurmese)
+    {
+        @BurmeseContent
+    }
+    else
+    {
+        @EnglishContent
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? BurmeseContent { get; set; }
+    [Parameter] public RenderFragment? EnglishContent { get; set; }
+    [Parameter] public bool BurmeseComplete { get; set; }
+    [Parameter] public bool EnglishComplete { get; set; }
+    [Parameter] public bool BurmeseAiGenerated { get; set; }
+    [Parameter] public bool EnglishAiGenerated { get; set; }
+    [Parameter] public bool BurmeseNeedsReview { get; set; }
+    [Parameter] public bool EnglishNeedsReview { get; set; }
+
+    [Inject] private UiLanguageService UiLanguageService { get; set; } = null!;
+
+    private bool showBurmese = true;
+
+    private string BurmeseStatus => GetStatus(BurmeseComplete, BurmeseAiGenerated, BurmeseNeedsReview);
+    private string EnglishStatus => GetStatus(EnglishComplete, EnglishAiGenerated, EnglishNeedsReview);
+
+    protected override void OnInitialized()
+    {
+        showBurmese = UiLanguageService.CurrentLanguage == AppLanguage.Burmese;
+    }
+
+    private void SelectTab(bool burmese) => showBurmese = burmese;
+
+    private static string GetStatus(bool complete, bool generated, bool needsReview) =>
+        generated ? "generated" : needsReview ? "review" : complete ? "complete" : "missing";
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "complete" => AppLocalization.Text("common.complete", "Complete"),
+        "generated" => AppLocalization.Text("common.aiGenerated", "AI generated"),
+        "review" => AppLocalization.Text("common.needsReview", "Needs review"),
+        _ => AppLocalization.Text("common.missing", "Missing")
+    };
+
+    private static string GetBadgeClass(string status) => status switch
+    {
+        "complete" => "bg-emerald-50 text-emerald-700",
+        "generated" => "bg-violet-50 text-violet-700",
+        "review" => "bg-amber-50 text-amber-700",
+        _ => "bg-slate-100 text-slate-500"
+    };
+}

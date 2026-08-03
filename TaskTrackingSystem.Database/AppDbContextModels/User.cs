@@ -13,6 +13,10 @@ public partial class User
 
     public string LastName { get; set; } = null!;
 
+    public string? FirstNameMy { get; set; }
+
+    public string? LastNameMy { get; set; }
+
     public string Email { get; set; } = null!;
 
     public string PasswordHash { get; set; } = null!;

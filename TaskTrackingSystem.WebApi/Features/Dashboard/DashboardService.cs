@@ -114,6 +114,7 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
                 {
                     ProjectId = project.Id,
                     ProjectName = project.Name,
+                    ProjectNameMy = project.NameMy,
                     TotalTasksCount = totalTasks,
                     CompletedTasksCount = completedTasks,
                     CompletionPercentage = percentage

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <UserSecretsId>TaskTrackingSystem-WebApi</UserSecretsId>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseAppHost>false</UseAppHost>
@@ -35,6 +36,12 @@
     <Folder Include="Features\Task\" />
     <Folder Include="Features\Project\" />
     <Folder Include="Features\Role\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
   </ItemGroup>
 
 </Project>

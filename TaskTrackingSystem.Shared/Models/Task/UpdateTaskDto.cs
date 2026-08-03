@@ -8,11 +8,17 @@ namespace TaskTrackingSystem.Shared.Models.Task
 {
     public class UpdateTaskDto : IValidatableObject
     {
-        [Required, MaxLength(200)]
+        [MaxLength(200)]
         public string Title { get; set; } = string.Empty;
+
+        [MaxLength(200)]
+        public string? TitleMy { get; set; }
 
         [MaxLength(1000)]
         public string? Description { get; set; }
+
+        [MaxLength(1000)]
+        public string? DescriptionMy { get; set; }
 
         [Required]
         [EnumDataType(typeof(AppTaskStatus))]
@@ -33,6 +39,11 @@ namespace TaskTrackingSystem.Shared.Models.Task
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
+            if (string.IsNullOrWhiteSpace(Title) && string.IsNullOrWhiteSpace(TitleMy))
+            {
+                yield return new ValidationResult("At least one task title is required.", new[] { nameof(Title), nameof(TitleMy) });
+            }
+
             if (DueDate == default)
             {
                 yield return new ValidationResult(

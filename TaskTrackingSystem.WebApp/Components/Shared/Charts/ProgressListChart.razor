@@ -42,6 +42,6 @@
 @code {
     [Parameter] public IReadOnlyList<ProgressListChartItem> Items { get; set; } = Array.Empty<ProgressListChartItem>();
     [Parameter] public double MaxValue { get; set; } = 100;
-    [Parameter] public string EmptyText { get; set; } = "No data available.";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noChartData", "No data available.");
     [Parameter] public string WrapperClass { get; set; } = "space-y-4";
 }

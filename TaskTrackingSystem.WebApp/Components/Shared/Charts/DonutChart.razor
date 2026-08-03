@@ -45,7 +45,7 @@
 @code {
     [Parameter] public IReadOnlyList<ChartDataPoint> Items { get; set; } = Array.Empty<ChartDataPoint>();
     [Parameter] public bool ShowLegend { get; set; } = true;
-    [Parameter] public string EmptyText { get; set; } = "No data available";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noChartData", "No data available.");
     [Parameter] public string ValueFormat { get; set; } = "0";
     [Parameter] public string WrapperClass { get; set; } = string.Empty;
 

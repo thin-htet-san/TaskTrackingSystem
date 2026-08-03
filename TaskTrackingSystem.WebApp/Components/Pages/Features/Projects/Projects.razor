@@ -78,11 +78,11 @@
                                 <td class="px-6 py-4 text-sm font-semibold text-slate-500">@((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4">
                                     <button @onclick="() => NavigateToKanban(project.Id)" class="text-sm font-semibold text-slate-900 hover:text-violet-600 transition-colors">
-                                        @project.Name
+                                        @Content.GetProjectName(project)
                                     </button>
-                                    @if (!string.IsNullOrEmpty(project.Description))
+                                    @if (!string.IsNullOrEmpty(Content.GetProjectDescription(project)))
                                     {
-                                        <p class="text-xs text-slate-400 mt-0.5 truncate max-w-xs">@project.Description</p>
+                                        <p class="text-xs text-slate-400 mt-0.5 truncate max-w-xs">@Content.GetProjectDescription(project)</p>
                                     }
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-600">@DisplayFormats.Date(project.StartDate)</td>
@@ -140,24 +140,33 @@
                 </button>
             </div>
             <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("field.name", "Name") <span class="text-red-500">*</span></label>
-                    <div class="relative">
-                        <input @bind="formName" type="text" placeholder="@AppLocalization.Text("project.projectName", "Project name")" class="w-full rounded-lg border @(isNameError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all pr-10" />
-                        @if (isNameError)
-                        {
-                            <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                        }
-                    </div>
-                    @if (isNameError)
-                    {
-                        <p class="mt-1 text-xs text-red-500">@nameErrorMessage</p>
-                    }
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.description", "Description")</label>
-                    <textarea @bind="formDescription" rows="3" placeholder="@AppLocalization.Text("project.projectDescriptionOptional", "Project description (optional)")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"></textarea>
-                </div>
+                <BilingualEditorTabs BurmeseComplete="@(!string.IsNullOrWhiteSpace(formNameMy))"
+                                     EnglishComplete="@(!string.IsNullOrWhiteSpace(formName))"
+                                     BurmeseAiGenerated="@burmeseGenerated"
+                                     EnglishAiGenerated="@englishGenerated"
+                                     BurmeseNeedsReview="@burmeseNeedsReview"
+                                     EnglishNeedsReview="@englishNeedsReview">
+                    <BurmeseContent>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">အမည် <span class="text-red-500">*</span></label>
+                        <input @bind="formNameMy" type="text" placeholder="အမည်" class="w-full rounded-lg border @(isNameError && string.IsNullOrWhiteSpace(formName) ? "border-red-500" : "border-slate-200") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                        <BilingualFieldWarning Text="@formNameMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveProjectNameToEnglish" />
+                        <BilingualTranslationAction SourceText="@formNameMy" SourceLanguage="my" TargetLanguage="en" IsName="false" TargetHasText="@(!string.IsNullOrWhiteSpace(formName))" Generated="GenerateProjectEnglishName" />
+                        <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">ဖော်ပြချက်</label>
+                        <textarea @bind="formDescriptionMy" rows="3" placeholder="ဖော်ပြချက်" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                        <BilingualFieldWarning Text="@formDescriptionMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveProjectDescriptionToEnglish" />
+                        <BilingualTranslationAction SourceText="@formDescriptionMy" SourceLanguage="my" TargetLanguage="en" TargetHasText="@(!string.IsNullOrWhiteSpace(formDescription))" Generated="GenerateProjectEnglishDescription" />
+                    </BurmeseContent>
+                    <EnglishContent>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.name", "Name") <span class="text-red-500">*</span></label>
+                        <input @bind="formName" type="text" placeholder="@AppLocalization.Text("project.projectName", "Project name")" class="w-full rounded-lg border @(isNameError && string.IsNullOrWhiteSpace(formNameMy) ? "border-red-500" : "border-slate-200") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                        <BilingualFieldWarning Text="@formName" ExpectedBurmese="false" MoveToOtherLanguage="MoveProjectNameToBurmese" />
+                        <BilingualTranslationAction SourceText="@formName" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formNameMy))" Generated="GenerateProjectBurmeseName" />
+                        <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.description", "Description")</label>
+                        <textarea @bind="formDescription" rows="3" placeholder="@AppLocalization.Text("project.projectDescriptionOptional", "Project description (optional)")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                        <BilingualFieldWarning Text="@formDescription" ExpectedBurmese="false" MoveToOtherLanguage="MoveProjectDescriptionToBurmese" />
+                        <BilingualTranslationAction SourceText="@formDescription" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formDescriptionMy))" Generated="GenerateProjectBurmeseDescription" />
+                    </EnglishContent>
+                </BilingualEditorTabs>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.startDate", "Start Date") <span class="text-red-500">*</span></label>
@@ -257,7 +266,13 @@
     // Form fields
     private long editingId;
     private string formName = "";
+    private string? formNameMy;
     private string? formDescription;
+    private string? formDescriptionMy;
+    private bool burmeseGenerated;
+    private bool englishGenerated;
+    private bool burmeseNeedsReview;
+    private bool englishNeedsReview;
     private DateTime formStartDate = DateTime.Today;
     private DateTime formEndDate = DateTime.Today.AddMonths(1);
     private int? formBudgetedHours;
@@ -267,6 +282,20 @@
     private string nameErrorMessage = "";
     private bool isDateError;
     private string dateErrorMessage = "";
+
+    private void MoveProjectNameToEnglish() { formName = formNameMy ?? string.Empty; }
+    private void MoveProjectNameToBurmese() { formNameMy = formName; }
+    private void MoveProjectDescriptionToEnglish() { formDescription = formDescriptionMy; }
+    private void MoveProjectDescriptionToBurmese() { formDescriptionMy = formDescription; }
+    private void MarkGenerated(bool english)
+    {
+        if (english) { englishGenerated = true; englishNeedsReview = true; }
+        else { burmeseGenerated = true; burmeseNeedsReview = true; }
+    }
+    private Task GenerateProjectEnglishName(TranslationResult result) { formName = result.TranslatedText ?? string.Empty; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateProjectBurmeseName(TranslationResult result) { formNameMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
+    private Task GenerateProjectEnglishDescription(TranslationResult result) { formDescription = result.TranslatedText ?? string.Empty; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateProjectBurmeseDescription(TranslationResult result) { formDescriptionMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -366,7 +395,10 @@
         isEditing = false;
         editingId = 0;
         formName = "";
+        formNameMy = null;
         formDescription = null;
+        formDescriptionMy = null;
+        burmeseGenerated = englishGenerated = burmeseNeedsReview = englishNeedsReview = false;
         formStartDate = DateTime.Today;
         formEndDate = DateTime.Today.AddMonths(1);
         formBudgetedHours = null;
@@ -379,7 +411,10 @@
         isEditing = true;
         editingId = project.Id;
         formName = project.Name;
+        formNameMy = project.NameMy;
         formDescription = project.Description;
+        formDescriptionMy = project.DescriptionMy;
+        burmeseGenerated = englishGenerated = burmeseNeedsReview = englishNeedsReview = false;
         formStartDate = project.StartDate;
         formEndDate = project.EndDate;
         formBudgetedHours = project.BudgetedHours;
@@ -400,7 +435,7 @@
         ClearValidation();
         bool hasError = false;
 
-        if (string.IsNullOrWhiteSpace(formName))
+        if (string.IsNullOrWhiteSpace(formName) && string.IsNullOrWhiteSpace(formNameMy))
         {
             isNameError = true;
             nameErrorMessage = AppLocalization.Text("validation.projectNameRequired", "Project name is required.");
@@ -466,7 +501,7 @@
 
     private async Task SaveProject()
     {
-        if (string.IsNullOrWhiteSpace(formName) || formEndDate < formStartDate)
+        if ((string.IsNullOrWhiteSpace(formName) && string.IsNullOrWhiteSpace(formNameMy)) || formEndDate < formStartDate)
         {
             return;
         }
@@ -482,7 +517,9 @@
                 var dto = new UpdateProjectDto
                 {
                     Name = formName,
+                    NameMy = formNameMy,
                     Description = formDescription,
+                    DescriptionMy = formDescriptionMy,
                     StartDate = formStartDate,
                     EndDate = formEndDate,
                     BudgetedHours = formBudgetedHours
@@ -500,7 +537,9 @@
                 var dto = new CreateProjectDto
                 {
                     Name = formName,
+                    NameMy = formNameMy,
                     Description = formDescription,
+                    DescriptionMy = formDescriptionMy,
                     StartDate = formStartDate,
                     EndDate = formEndDate,
                     CreatedById = currentUserId,

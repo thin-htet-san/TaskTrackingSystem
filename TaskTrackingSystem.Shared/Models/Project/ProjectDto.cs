@@ -10,7 +10,9 @@ namespace TaskTrackingSystem.Shared.Models.Project
     {
         public long Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string? NameMy { get; set; }
         public string? Description { get; set; }
+        public string? DescriptionMy { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public long CreatedById { get; set; }

@@ -20,8 +20,14 @@
 		</PackageReference>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 	</ItemGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\TaskTrackingSystem.Shared\TaskTrackingSystem.Shared.csproj" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TaskTrackingSystem.Shared\TaskTrackingSystem.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+  </ItemGroup>
 
 </Project>

@@ -38,7 +38,7 @@
                 }
                 <a href="/reports/tasks" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
                     <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
-                    @AppLocalization.Text("menu.REPORTS", "Reports")
+                    @AppLocalization.Text("page.reports", "Reports")
                 </a>
             </div>
         </div>
@@ -141,7 +141,7 @@
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <p class="truncate text-sm font-semibold text-slate-900">@project.Name</p>
+                                    <p class="truncate text-sm font-semibold text-slate-900">@Content.GetProjectName(project)</p>
                                     <span class="@GetProjectBadgeClasses(project)">@GetProjectBadgeLabel(project)</span>
                                 </div>
                                 <p class="mt-1 text-xs text-slate-500">@DisplayFormats.Date(project.StartDate) - @DisplayFormats.Date(project.EndDate)</p>
@@ -202,7 +202,7 @@
                     <div class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <span class="mt-1 h-8 w-1.5 rounded-full" style="background-color: @item.Color"></span>
                         <div class="min-w-0">
-                            <div class="truncate text-sm font-semibold text-slate-900">@item.Name</div>
+                            <div class="truncate text-sm font-semibold text-slate-900">@Content.GetText(item.Name, item.NameMy)</div>
                             <div class="text-xs text-slate-500">@item.DateLabel</div>
                         </div>
                     </div>
@@ -408,7 +408,7 @@
                 var progress = GetProjectProgress(p.Id);
                 return new {
                     id = p.Id.ToString(),
-                    name = p.Name,
+                    name = Content.GetText(p.Name, p.NameMy),
                     start = new DateTimeOffset(DateTime.SpecifyKind(p.StartDate.Date, DateTimeKind.Utc)).ToUnixTimeMilliseconds(),
                     end = new DateTimeOffset(DateTime.SpecifyKind(p.EndDate.Date, DateTimeKind.Utc)).ToUnixTimeMilliseconds(),
                     completed = progress.CompletionPercentage / 100.0,
@@ -439,7 +439,7 @@
         var user = usersList.FirstOrDefault(u => string.Equals(u.Username, currentUserName, StringComparison.OrdinalIgnoreCase));
         if (user != null)
         {
-            return $"{user.FirstName} {user.LastName}".Trim();
+            return Content.GetUserFullName(user);
         }
 
         return currentUserName;
@@ -656,7 +656,7 @@
         return projectsList
             .Where(project => project.StartDate.Date >= DateTime.Today)
             .OrderBy(project => project.StartDate)
-            .Select(project => new CalendarEventItem(project.Name, GetDisplayDateLabel(project.StartDate), GetProjectColor(project.Id)))
+            .Select(project => new CalendarEventItem(project.Name, project.NameMy, GetDisplayDateLabel(project.StartDate), GetProjectColor(project.Id)))
             .ToList();
     }
 
@@ -709,6 +709,7 @@
 
             return new TimelineRow(
                 project.Name,
+                project.NameMy,
                 $"{DisplayFormats.Date(project.StartDate)} - {DisplayFormats.Date(project.EndDate)}",
                 GetProjectColor(project.Id),
                 left,
@@ -1058,6 +1059,6 @@
     private readonly record struct DistributionSlice(string Label, int Count, string Color, string DashArray, double DashOffset);
     private readonly record struct DistributionLegendItem(string Label, int Count, string Color);
     private readonly record struct CalendarCell(DateTime Date, bool IsCurrentMonth, bool IsToday, List<string> ProjectDots);
-    private readonly record struct CalendarEventItem(string Name, string DateLabel, string Color);
-    private readonly record struct TimelineRow(string Name, string DateLabel, string Color, double Left, double Width, double CompletionPercentage);
+    private readonly record struct CalendarEventItem(string Name, string? NameMy, string DateLabel, string Color);
+    private readonly record struct TimelineRow(string Name, string? NameMy, string DateLabel, string Color, double Left, double Width, double CompletionPercentage);
 }

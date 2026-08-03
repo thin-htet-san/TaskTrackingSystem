@@ -10,6 +10,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using TaskTrackingSystem.Shared;
+using TaskTrackingSystem.Shared.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,14 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.UserDevice.UserDev
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.FirebaseNotificationService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.NotificationRealtimeService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Notification.NotificationService>();
+if (string.Equals(builder.Configuration["Translation:Provider"], "OpenRouter", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<IContentTranslationService, TaskTrackingSystem.WebApi.Features.Translation.OpenRouterContentTranslationService>();
+}
+else
+{
+    builder.Services.AddScoped<IContentTranslationService, NoOpContentTranslationService>();
+}
 builder.Services.AddHostedService<TaskTrackingSystem.WebApi.Features.Notification.NotificationCleanupHostedService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Infrastructure.PermissionAuthorizationService>();
 builder.Services.AddScoped<IPasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>, PasswordHasher<TaskTrackingSystem.Database.AppDbContextModels.User>>();

@@ -67,7 +67,7 @@
 
     [Parameter] public IReadOnlyList<BarChartGroup> Groups { get; set; } = Array.Empty<BarChartGroup>();
     [Parameter] public string WrapperClass { get; set; } = "relative h-[280px]";
-    [Parameter] public string EmptyText { get; set; } = "No data available";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noChartData", "No data available.");
     [Parameter] public bool ShowLegend { get; set; } = true;
     [Parameter] public double BarWidth { get; set; } = 18;
     [Parameter] public int MaxBarsPerGroup { get; set; } = 4;

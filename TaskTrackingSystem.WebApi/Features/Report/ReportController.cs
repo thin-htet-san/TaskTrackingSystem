@@ -45,6 +45,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] bool? assignedToMyTeam,
             [FromQuery] PaginationQuery? paging = null)
         {
+            (startDate, endDate) = NormalizeDateRange(startDate, endDate);
+            if (startDate.HasValue && endDate.HasValue && endDate.Value < startDate.Value)
+            {
+                return BadRequest(Result.Failure("End date cannot be earlier than start date.", 400));
+            }
+
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
                 var full = await _reportService.GetTasksReportAsync(
@@ -191,6 +197,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] bool? assignedToMyTeam,
             [FromQuery] PaginationQuery? paging = null)
         {
+            (startDate, endDate) = NormalizeDateRange(startDate, endDate);
+            if (startDate.HasValue && endDate.HasValue && endDate.Value < startDate.Value)
+            {
+                return BadRequest(Result.Failure("End date cannot be earlier than start date.", 400));
+            }
+
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
                 var reportData = await _reportService.GetEmployeeProductivityReportAsync(
@@ -216,6 +228,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] bool? assignedToMyTeam,
             [FromQuery] PaginationQuery? paging = null)
         {
+            (startDate, endDate) = NormalizeDateRange(startDate, endDate);
+            if (startDate.HasValue && endDate.HasValue && endDate.Value < startDate.Value)
+            {
+                return BadRequest(Result.Failure("End date cannot be earlier than start date.", 400));
+            }
+
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
                 var reportData = await _reportService.GetProjectProgressReportAsync(
@@ -227,6 +245,15 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 search, startDate, endDate, status, User.GetRoleId(), User.GetUserId(),
                 paging.Page ?? 1, paging.Limit ?? 10, assignedToMe, assignedToMyTeam);
             return Ok(reportDataPaged);
+        }
+
+        private static (DateTime? StartDate, DateTime? EndDate) NormalizeDateRange(DateTime? startDate, DateTime? endDate)
+        {
+            static DateTime? Normalize(DateTime? value) => value.HasValue
+                ? DateTime.SpecifyKind(value.Value.Date, DateTimeKind.Utc)
+                : null;
+
+            return (Normalize(startDate), Normalize(endDate));
         }
     }
 }

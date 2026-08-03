@@ -13,6 +13,8 @@ public partial class Comment
 
     public string Message { get; set; } = null!;
 
+    public string? MessageMy { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public long? CreatedBy { get; set; }

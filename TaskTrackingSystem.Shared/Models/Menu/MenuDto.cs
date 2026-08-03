@@ -8,6 +8,7 @@ namespace TaskTrackingSystem.Shared.Models.Menu
         public string MenuCode { get; set; } = string.Empty;
         public string ParentCode { get; set; } = string.Empty;
         public string MenuName { get; set; } = string.Empty;
+        public string? MenuNameMy { get; set; }
         public string? MenuUrl { get; set; }
         public int OrderNo { get; set; }
         public string? Icon { get; set; }

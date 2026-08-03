@@ -48,8 +48,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                     TaskId = c.TaskId,
                     UserId = c.UserId,
                     UserFullName = $"{c.User.FirstName} {c.User.LastName}",
+                    UserFullNameMy = $"{c.User.FirstNameMy} {c.User.LastNameMy}",
                     UserRoleName = c.User.Role != null ? c.User.Role.Name : "User",
+                    UserRoleNameMy = c.User.Role != null ? c.User.Role.NameMy : null,
                     Message = c.Message,
+                    MessageMy = c.MessageMy,
                     CreatedAt = c.CreatedAt ?? DateTime.UtcNow,
                     UpdatedAt = c.UpdatedAt
                 })
@@ -61,7 +64,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpPost("tasks/{taskId}/comments")]
         public async Task<ActionResult<Result<CommentDto>>> CreateComment(long taskId, [FromBody] CreateCommentDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Message))
+            if (string.IsNullOrWhiteSpace(dto.Message) && string.IsNullOrWhiteSpace(dto.MessageMy))
             {
                 return BadRequest(Result<CommentDto>.Failure("Comment message cannot be empty.", 400));
             }
@@ -86,7 +89,8 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             {
                 TaskId = taskId,
                 UserId = userId,
-                Message = dto.Message.Trim(),
+                Message = dto.Message?.Trim() ?? string.Empty,
+                MessageMy = dto.MessageMy,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = userId,
                 IsDeleted = false
@@ -105,8 +109,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 TaskId = comment.TaskId,
                 UserId = comment.UserId,
                 UserFullName = $"{user.FirstName} {user.LastName}",
+                UserFullNameMy = $"{user.FirstNameMy} {user.LastNameMy}",
                 UserRoleName = user.Role != null ? user.Role.Name : "User",
+                UserRoleNameMy = user.Role != null ? user.Role.NameMy : null,
                 Message = comment.Message,
+                MessageMy = comment.MessageMy,
                 CreatedAt = comment.CreatedAt ?? DateTime.UtcNow
             };
 

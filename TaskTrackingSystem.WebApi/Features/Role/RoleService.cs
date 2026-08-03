@@ -30,7 +30,9 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 {
                     Id = r.Id,
                     Name = r.Name,
+                    NameMy = r.NameMy,
                     Description = r.Description,
+                    DescriptionMy = r.DescriptionMy,
                     CreatedAt = r.CreatedAt ?? DateTime.UtcNow
                 })
                 .ToListAsync();
@@ -45,7 +47,9 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 var searchTerm = search.Trim().ToLower();
                 query = query.Where(r =>
                     (r.Name != null && r.Name.ToLower().Contains(searchTerm)) ||
-                    (r.Description != null && r.Description.ToLower().Contains(searchTerm)));
+                    (r.NameMy != null && r.NameMy.ToLower().Contains(searchTerm)) ||
+                    (r.Description != null && r.Description.ToLower().Contains(searchTerm)) ||
+                    (r.DescriptionMy != null && r.DescriptionMy.ToLower().Contains(searchTerm)));
             }
 
             return await query
@@ -54,7 +58,9 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 {
                     Id = r.Id,
                     Name = r.Name,
+                    NameMy = r.NameMy,
                     Description = r.Description,
+                    DescriptionMy = r.DescriptionMy,
                     CreatedAt = r.CreatedAt ?? DateTime.UtcNow
                 })
                 .ToPagedResultAsync(page, pageSize);
@@ -72,19 +78,21 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             {
                 Id = role.Id,
                 Name = role.Name,
+                NameMy = role.NameMy,
                 Description = role.Description,
+                DescriptionMy = role.DescriptionMy,
                 CreatedAt = role.CreatedAt ?? DateTime.UtcNow
             };
         }
 
         public async Task<Result<RoleDto>> CreateRoleAsync(CreateRoleDto dto, long? currentUserId = null)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
+            if (string.IsNullOrWhiteSpace(dto.Name) && string.IsNullOrWhiteSpace(dto.NameMy))
             {
                 return Result<RoleDto>.Failure(ResultMessages.RoleNameRequired, 400);
             }
 
-            var nameExists = await _db.Roles.AnyAsync(r => r.Name == dto.Name);
+            var nameExists = !string.IsNullOrWhiteSpace(dto.Name) && await _db.Roles.AnyAsync(r => r.Name == dto.Name);
             if (nameExists)
             {
                 return Result<RoleDto>.Failure("Role name is already taken.", 400);
@@ -101,8 +109,10 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             var role = new RoleEntity
             {
-                Name = dto.Name,
+                Name = dto.Name ?? string.Empty,
+                NameMy = dto.NameMy,
                 Description = dto.Description,
+                DescriptionMy = dto.DescriptionMy,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = currentUserId
             };
@@ -125,14 +135,16 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             {
                 Id = role.Id,
                 Name = role.Name,
+                NameMy = role.NameMy,
                 Description = role.Description,
+                DescriptionMy = role.DescriptionMy,
                 CreatedAt = role.CreatedAt ?? DateTime.UtcNow
             }, 201);
         }
 
         public async Task<Result> UpdateRoleAsync(long id, UpdateRoleDto dto, long? currentUserId = null)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
+            if (string.IsNullOrWhiteSpace(dto.Name) && string.IsNullOrWhiteSpace(dto.NameMy))
             {
                 return Result.Failure(ResultMessages.RoleNameRequired, 400);
             }
@@ -143,14 +155,16 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return Result.Failure(ResultMessages.RoleNotFound(id), 404);
             }
 
-            var nameExists = await _db.Roles.AnyAsync(r => r.Name == dto.Name && r.Id != id && r.IsDeleted != true);
+            var nameExists = !string.IsNullOrWhiteSpace(dto.Name) && await _db.Roles.AnyAsync(r => r.Name == dto.Name && r.Id != id && r.IsDeleted != true);
             if (nameExists)
             {
                 return Result.Failure("Role name is already taken by another role.", 400);
             }
 
-            role.Name = dto.Name;
+            role.Name = dto.Name ?? string.Empty;
+            role.NameMy = dto.NameMy;
             role.Description = dto.Description;
+            role.DescriptionMy = dto.DescriptionMy;
             role.UpdatedAt = DateTime.UtcNow;
             role.UpdatedBy = currentUserId;
 

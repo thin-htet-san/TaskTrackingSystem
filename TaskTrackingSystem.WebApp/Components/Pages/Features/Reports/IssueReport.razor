@@ -48,7 +48,7 @@
                     <option value="0">@AppLocalization.Text("common.all", "All Projects")</option>
                     @foreach (var project in projects)
                     {
-                        <option value="@project.Id">@project.Name</option>
+                        <option value="@project.Id">@Content.GetProjectName(project)</option>
                     }
                 </select>
             </div>
@@ -158,13 +158,13 @@
                                 {
                                     <tr class="align-top hover:bg-slate-50/50">
                                         <td class="px-4 py-3">
-                                            <button @onclick="() => ToggleExpanded(issue.Id)" class="block w-full text-left text-sm font-semibold text-slate-900 hover:text-violet-600 break-words">@issue.Title</button>
+                                            <button @onclick="() => ToggleExpanded(issue.Id)" class="block w-full text-left text-sm font-semibold text-slate-900 hover:text-violet-600 break-words">@Content.GetIssueTitle(issue)</button>
                                             @if (expandedIssues.Contains(issue.Id))
                                             {
                                                 <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                                                    <div>@(string.IsNullOrWhiteSpace(issue.Description) ? AppLocalization.Text("common.noDescription", "No description") : issue.Description)</div>
-                                                    <div class="mt-1">@AppLocalization.Text("report.delay", "Delay"): @(string.IsNullOrWhiteSpace(issue.DelayReason) ? AppLocalization.Text("common.noneRecorded", "None recorded") : issue.DelayReason)</div>
-                                                    <div>@AppLocalization.Text("report.blockedBy", "Blocked by"): @(string.IsNullOrWhiteSpace(issue.BlockedBy) ? AppLocalization.Text("common.none", "None") : issue.BlockedBy)</div>
+                                                    <div>@(string.IsNullOrWhiteSpace(Content.GetIssueDescription(issue)) ? AppLocalization.Text("common.noDescription", "No description") : Content.GetIssueDescription(issue))</div>
+                                                    <div class="mt-1">@AppLocalization.Text("report.delay", "Delay"): @(string.IsNullOrWhiteSpace(Content.GetText(issue.DelayReason, issue.DelayReasonMy)) ? AppLocalization.Text("common.noneRecorded", "None recorded") : Content.GetText(issue.DelayReason, issue.DelayReasonMy))</div>
+                                                    <div>@AppLocalization.Text("report.blockedBy", "Blocked by"): @(string.IsNullOrWhiteSpace(Content.GetText(issue.BlockedBy, issue.BlockedByMy)) ? AppLocalization.Text("common.none", "None") : Content.GetText(issue.BlockedBy, issue.BlockedByMy))</div>
                                                 </div>
                                             }
                                         </td>
@@ -175,12 +175,12 @@
                                             @if (expandedTaskDetails.Contains(issue.Id))
                                             {
                                         <div class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                                            <div class="font-medium text-slate-800 break-words">@issue.TaskTitle</div>
-                                            <div class="mt-1 break-words">@issue.ProjectName</div>
+                                            <div class="font-medium text-slate-800 break-words">@Content.GetText(issue.TaskTitle, issue.TaskTitleMy)</div>
+                                            <div class="mt-1 break-words">@Content.GetText(issue.ProjectName, issue.ProjectNameMy)</div>
                                         </div>
                                             }
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-slate-600 break-words">@(issue.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))</td>
+                                        <td class="px-4 py-3 text-sm text-slate-600 break-words">@(string.IsNullOrWhiteSpace(Content.GetText(issue.AssignedToName, issue.AssignedToNameMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(issue.AssignedToName, issue.AssignedToNameMy))</td>
                                         <td class="px-4 py-3"><span class="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium @GetStatusBadge(issue.StatusId)">@GetStatusLabel(issue.StatusId)</span></td>
                                         <td class="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">@AppLocalization.Number(issue.EstimatedHours ?? 0, "N1") / @AppLocalization.Number(issue.ActualHours ?? 0, "N1")</td>
                                         <td class="px-4 py-3 text-sm whitespace-nowrap @(IsOverdue(issue) ? "font-semibold text-rose-600" : "text-slate-600")">@DisplayFormats.Date(issue.DueDate)</td>
@@ -259,10 +259,13 @@
         if (!string.IsNullOrWhiteSpace(appliedSearch))
         {
             var s = appliedSearch.Trim();
-            return issue.Title.Contains(s, StringComparison.OrdinalIgnoreCase)
-                || issue.TaskTitle.Contains(s, StringComparison.OrdinalIgnoreCase)
-                || issue.ProjectName.Contains(s, StringComparison.OrdinalIgnoreCase)
-                || (issue.AssignedToName?.Contains(s, StringComparison.OrdinalIgnoreCase) == true);
+            return Content.GetText(issue.Title, issue.TitleMy).Contains(s, StringComparison.OrdinalIgnoreCase)
+                || Content.GetText(issue.TaskTitle, issue.TaskTitleMy).Contains(s, StringComparison.OrdinalIgnoreCase)
+                || Content.GetText(issue.ProjectName, issue.ProjectNameMy).Contains(s, StringComparison.OrdinalIgnoreCase)
+                || Content.GetText(issue.Description, issue.DescriptionMy).Contains(s, StringComparison.OrdinalIgnoreCase)
+                || Content.GetText(issue.DelayReason, issue.DelayReasonMy).Contains(s, StringComparison.OrdinalIgnoreCase)
+                || Content.GetText(issue.BlockedBy, issue.BlockedByMy).Contains(s, StringComparison.OrdinalIgnoreCase)
+                || Content.GetText(issue.AssignedToName, issue.AssignedToNameMy).Contains(s, StringComparison.OrdinalIgnoreCase);
         }
         return true;
     }
@@ -327,8 +330,8 @@
 
     private IReadOnlyList<(string Label, int Value)> StatusChart => new[] { (AppLocalization.StatusLabel(AppTaskStatus.Todo), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Todo)), (AppLocalization.StatusLabel(AppTaskStatus.InProgress), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.InProgress)), (AppLocalization.StatusLabel(AppTaskStatus.Done), FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)), (AppLocalization.Text("status.overdue", "Overdue"), OverdueIssues) };
     private IReadOnlyList<(string Label, int Value)> PriorityChart => Enum.GetValues<TaskPriority>().Select(p => (GetPriorityLabel(p), FilteredIssues.Count(i => i.PriorityId == p))).ToList();
-    private IReadOnlyList<(string Label, int Value)> EmployeeChart => FilteredIssues.GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned")).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
-    private IReadOnlyList<(string Label, int Value)> ProjectChart => FilteredIssues.GroupBy(i => i.ProjectName).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
+    private IReadOnlyList<(string Label, int Value)> EmployeeChart => FilteredIssues.GroupBy(i => string.IsNullOrWhiteSpace(Content.GetText(i.AssignedToName, i.AssignedToNameMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(i.AssignedToName, i.AssignedToNameMy)).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
+    private IReadOnlyList<(string Label, int Value)> ProjectChart => FilteredIssues.GroupBy(i => Content.GetText(i.ProjectName, i.ProjectNameMy)).OrderByDescending(g => g.Count()).Take(5).Select(g => (g.Key, g.Count())).ToList();
     private IEnumerable<string> Insights => new[] { $"{AppLocalization.Number(OverdueIssues)} {AppLocalization.Text("report.overdueIssuesNeedAttention", "overdue issues need attention.")}", $"{AppLocalization.Number(BlockedIssues)} {AppLocalization.Text("report.issuesAreBlocked", "issues are blocked.")}", $"{AppLocalization.Text("report.actualHoursAre", "Actual hours are")} {AppLocalization.Number(FilteredIssues.Sum(i => i.ActualHours ?? 0), "N1")} {AppLocalization.Text("report.against", "against")} {AppLocalization.Number(FilteredIssues.Sum(i => i.EstimatedHours ?? 0), "N1")} {AppLocalization.Text("report.estimated", "estimated.")}" };
     private double BlockedOverduePercent => FilteredIssues.Any() ? (BlockedIssues + OverdueIssues) / (double)FilteredIssues.Count() * 100 : 0;
     private string IssueStatusInsight => OpenIssues > FilteredIssues.Count(i => i.StatusId == AppTaskStatus.Done)
@@ -353,7 +356,7 @@
     };
 
     private List<TopRiskItem> IssueProjectItems => FilteredIssues
-        .GroupBy(i => i.ProjectName)
+        .GroupBy(i => Content.GetText(i.ProjectName, i.ProjectNameMy))
         .Select(g =>
         {
             var blocked = g.Count(i => i.IsBlocked);
@@ -366,7 +369,7 @@
         .ToList();
 
     private List<TopRiskItem> IssueAssigneeItems => FilteredIssues
-        .GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))
+        .GroupBy(i => string.IsNullOrWhiteSpace(Content.GetText(i.AssignedToName, i.AssignedToNameMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(i.AssignedToName, i.AssignedToNameMy))
         .Select(g =>
         {
             var blocked = g.Count(i => i.IsBlocked);
@@ -396,14 +399,14 @@
 
     private async Task DownloadExcel()
     {
-        var rows = FilteredIssues.Select(i => new object?[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"), GetStatusLabel(i.StatusId), GetPriorityLabel(i.PriorityId), i.EstimatedHours ?? 0, i.ActualHours ?? 0, i.DueDate, i.IsBlocked ? AppLocalization.Text("status.blocked", "Blocked") : AppLocalization.Text("status.clear", "Clear"), EscalationLabel(i.EscalationLevel), i.DelayReason ?? "" });
+        var rows = FilteredIssues.Select(i => new object?[] { Content.GetText(i.Title, i.TitleMy), Content.GetText(i.TaskTitle, i.TaskTitleMy), Content.GetText(i.ProjectName, i.ProjectNameMy), string.IsNullOrWhiteSpace(Content.GetText(i.AssignedToName, i.AssignedToNameMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(i.AssignedToName, i.AssignedToNameMy), GetStatusLabel(i.StatusId), GetPriorityLabel(i.PriorityId), i.EstimatedHours ?? 0, i.ActualHours ?? 0, i.DueDate, i.IsBlocked ? AppLocalization.Text("status.blocked", "Blocked") : AppLocalization.Text("status.clear", "Clear"), EscalationLabel(i.EscalationLevel), Content.GetText(i.DelayReason, i.DelayReasonMy) });
         var bytes = SpreadsheetReportBuilder.BuildTableWorkbook(AppLocalization.PageTitle("issueReport", "Issue Report"), AppLocalization.PageTitle("issueReport", "Issue Report"), new[] { AppLocalization.Text("common.issue", "Issue"), AppLocalization.Text("common.task", "Task"), AppLocalization.Text("common.project", "Project"), AppLocalization.Text("common.assignee", "Assignee"), AppLocalization.Text("common.status", "Status"), AppLocalization.Text("common.priority", "Priority"), AppLocalization.Text("report.estimated", "Estimated"), AppLocalization.Text("report.actual", "Actual"), AppLocalization.Text("common.dueDate", "Due Date"), AppLocalization.Text("status.blocked", "Blocked"), AppLocalization.Text("report.escalation", "Escalation"), AppLocalization.Text("report.delayReason", "Delay Reason") }, rows, new[] { $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}" });
         await JS.InvokeVoidAsync("downloadFileFromBase64", $"IssueReport_{DateTime.Today:yyyyMMdd}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Convert.ToBase64String(bytes));
     }
 
     private async Task DownloadPdf()
     {
-        var rows = FilteredIssues.Select(i => new[] { i.Title, i.TaskTitle, i.ProjectName, i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"), GetStatusLabel(i.StatusId), DisplayFormats.Date(i.DueDate), i.IsBlocked ? AppLocalization.Text("status.blocked", "Blocked") : AppLocalization.Text("status.clear", "Clear") });
+        var rows = FilteredIssues.Select(i => new[] { Content.GetText(i.Title, i.TitleMy), Content.GetText(i.TaskTitle, i.TaskTitleMy), Content.GetText(i.ProjectName, i.ProjectNameMy), string.IsNullOrWhiteSpace(Content.GetText(i.AssignedToName, i.AssignedToNameMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(i.AssignedToName, i.AssignedToNameMy), GetStatusLabel(i.StatusId), DisplayFormats.Date(i.DueDate), i.IsBlocked ? AppLocalization.Text("status.blocked", "Blocked") : AppLocalization.Text("status.clear", "Clear") });
         var bytes = SimplePdfReportBuilder.BuildTableReport(AppLocalization.PageTitle("issueReport", "Issue Report"), new[] { $"{AppLocalization.Text("common.date", "Generated")}: {DisplayFormats.Date(DateTime.Today)}" }, new[] { AppLocalization.Text("common.issue", "Issue"), AppLocalization.Text("common.task", "Task"), AppLocalization.Text("common.project", "Project"), AppLocalization.Text("common.assignee", "Assignee"), AppLocalization.Text("common.status", "Status"), AppLocalization.Text("common.dueDate", "Due Date"), AppLocalization.Text("common.issue", "Risk") }, rows);
         await JS.InvokeVoidAsync("downloadFileFromBase64", $"IssueReport_{DateTime.Today:yyyyMMdd}.pdf", "application/pdf", Convert.ToBase64String(bytes));
     }

@@ -49,7 +49,7 @@
                         <option value="0">@AppLocalization.Text("common.allProjects", "All Projects")</option>
                         @foreach (var p in projects)
                         {
-                            <option value="@p.Id">@p.Name</option>
+                            <option value="@p.Id">@Content.GetProjectName(p)</option>
                         }
                     </select>
                 </div>
@@ -116,10 +116,10 @@
                                     <span class="font-mono text-[11px] font-semibold text-indigo-700">@GetTaskCode(task.Id)</span>
                                 </td>
                                 <td class="px-6 py-4 text-left">
-                                    <a href="/tasks/@task.Id/details" class="text-sm font-semibold text-slate-900 hover:text-violet-600 transition-colors">@task.Title</a>
-                                    @if (!string.IsNullOrEmpty(task.Description))
+                                    <a href="/tasks/@task.Id/details" class="text-sm font-semibold text-slate-900 hover:text-violet-600 transition-colors">@Content.GetTaskTitle(task)</a>
+                                    @if (!string.IsNullOrEmpty(Content.GetTaskDescription(task)))
                                     {
-                                        <p class="mt-0.5 text-xs text-slate-400 truncate max-w-full">@task.Description</p>
+                                        <p class="mt-0.5 text-xs text-slate-400 truncate max-w-full">@Content.GetTaskDescription(task)</p>
                                     }
                                 </td>
                                 <td class="px-6 py-4 text-left">
@@ -135,7 +135,7 @@
                                 <td class="px-6 py-4 text-sm text-slate-600 text-left whitespace-nowrap">@DisplayFormats.Date(task.DueDate)</td>
                                 <td class="px-6 py-4 text-sm text-slate-500 text-left break-words">
                                     @{ var proj = projects.FirstOrDefault(p => p.Id == task.ProjectId); }
-                                    @(proj?.Name ?? $"#{task.ProjectId}")
+                                    @(proj != null ? Content.GetProjectName(proj) : $"#{task.ProjectId}")
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-500 font-medium text-left">
                                     @{ var user = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo); }
@@ -145,7 +145,7 @@
                                             <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
                                                 @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
                                             </span>
-                                            <span class="text-xs text-slate-700 font-semibold">@user.FirstName @user.LastName</span>
+                                            <span class="text-xs text-slate-700 font-semibold">@Content.GetUserFullName(user)</span>
                                         </div>
                                     }
                                     else
@@ -202,24 +202,33 @@
                 </button>
             </div>
             <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("field.title", "Title") <span class="text-red-500">*</span></label>
-                    <div class="relative">
-                        <input @bind="formTitle" type="text" placeholder="@AppLocalization.Text("task.taskTitle", "Task title")" class="w-full rounded-lg border @(isTitleError ? "border-red-500 focus:ring-red-500" : "border-slate-200 focus:ring-slate-900") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all @(isTitleError ? "pr-10" : "")" />
-                        @if (isTitleError)
-                        {
-                            <svg class="absolute right-3 top-2.5 h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                        }
-                    </div>
-                    @if (isTitleError)
-                    {
-                        <p class="mt-1 text-xs text-red-500">@titleErrorMessage</p>
-                    }
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.description", "Description")</label>
-                    <textarea @bind="formDescription" rows="3" placeholder="@AppLocalization.Text("common.description", "Description")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"></textarea>
-                </div>
+                <BilingualEditorTabs BurmeseComplete="@(!string.IsNullOrWhiteSpace(formTitleMy))"
+                                     EnglishComplete="@(!string.IsNullOrWhiteSpace(formTitle))"
+                                     BurmeseAiGenerated="@burmeseGenerated"
+                                     EnglishAiGenerated="@englishGenerated"
+                                     BurmeseNeedsReview="@burmeseNeedsReview"
+                                     EnglishNeedsReview="@englishNeedsReview">
+                    <BurmeseContent>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">ခေါင်းစဉ် <span class="text-red-500">*</span></label>
+                        <input @bind="formTitleMy" type="text" placeholder="ခေါင်းစဉ်" class="w-full rounded-lg border @(isTitleError && string.IsNullOrWhiteSpace(formTitle) ? "border-red-500" : "border-slate-200") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                        <BilingualFieldWarning Text="@formTitleMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveTaskTitleToEnglish" />
+                        <BilingualTranslationAction SourceText="@formTitleMy" SourceLanguage="my" TargetLanguage="en" TargetHasText="@(!string.IsNullOrWhiteSpace(formTitle))" Generated="GenerateTaskEnglishTitle" />
+                        <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">ဖော်ပြချက်</label>
+                        <textarea @bind="formDescriptionMy" rows="3" placeholder="ဖော်ပြချက်" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                        <BilingualFieldWarning Text="@formDescriptionMy" ExpectedBurmese="true" MoveToOtherLanguage="MoveTaskDescriptionToEnglish" />
+                        <BilingualTranslationAction SourceText="@formDescriptionMy" SourceLanguage="my" TargetLanguage="en" TargetHasText="@(!string.IsNullOrWhiteSpace(formDescription))" Generated="GenerateTaskEnglishDescription" />
+                    </BurmeseContent>
+                    <EnglishContent>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("field.title", "Title") <span class="text-red-500">*</span></label>
+                        <input @bind="formTitle" type="text" placeholder="@AppLocalization.Text("task.taskTitle", "Task title")" class="w-full rounded-lg border @(isTitleError && string.IsNullOrWhiteSpace(formTitleMy) ? "border-red-500" : "border-slate-200") px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                        <BilingualFieldWarning Text="@formTitle" ExpectedBurmese="false" MoveToOtherLanguage="MoveTaskTitleToBurmese" />
+                        <BilingualTranslationAction SourceText="@formTitle" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formTitleMy))" Generated="GenerateTaskBurmeseTitle" />
+                        <label class="mt-4 block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.description", "Description")</label>
+                        <textarea @bind="formDescription" rows="3" placeholder="@AppLocalization.Text("task.taskDescription", "Task description")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all"></textarea>
+                        <BilingualFieldWarning Text="@formDescription" ExpectedBurmese="false" MoveToOtherLanguage="MoveTaskDescriptionToBurmese" />
+                        <BilingualTranslationAction SourceText="@formDescription" SourceLanguage="en" TargetLanguage="my" TargetHasText="@(!string.IsNullOrWhiteSpace(formDescriptionMy))" Generated="GenerateTaskBurmeseDescription" />
+                    </EnglishContent>
+                </BilingualEditorTabs>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">@AppLocalization.Text("common.project", "Project") <span class="text-red-500">*</span></label>
@@ -227,7 +236,7 @@
                             <option value="0">@AppLocalization.Text("task.selectProject", "Select project...")</option>
                             @foreach (var p in projects)
                             {
-                                <option value="@p.Id">@p.Name</option>
+                                <option value="@p.Id">@Content.GetProjectName(p)</option>
                             }
                         </select>
                         @if (isProjectError)
@@ -319,7 +328,7 @@
                                                         @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
                                                     </span>
                                                     <div class="min-w-0 flex-1">
-                                                        <p class="truncate text-sm font-semibold text-slate-900">@user.FirstName @user.LastName</p>
+                                                        <p class="truncate text-sm font-semibold text-slate-900">@Content.GetUserFullName(user)</p>
                                                         <p class="truncate text-xs text-slate-500">@@@user.Username</p>
                                                     </div>
                                                 </button>
@@ -431,7 +440,13 @@
     // Form fields
     private long editingId;
     private string formTitle = "";
+    private string? formTitleMy;
     private string? formDescription;
+    private string? formDescriptionMy;
+    private bool burmeseGenerated;
+    private bool englishGenerated;
+    private bool burmeseNeedsReview;
+    private bool englishNeedsReview;
     private long formProjectId;
     private AppTaskStatus formStatusId = AppTaskStatus.Todo;
     private TaskPriority formPriorityId = TaskPriority.Medium;
@@ -439,6 +454,20 @@
     private long? formAssignedTo;
     private string assigneeSearchInput = "";
     private bool isLoadingProjectMembers;
+
+    private void MoveTaskTitleToEnglish() { formTitle = formTitleMy ?? string.Empty; }
+    private void MoveTaskTitleToBurmese() { formTitleMy = formTitle; }
+    private void MoveTaskDescriptionToEnglish() { formDescription = formDescriptionMy; }
+    private void MoveTaskDescriptionToBurmese() { formDescriptionMy = formDescription; }
+    private void MarkGenerated(bool english)
+    {
+        if (english) { englishGenerated = true; englishNeedsReview = true; }
+        else { burmeseGenerated = true; burmeseNeedsReview = true; }
+    }
+    private Task GenerateTaskEnglishTitle(TranslationResult result) { formTitle = result.TranslatedText ?? string.Empty; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateTaskBurmeseTitle(TranslationResult result) { formTitleMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
+    private Task GenerateTaskEnglishDescription(TranslationResult result) { formDescription = result.TranslatedText ?? string.Empty; MarkGenerated(true); return Task.CompletedTask; }
+    private Task GenerateTaskBurmeseDescription(TranslationResult result) { formDescriptionMy = result.TranslatedText; MarkGenerated(false); return Task.CompletedTask; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -614,7 +643,8 @@
             {
                 var search = assigneeSearchInput.Trim();
                 result = result.Where(u =>
-                    $"{u.FirstName} {u.LastName}".Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    Content.GetUserFullName(u).Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    $"{u.FirstName} {u.LastName} {u.FirstNameMy} {u.LastNameMy}".Contains(search, StringComparison.OrdinalIgnoreCase) ||
                     (!string.IsNullOrWhiteSpace(u.Username) && u.Username.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                     (!string.IsNullOrWhiteSpace(u.Email) && u.Email.Contains(search, StringComparison.OrdinalIgnoreCase)));
             }
@@ -638,7 +668,7 @@
             var selectedUser = projectMembers.FirstOrDefault(u => u.Id == formAssignedTo.Value);
             return selectedUser == null
                 ? AppLocalization.Text("common.selected", "selected")
-                : $"{selectedUser.FirstName} {selectedUser.LastName}".Trim();
+                : Content.GetUserFullName(selectedUser);
         }
     }
 
@@ -751,7 +781,10 @@
         isEditing = false;
         editingId = 0;
         formTitle = "";
+        formTitleMy = null;
         formDescription = null;
+        formDescriptionMy = null;
+        burmeseGenerated = englishGenerated = burmeseNeedsReview = englishNeedsReview = false;
         formProjectId = projects.FirstOrDefault()?.Id ?? 0;
         formStatusId = AppTaskStatus.Todo;
         formPriorityId = TaskPriority.Medium;
@@ -771,7 +804,10 @@
         isEditing = true;
         editingId = task.Id;
         formTitle = task.Title;
+        formTitleMy = task.TitleMy;
         formDescription = task.Description;
+        formDescriptionMy = task.DescriptionMy;
+        burmeseGenerated = englishGenerated = burmeseNeedsReview = englishNeedsReview = false;
         formProjectId = task.ProjectId;
         formStatusId = task.StatusId;
         formPriorityId = task.PriorityId;
@@ -804,7 +840,7 @@
         isProjectError = false; projectErrorMessage = "";
         bool hasError = false;
 
-        if (string.IsNullOrWhiteSpace(formTitle))
+        if (string.IsNullOrWhiteSpace(formTitle) && string.IsNullOrWhiteSpace(formTitleMy))
         {
             isTitleError = true;
             titleErrorMessage = AppLocalization.Text("validation.taskTitleRequired", "Task title is required.");
@@ -869,7 +905,7 @@
 
     private async Task SaveTask()
     {
-        if (string.IsNullOrWhiteSpace(formTitle))
+        if (string.IsNullOrWhiteSpace(formTitle) && string.IsNullOrWhiteSpace(formTitleMy))
         {
             errorMessage = ResultMessages.TaskTitleRequired;
             return;
@@ -891,7 +927,9 @@
                 var dto = new UpdateTaskDto
                 {
                     Title = formTitle,
+                    TitleMy = formTitleMy,
                     Description = formDescription,
+                    DescriptionMy = formDescriptionMy,
                     StatusId = formStatusId,
                     PriorityId = formPriorityId,
                     DueDate = formDueDate,
@@ -910,7 +948,9 @@
                 var dto = new CreateTaskDto
                 {
                     Title = formTitle,
+                    TitleMy = formTitleMy,
                     Description = formDescription,
+                    DescriptionMy = formDescriptionMy,
                     ProjectId = formProjectId,
                     StatusId = formStatusId,
                     PriorityId = formPriorityId,

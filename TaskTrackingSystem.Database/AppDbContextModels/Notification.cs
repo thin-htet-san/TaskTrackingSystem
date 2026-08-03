@@ -14,7 +14,11 @@ public partial class Notification
 
     public string Title { get; set; } = null!;
 
+    public string? TitleMy { get; set; }
+
     public string Body { get; set; } = null!;
+
+    public string? BodyMy { get; set; }
 
     public string SourceType { get; set; } = null!;
 

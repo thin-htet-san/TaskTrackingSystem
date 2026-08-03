@@ -57,12 +57,12 @@
                             <button @onclick="() => SelectProject(proj)"
                                     class="w-full text-left p-4 hover:bg-slate-50/60 transition-colors flex flex-col gap-1 @(isSelected ? "bg-violet-50/60 border-l-4 border-violet-600 pl-3" : "")">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-900 @(isSelected ? "text-violet-700" : "")">@proj.Name</span>
+                                    <span class="text-sm font-semibold text-slate-900 @(isSelected ? "text-violet-700" : "")">@Content.GetProjectName(proj)</span>
                                     <span class="text-[10px] text-slate-400">@DisplayFormats.Date(proj.StartDate) - @DisplayFormats.Date(proj.EndDate)</span>
                                 </div>
-                                @if (!string.IsNullOrEmpty(proj.Description))
+                                @if (!string.IsNullOrEmpty(Content.GetText(proj.Description, proj.DescriptionMy)))
                                 {
-                                    <p class="text-xs text-slate-500 line-clamp-1">@proj.Description</p>
+                                    <p class="text-xs text-slate-500 line-clamp-1">@Content.GetText(proj.Description, proj.DescriptionMy)</p>
                                 }
                             </button>
                         }
@@ -92,10 +92,10 @@
                     <div class="p-6 border-b border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <span class="text-[10px] font-bold text-violet-600 uppercase tracking-wider">@AppLocalization.Text("common.currentlyManaging", "Currently Managing")</span>
-                            <h3 class="text-xl font-bold text-slate-900">@SelectedProject.Name</h3>
-                            @if (!string.IsNullOrEmpty(SelectedProject.Description))
+                            <h3 class="text-xl font-bold text-slate-900">@Content.GetProjectName(SelectedProject)</h3>
+                            @if (!string.IsNullOrEmpty(Content.GetText(SelectedProject.Description, SelectedProject.DescriptionMy)))
                             {
-                                <p class="text-xs text-slate-500 mt-1">@SelectedProject.Description</p>
+                                <p class="text-xs text-slate-500 mt-1">@Content.GetText(SelectedProject.Description, SelectedProject.DescriptionMy)</p>
                             }
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -123,7 +123,7 @@
                                             <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
                                                 @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
                                             </span>
-                                            <span>@user.FirstName @user.LastName</span>
+                                            <span>@Content.GetUserFullName(user)</span>
                                         </span>
                                     }
                                 </div>
@@ -157,7 +157,7 @@
                                     <option value="0">@AppLocalization.Text("common.allRoles", "All Roles")</option>
                                     @foreach (var r in roles)
                                     {
-                                        <option value="@r.Id">@AppLocalization.RoleName(r.Name)</option>
+                                        <option value="@r.Id">@Content.GetRoleName(r)</option>
                                     }
                                 </select>
                             </div>
@@ -201,7 +201,7 @@
                                                 @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
                                             </span>
                                             <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-semibold text-slate-800 truncate">@user.FirstName @user.LastName</p>
+                                                <p class="text-sm font-semibold text-slate-800 truncate">@Content.GetUserFullName(user)</p>
                                                 <p class="text-xs text-slate-400 truncate">@@@user.Username</p>
                                             </div>
                                         </label>

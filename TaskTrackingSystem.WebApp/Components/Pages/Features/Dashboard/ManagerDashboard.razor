@@ -125,7 +125,7 @@
                                 <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                     <span class="h-2.5 w-2.5 rounded-full" style="background-color: @item.Color;"></span>
                                     <div class="min-w-0 flex-1">
-                                        <div class="truncate text-sm font-semibold text-slate-950">@item.Name</div>
+                                        <div class="truncate text-sm font-semibold text-slate-950">@Content.GetText(item.Name, item.NameMy)</div>
                                         <div class="text-xs text-slate-500">@AppLocalization.LocalizeDigits(item.EndDateLabel)</div>
                                     </div>
                                     <div class="@item.DaysLeftClass">@item.DaysLeftLabel</div>
@@ -163,7 +163,7 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-center gap-3">
                                             <span class="h-2.5 w-2.5 rounded-full" style="background-color: @project.Color;"></span>
-                                            <h4 class="truncate text-lg font-semibold text-slate-950">@project.Name</h4>
+                                        <h4 class="truncate text-lg font-semibold text-slate-950">@Content.GetText(project.Name, project.NameMy)</h4>
                                             <span class="@project.StatusClass">@project.StatusLabel</span>
                                         </div>
 
@@ -404,6 +404,7 @@
                 return new ProjectCardViewModel(
                     project.Id,
                     project.Name,
+                    project.NameMy,
                     completed,
                     total,
                     overdue,
@@ -494,6 +495,7 @@
                 return new DeadlineItemViewModel(
                     project.Id,
                     project.Name,
+                    project.NameMy,
                     project.EndDate.ToString("yyyy-MM-dd"),
                     label,
                     labelClass,
@@ -662,6 +664,7 @@
     private sealed record ProjectCardViewModel(
         long Id,
         string Name,
+        string? NameMy,
         int Completed,
         int Total,
         int Overdue,
@@ -711,6 +714,7 @@
     private sealed record DeadlineItemViewModel(
         long ProjectId,
         string Name,
+        string? NameMy,
         string EndDateLabel,
         string DaysLeftLabel,
         string DaysLeftClass,

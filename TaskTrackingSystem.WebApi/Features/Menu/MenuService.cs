@@ -98,6 +98,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                     MenuCode = m.MenuCode,
                     ParentCode = GetParentCode(m, menuLookup),
                     MenuName = m.MenuName,
+                    MenuNameMy = m.MenuNameMy,
                     MenuUrl = m.MenuUrl,
                     OrderNo = m.OrderNo,
                     Icon = m.Icon
@@ -247,6 +248,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                         MenuCode = m.MenuCode,
                         ParentCode = GetParentCode(m, menuLookup),
                         MenuName = m.MenuName,
+                        MenuNameMy = m.MenuNameMy,
                         MenuUrl = m.MenuUrl,
                         OrderNo = m.OrderNo,
                         Icon = m.Icon,
@@ -273,6 +275,7 @@ namespace TaskTrackingSystem.WebApi.Features.Menu
                         PermissionCode = permission.PermissionCode,
                         ParentMenuCode = menuLookup.TryGetValue(permission.MenuId, out var parentMenu) ? parentMenu.MenuCode : string.Empty,
                         ActionName = permission.ActionName,
+                        ActionNameMy = permission.ActionNameMy,
                         ApiName = permission.ApiName,
                         Visible = permission.Visible,
                         OrderNo = permission.OrderNo

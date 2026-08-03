@@ -86,13 +86,12 @@ public sealed class UiLanguageService
     public static string ToCode(AppLanguage language) => language == AppLanguage.Burmese ? "my-MM" : "en-US";
 
     public static AppLanguage FromCode(string? code) =>
-        string.Equals(code, "my", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(code, "my-MM", StringComparison.OrdinalIgnoreCase)
-            ? AppLanguage.Burmese
-            : AppLanguage.English;
+        string.Equals(code, "en", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(code, "en-US", StringComparison.OrdinalIgnoreCase)
+            ? AppLanguage.English
+            : AppLanguage.Burmese;
 
     public string T(string key, string fallback = "") => AppLocalization.Text(key, fallback);
-    public string Menu(string menuCode, string fallback = "") => AppLocalization.Menu(menuCode, fallback);
     public string PageTitle(string key, string fallback = "") => AppLocalization.PageTitle(key, fallback);
     public string PageDescription(string key, string fallback = "") => AppLocalization.PageDescription(key, fallback);
     public string StatusLabel(TaskTrackingSystem.Shared.Enums.AppTaskStatus status) => AppLocalization.StatusLabel(status);

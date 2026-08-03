@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using TaskTrackingSystem.WebApp.Localization;
+using TaskTrackingSystem.Shared.Localization;
 using TaskTrackingSystem.WebApp;
 using TaskTrackingSystem.WebApp.Components;
 
@@ -46,6 +47,9 @@ builder.Services.AddScoped<UserSessionState>();
 builder.Services.AddScoped<ApiClientService>();
 builder.Services.AddScoped<MenuAuthorizationService>();
 builder.Services.AddScoped<UiLanguageService>();
+builder.Services.AddScoped<ILocalizedContentService, LocalizedContentService>();
+builder.Services.AddScoped<TaskTrackingSystem.Shared.Localization.IContentTranslationService, ApiContentTranslationService>();
+builder.Services.AddScoped<TaskTrackingSystem.Shared.Localization.LanguageDetectionService>();
 
 // Cookie authentication for Blazor pages and HTTP middleware.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -64,6 +68,19 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    var catalog = AppLocalization.ValidateCatalogs();
+    if (catalog.MissingInEnglish.Count > 0 || catalog.MissingInBurmese.Count > 0 || catalog.DuplicateKeys.Count > 0)
+    {
+        app.Logger.LogWarning(
+            "Localization catalog validation: missing English={MissingEnglish}; missing Burmese={MissingBurmese}; duplicate={Duplicate}",
+            string.Join(", ", catalog.MissingInEnglish),
+            string.Join(", ", catalog.MissingInBurmese),
+            string.Join(", ", catalog.DuplicateKeys));
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

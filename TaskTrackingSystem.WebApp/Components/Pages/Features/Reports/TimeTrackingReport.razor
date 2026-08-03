@@ -105,7 +105,7 @@
                         <option value="0">@AppLocalization.Text("common.allProjects", "All Projects")</option>
                         @foreach (var proj in allProjects)
                         {
-                            <option value="@proj.Id">@proj.Name</option>
+                            <option value="@proj.Id">@Content.GetProjectName(proj)</option>
                         }
                     </select>
                 </div>
@@ -217,25 +217,25 @@
                                 <td class="px-6 py-4 text-sm font-semibold text-slate-500">@AppLocalization.Number((currentPage - 1) * pageSize + entry.index + 1)</td>
                                 <td class="px-6 py-4">
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-900">@issue.Title</p>
-                                        @if (!string.IsNullOrEmpty(issue.Description))
+                                        <p class="text-sm font-semibold text-slate-900">@Content.GetIssueTitle(issue)</p>
+                                        @if (!string.IsNullOrEmpty(Content.GetIssueDescription(issue)))
                                         {
-                                            <p class="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">@issue.Description</p>
+                                            <p class="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">@Content.GetIssueDescription(issue)</p>
                                         }
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm text-slate-800 font-medium">@issue.TaskTitle</div>
-                                    <div class="text-xs text-slate-400 mt-0.5">@issue.ProjectName</div>
+                                    <div class="text-sm text-slate-800 font-medium">@Content.GetText(issue.TaskTitle, issue.TaskTitleMy)</div>
+                                    <div class="text-xs text-slate-400 mt-0.5">@Content.GetText(issue.ProjectName, issue.ProjectNameMy)</div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    @if (!string.IsNullOrEmpty(issue.AssignedToName))
+                                    @if (Content.GetText(issue.AssignedToName, issue.AssignedToNameMy) is { Length: > 0 } assigneeName)
                                     {
                                         <div class="flex items-center gap-2">
                                             <span class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
-                                                @(issue.AssignedToName.Length > 0 ? issue.AssignedToName[0].ToString().ToUpper() : "")
+                                                @assigneeName[0].ToString().ToUpper()
                                             </span>
-                                            <span class="text-sm text-slate-700">@issue.AssignedToName</span>
+                                            <span class="text-sm text-slate-700">@Content.GetText(issue.AssignedToName, issue.AssignedToNameMy)</span>
                                         </div>
                                     }
                                     else
@@ -332,10 +332,10 @@
             {
                 var q = appliedSearch.Trim().ToLower();
                 result = result.Where(i =>
-                    i.Title.ToLower().Contains(q) ||
-                    (i.Description != null && i.Description.ToLower().Contains(q)) ||
-                    (i.AssignedToName != null && i.AssignedToName.ToLower().Contains(q)) ||
-                    i.TaskTitle.ToLower().Contains(q)
+                    Content.GetText(i.Title, i.TitleMy).ToLower().Contains(q) ||
+                    Content.GetText(i.Description, i.DescriptionMy).ToLower().Contains(q) ||
+                    Content.GetText(i.AssignedToName, i.AssignedToNameMy).ToLower().Contains(q) ||
+                    Content.GetText(i.TaskTitle, i.TaskTitleMy).ToLower().Contains(q)
                 );
             }
 
@@ -452,14 +452,14 @@
     };
 
     private List<StackedSegment> ProjectEffortSegments => FilteredIssues
-        .GroupBy(i => i.ProjectName)
+        .GroupBy(i => Content.GetText(i.ProjectName, i.ProjectNameMy))
         .OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0))
         .Take(6)
         .Select((g, index) => new StackedSegment(g.Key, (double)g.Sum(i => i.ActualHours ?? 0), ChartPalette[index % ChartPalette.Length]))
         .ToList();
 
     private List<TopRiskItem> EmployeeEffortLeaders => FilteredIssues
-        .GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))
+        .GroupBy(i => string.IsNullOrWhiteSpace(Content.GetText(i.AssignedToName, i.AssignedToNameMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(i.AssignedToName, i.AssignedToNameMy))
         .Select(g =>
         {
             var actual = g.Sum(i => i.ActualHours ?? 0);
@@ -490,7 +490,7 @@
     private double EstimatedVsActualMax => GetMax(EstimatedVsActualItems);
 
     private List<ProgressListChartItem> EffortByProjectItems => FilteredIssues
-        .GroupBy(i => i.ProjectName)
+        .GroupBy(i => Content.GetText(i.ProjectName, i.ProjectNameMy))
         .OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0))
         .Take(5)
         .Select(g =>
@@ -503,7 +503,7 @@
     private double EffortByProjectMax => GetMax(EffortByProjectItems);
 
     private List<ProgressListChartItem> EffortByEmployeeItems => FilteredIssues
-        .GroupBy(i => i.AssignedToName ?? AppLocalization.Text("common.unassigned", "Unassigned"))
+        .GroupBy(i => string.IsNullOrWhiteSpace(Content.GetText(i.AssignedToName, i.AssignedToNameMy)) ? AppLocalization.Text("common.unassigned", "Unassigned") : Content.GetText(i.AssignedToName, i.AssignedToNameMy))
         .OrderByDescending(g => g.Sum(i => i.ActualHours ?? 0))
         .Take(5)
         .Select(g =>
@@ -570,18 +570,14 @@
     {
         var rows = FilteredIssues.Select(issue =>
         {
-            var statusLabel = issue.StatusId switch {
-                AppTaskStatus.InProgress => "In Progress",
-                AppTaskStatus.Done => "Completed",
-                _ => "To Do"
-            };
+            var statusLabel = AppLocalization.StatusLabel(issue.StatusId);
 
             return new object?[]
             {
-                issue.Title,
-                issue.TaskTitle,
-                issue.ProjectName,
-                issue.AssignedToName ?? "Unassigned",
+                Content.GetText(issue.Title, issue.TitleMy),
+                Content.GetText(issue.TaskTitle, issue.TaskTitleMy),
+                Content.GetText(issue.ProjectName, issue.ProjectNameMy),
+                string.IsNullOrWhiteSpace(Content.GetText(issue.AssignedToName, issue.AssignedToNameMy)) ? "Unassigned" : Content.GetText(issue.AssignedToName, issue.AssignedToNameMy),
                 issue.EstimatedHours ?? 0,
                 issue.DueDate,
                 statusLabel
@@ -596,7 +592,7 @@
             new[]
             {
                 $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All" : appliedSearch)}",
-                $"Project: {(appliedProjectId > 0 ? allProjects.FirstOrDefault(p => p.Id == appliedProjectId)?.Name ?? "All" : "All")}",
+                $"Project: {(appliedProjectId > 0 && allProjects.FirstOrDefault(p => p.Id == appliedProjectId) is { } project ? Content.GetProjectName(project) : "All")}",
                 $"Status: {(appliedStatus != "0" ? appliedStatus : "All")}",
                 $"Assigned To Me: {(filterAssignToMe ? "Yes" : "No")}",
                 $"Assigned To My Team: {(filterAssignToMyTeam ? "Yes" : "No")}",
@@ -615,7 +611,7 @@
         var summaryLines = new List<string>
         {
             $"Search: {(string.IsNullOrWhiteSpace(appliedSearch) ? "All" : appliedSearch)}",
-            $"Project: {(appliedProjectId > 0 ? allProjects.FirstOrDefault(p => p.Id == appliedProjectId)?.Name ?? "All" : "All")}",
+            $"Project: {(appliedProjectId > 0 && allProjects.FirstOrDefault(p => p.Id == appliedProjectId) is { } project ? Content.GetProjectName(project) : "All")}",
             $"Status: {(appliedStatus != "0" ? appliedStatus : "All")}",
             $"Assigned To Me: {(filterAssignToMe ? "Yes" : "No")}",
             $"Assigned To My Team: {(filterAssignToMyTeam ? "Yes" : "No")}",
@@ -626,18 +622,14 @@
 
         var rows = FilteredIssues.Select(issue =>
         {
-            var statusLabel = issue.StatusId switch {
-                AppTaskStatus.InProgress => "In Progress",
-                AppTaskStatus.Done => "Completed",
-                _ => "To Do"
-            };
+            var statusLabel = AppLocalization.StatusLabel(issue.StatusId);
 
             return new[]
             {
-                issue.Title,
-                issue.TaskTitle,
-                issue.ProjectName,
-                issue.AssignedToName ?? "Unassigned",
+                Content.GetText(issue.Title, issue.TitleMy),
+                Content.GetText(issue.TaskTitle, issue.TaskTitleMy),
+                Content.GetText(issue.ProjectName, issue.ProjectNameMy),
+                string.IsNullOrWhiteSpace(Content.GetText(issue.AssignedToName, issue.AssignedToNameMy)) ? "Unassigned" : Content.GetText(issue.AssignedToName, issue.AssignedToNameMy),
                 (issue.EstimatedHours ?? 0).ToString("N1") + " hrs",
                 DisplayFormats.Date(issue.DueDate),
                 statusLabel
