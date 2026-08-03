@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 
 <head>
     <meta charset="utf-8" />
@@ -29,9 +29,9 @@
     <script>
         (() => {
             const storageKey = 'tts-language';
-            let language = 'en';
+            let language = 'my';
             try {
-                language = localStorage.getItem(storageKey) === 'my' ? 'my' : 'en';
+                language = localStorage.getItem(storageKey) === 'en' ? 'en' : 'my';
             } catch {
             }
             document.documentElement.lang = language;
@@ -40,7 +40,7 @@
     <script>
         window.languagePreference = {
             normalize(code) {
-                return code === 'my' ? 'my' : 'en';
+                return code === 'en' ? 'en' : 'my';
             },
             apply(storageKey, code) {
                 const normalized = this.normalize(code);
@@ -52,7 +52,7 @@
                 return normalized;
             },
             init(storageKey) {
-                let code = 'en';
+                let code = 'my';
                 try {
                     code = this.normalize(localStorage.getItem(storageKey));
                 } catch {

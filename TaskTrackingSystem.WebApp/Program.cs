@@ -1,7 +1,12 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using TaskTrackingSystem.WebApp.Localization;
 using TaskTrackingSystem.WebApp;
 using TaskTrackingSystem.WebApp.Components;
+
+var defaultCulture = CultureInfo.GetCultureInfo("my-MM");
+CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
+CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 

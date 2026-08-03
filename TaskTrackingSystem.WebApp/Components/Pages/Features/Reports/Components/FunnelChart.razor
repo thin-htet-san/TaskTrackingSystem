@@ -14,7 +14,7 @@
                 <div class="mb-1.5 grid grid-cols-[96px_1fr_72px] items-center gap-3 text-xs">
                     <span class="truncate font-semibold text-slate-700">@stage.Label</span>
                     <span class="text-[11px] text-slate-400">@GetStageHelper(stage)</span>
-                    <span class="text-right font-bold tabular-nums text-slate-950">@stage.Value.ToString("0") · @percent.ToString("0")%</span>
+                    <span class="text-right font-bold tabular-nums text-slate-950">@AppLocalization.Number(stage.Value, "0") · @AppLocalization.Number(percent, "0")%</span>
                 </div>
                 <div class="h-8 rounded-lg bg-slate-100 p-1">
                     <div class="@GetFillClass(stage)" style="width: @width%; background-color: @(stage.Value > 0 ? stage.Color : "transparent");">
@@ -28,14 +28,16 @@
         }
 
         <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-            Width is measured against @Items.First().Label.ToLowerInvariant() (@Baseline.ToString("0")). Zero-value stages keep an empty track with no colored fill.
+            @AppLocalization.Text("report.funnelBaselineNote", "Width is measured against {label} ({value}). Zero-value stages keep an empty track with no colored fill.")
+                .Replace("{label}", Items.First().Label.ToLowerInvariant())
+                .Replace("{value}", AppLocalization.Number(Baseline, "0"))
         </div>
     }
 </div>
 
 @code {
     [Parameter] public IReadOnlyList<ReportChartItem> Items { get; set; } = Array.Empty<ReportChartItem>();
-    [Parameter] public string EmptyText { get; set; } = "No funnel data available.";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noFunnelData", "No funnel data available.");
     [Parameter] public double MinVisiblePercent { get; set; } = 4;
 
     private double Baseline => Math.Max(1, Items.FirstOrDefault()?.Value ?? Items.Select(item => item.Value).DefaultIfEmpty(0).Max());
@@ -51,7 +53,7 @@
     {
         if (item.Value <= 0)
         {
-            return $"No {item.Label.ToLowerInvariant()}";
+            return AppLocalization.Text("report.noStage", "No {stage}").Replace("{stage}", item.Label.ToLowerInvariant());
         }
 
         return item.Detail ?? string.Empty;
@@ -59,6 +61,9 @@
 
     private static string BuildTitle(ReportChartItem item, double percent)
     {
-        return $"{item.Label}: {item.Value:0} ({percent:0}% of baseline)";
+        return AppLocalization.Text("report.funnelTooltip", "{label}: {value} ({percent}% of baseline)")
+            .Replace("{label}", item.Label)
+            .Replace("{value}", AppLocalization.Number(item.Value, "0"))
+            .Replace("{percent}", AppLocalization.Number(percent, "0"));
     }
 }

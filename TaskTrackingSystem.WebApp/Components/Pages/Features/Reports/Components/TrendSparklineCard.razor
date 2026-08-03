@@ -28,7 +28,7 @@
     [Parameter] public string? Insight { get; set; }
     [Parameter] public IReadOnlyList<SparklinePoint> Points { get; set; } = Array.Empty<SparklinePoint>();
     [Parameter] public string Color { get; set; } = "#7c3aed";
-    [Parameter] public string EmptyText { get; set; } = "Not enough data for a trend yet.";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.notEnoughTrendData", "Not enough data for a trend yet.");
 
     private IReadOnlyList<(double X, double Y)> SvgPoints => BuildSvgPoints();
     private string LinePath => SvgPoints.Any() ? $"M {string.Join(" L ", SvgPoints.Select(p => $"{p.X:0},{p.Y:0}"))}" : string.Empty;

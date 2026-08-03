@@ -6,7 +6,7 @@
                 <circle cx="80" cy="80" r="58" fill="none" stroke="@Color" stroke-width="16" stroke-dasharray="@DashArray" stroke-linecap="round" />
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <span class="text-3xl font-bold tabular-nums text-slate-950">@ClampedPercent.ToString("0")%</span>
+                <span class="text-3xl font-bold tabular-nums text-slate-950">@AppLocalization.Number(ClampedPercent, "0")%</span>
                 <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">@CenterLabel</span>
             </div>
         </div>
@@ -19,7 +19,7 @@
     [Parameter] public string? Value { get; set; }
     [Parameter] public string? ValueLabel { get; set; }
     [Parameter] public string? Insight { get; set; }
-    [Parameter] public string CenterLabel { get; set; } = "score";
+    [Parameter] public string CenterLabel { get; set; } = AppLocalization.Text("common.score", "score");
     [Parameter] public double Percent { get; set; }
     [Parameter] public string Color { get; set; } = "#7c3aed";
 

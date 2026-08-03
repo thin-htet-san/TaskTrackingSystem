@@ -39,7 +39,7 @@ public sealed class UiLanguageService
         _js = js;
     }
 
-    public AppLanguage CurrentLanguage { get; private set; } = AppLanguage.English;
+    public AppLanguage CurrentLanguage { get; private set; } = AppLanguage.Burmese;
 
     public UiTextBundle Texts => new()
     {

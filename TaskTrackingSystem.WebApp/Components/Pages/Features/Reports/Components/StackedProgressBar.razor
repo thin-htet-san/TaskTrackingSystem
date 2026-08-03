@@ -21,7 +21,7 @@
                         <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: @segment.Color"></span>
                         <span class="truncate">@segment.Label</span>
                     </span>
-                    <span class="text-xs font-semibold tabular-nums text-slate-900">@segment.Value.ToString("0.#") · @pct.ToString("0")%</span>
+                    <span class="text-xs font-semibold tabular-nums text-slate-900">@AppLocalization.Number(segment.Value, "0.#") · @AppLocalization.Number(pct, "0")%</span>
                 </div>
             }
         </div>
@@ -30,7 +30,7 @@
 
 @code {
     [Parameter] public IReadOnlyList<StackedSegment> Segments { get; set; } = Array.Empty<StackedSegment>();
-    [Parameter] public string EmptyText { get; set; } = "No data available.";
-    [Parameter] public string AriaLabel { get; set; } = "Stacked progress";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noChartData", "No data available.");
+    [Parameter] public string AriaLabel { get; set; } = AppLocalization.Text("report.stackedProgress", "Stacked progress");
     private double Total => Segments.Sum(segment => Math.Max(0, segment.Value));
 }

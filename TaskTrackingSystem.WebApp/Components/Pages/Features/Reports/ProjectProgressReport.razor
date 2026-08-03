@@ -314,7 +314,7 @@
             GetProjectUrgency(project),
             1,
             project.ProjectHealth == "Critical" ? "#ef4444" : project.IsAtRisk ? "#f59e0b" : "#3b82f6",
-            $"{project.Progress:0}% complete, {project.BlockedIssues} blocked, {project.OverdueIssues} overdue"))
+            $"{AppLocalization.Text("report.percentComplete", "{percent}% complete").Replace("{percent}", AppLocalization.Number(project.Progress, "0"))}, {AppLocalization.Number(project.BlockedIssues)} {AppLocalization.Text("common.blocked", "blocked")}, {AppLocalization.Number(project.OverdueIssues)} {AppLocalization.Text("common.overdue", "overdue")}"))
         .ToList();
 
     private List<ProjectQuadrantPoint> ProjectQuadrantPoints => allProjects
@@ -330,7 +330,7 @@
                 : project.IsAtRisk
                     ? "#f59e0b"
                     : risk > 35 ? "#3b82f6" : "#10b981";
-            var tooltip = $"{project.ProjectName}\n{project.Progress:0}% complete\nRisk score: {risk:0}\n{project.BlockedIssues} blocked, {project.OverdueIssues} overdue, {project.OpenIssues} open";
+            var tooltip = $"{project.ProjectName}\n{AppLocalization.Text("report.percentComplete", "{percent}% complete").Replace("{percent}", AppLocalization.Number(project.Progress, "0"))}\n{AppLocalization.Text("report.riskScore", "Risk score")}: {AppLocalization.Number(risk, "0")}\n{AppLocalization.Number(project.BlockedIssues)} {AppLocalization.Text("common.blocked", "blocked")}, {AppLocalization.Number(project.OverdueIssues)} {AppLocalization.Text("common.overdue", "overdue")}, {AppLocalization.Number(project.OpenIssues)} {AppLocalization.Text("report.open", "open")}";
             return new ProjectQuadrantPoint(project.ProjectName, left, top, color, tooltip);
         })
         .ToList();

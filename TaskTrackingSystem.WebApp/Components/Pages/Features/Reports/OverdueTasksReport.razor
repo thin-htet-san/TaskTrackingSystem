@@ -316,9 +316,9 @@
     private List<ReportChartItem> AgingBuckets => new()
     {
         new(AppLocalization.Text("report.dueSoon", "Due soon"), allOverdue.Count(t => t.DaysOverdue <= 0), "#f59e0b", AppLocalization.Text("report.notOverdueYet", "not overdue yet")),
-        new("1-3d", allOverdue.Count(t => t.DaysOverdue >= 1 && t.DaysOverdue <= 3), "#3b82f6", AppLocalization.Text("report.earlyDelay", "early delay")),
-        new("4-7d", allOverdue.Count(t => t.DaysOverdue >= 4 && t.DaysOverdue <= 7), "#f59e0b", AppLocalization.Text("report.needsAction", "needs action")),
-        new("8d+", allOverdue.Count(t => t.DaysOverdue >= 8), "#ef4444", AppLocalization.Text("report.highRisk", "high risk"))
+        new(AppLocalization.Text("report.1to3Days", "1-3d"), allOverdue.Count(t => t.DaysOverdue >= 1 && t.DaysOverdue <= 3), "#3b82f6", AppLocalization.Text("report.earlyDelay", "early delay")),
+        new(AppLocalization.Text("report.4to7Days", "4-7d"), allOverdue.Count(t => t.DaysOverdue >= 4 && t.DaysOverdue <= 7), "#f59e0b", AppLocalization.Text("report.needsAction", "needs action")),
+        new(AppLocalization.Text("report.8PlusDays", "8d+"), allOverdue.Count(t => t.DaysOverdue >= 8), "#ef4444", AppLocalization.Text("report.highRisk", "high risk"))
     };
 
     private List<TopRiskItem> DelayProjectItems => allOverdue

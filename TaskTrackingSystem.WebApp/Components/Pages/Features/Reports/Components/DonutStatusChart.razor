@@ -30,7 +30,7 @@
                         <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: @item.Color"></span>
                         <span class="truncate text-xs font-medium text-slate-700">@item.Label</span>
                     </div>
-                    <span class="shrink-0 text-xs font-semibold tabular-nums text-slate-900">@item.Value.ToString("0") · @pct.ToString("0")%</span>
+                    <span class="shrink-0 text-xs font-semibold tabular-nums text-slate-900">@AppLocalization.Number(item.Value, "0") · @AppLocalization.Number(pct, "0")%</span>
                 </div>
             }
         </div>
@@ -39,9 +39,9 @@
 
 @code {
     [Parameter] public IReadOnlyList<ReportChartItem> Items { get; set; } = Array.Empty<ReportChartItem>();
-    [Parameter] public string CenterLabel { get; set; } = "total";
-    [Parameter] public string EmptyText { get; set; } = "No data available.";
-    [Parameter] public string AriaLabel { get; set; } = "Status distribution";
+    [Parameter] public string CenterLabel { get; set; } = AppLocalization.Text("report.total", "total");
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noChartData", "No data available.");
+    [Parameter] public string AriaLabel { get; set; } = AppLocalization.Text("report.statusDistribution", "Status distribution");
 
     private double Total => Items.Sum(item => Math.Max(0, item.Value));
     private IReadOnlyList<Slice> Slices => BuildSlices();

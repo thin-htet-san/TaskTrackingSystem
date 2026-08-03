@@ -422,8 +422,8 @@
         .GroupBy(t => new DateTime(t.CreatedAt.Year, t.CreatedAt.Month, 1))
         .OrderBy(g => g.Key)
         .TakeLast(8)
-        .Select(g => new SparklinePoint(g.Key.ToString("MMM"), g.Count(t => t.StatusId == AppTaskStatus.Done)))
-        .DefaultIfEmpty(new SparklinePoint(DateTime.Today.ToString("MMM"), CompletedTaskCount))
+        .Select(g => new SparklinePoint(AppLocalization.MonthName(g.Key, abbreviated: true), g.Count(t => t.StatusId == AppTaskStatus.Done)))
+        .DefaultIfEmpty(new SparklinePoint(AppLocalization.MonthName(DateTime.Today, abbreviated: true), CompletedTaskCount))
         .ToList();
 
     private List<TopRiskItem> ProjectRiskItems => FilteredList
@@ -436,11 +436,11 @@
 
             return new TopRiskItem(
                 g.Key,
-                $"{g.Count()} {AppLocalization.Text("common.task", "tasks")} · {g.Sum(t => t.OpenIssues)} {AppLocalization.Text("common.issue", "open issues")}",
+                $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("common.task", "tasks")} · {AppLocalization.Number(g.Sum(t => t.OpenIssues))} {AppLocalization.Text("common.issue", "open issues")}",
                 score,
-                overdue > 0 ? $"{overdue} {AppLocalization.Text("status.overdue", "overdue")}" : $"{score:0} {AppLocalization.Text("report.risk", "risk")}",
+                overdue > 0 ? $"{AppLocalization.Number(overdue)} {AppLocalization.Text("status.overdue", "overdue")}" : $"{AppLocalization.Number((double)score, "0")} {AppLocalization.Text("report.risk", "risk")}",
                 tone,
-                $"{g.Count(t => t.PriorityId == TaskPriority.High)} {AppLocalization.Text("report.highPriorityTasks", "high-priority tasks")}");
+                $"{AppLocalization.Number(g.Count(t => t.PriorityId == TaskPriority.High))} {AppLocalization.Text("report.highPriorityTasks", "high-priority tasks")}");
         })
         .OrderByDescending(item => item.Score)
         .Take(5)
@@ -458,7 +458,7 @@
                 t.Title,
                 t.ProjectName,
                 score,
-                $"{t.OpenIssues + t.OverdueIssues} {AppLocalization.Text("common.issue", "issues")}",
+                $"{AppLocalization.Number(t.OpenIssues + t.OverdueIssues)} {AppLocalization.Text("common.issue", "issues")}",
                 tone,
                 $"{AppLocalization.StatusLabel(t.StatusId)} · {AppLocalization.PriorityLabel(t.PriorityId)}");
         })
@@ -468,7 +468,7 @@
         .GroupBy(t => t.ProjectName)
         .OrderByDescending(g => g.Count())
         .Take(5)
-        .Select(g => new ProgressListChartItem(g.Key, g.Count(), g.Count().ToString(), "#7c3aed"))
+        .Select(g => new ProgressListChartItem(g.Key, g.Count(), AppLocalization.Number(g.Count()), "#7c3aed"))
         .ToList();
 
     private double TasksByProjectMax => Math.Max(1, TasksByProjectItems.Select(item => item.Value).DefaultIfEmpty(0).Max());
@@ -476,7 +476,7 @@
     private List<ProgressListChartItem> TasksWithMostIssuesItems => FilteredList
         .OrderByDescending(t => t.OpenIssues + t.OverdueIssues)
         .Take(5)
-        .Select(t => new ProgressListChartItem(t.Title, t.OpenIssues + t.OverdueIssues, (t.OpenIssues + t.OverdueIssues).ToString(), "#7c3aed"))
+        .Select(t => new ProgressListChartItem(t.Title, t.OpenIssues + t.OverdueIssues, AppLocalization.Number(t.OpenIssues + t.OverdueIssues), "#7c3aed"))
         .ToList();
 
     private double TasksWithMostIssuesMax => Math.Max(1, TasksWithMostIssuesItems.Select(item => item.Value).DefaultIfEmpty(0).Max());

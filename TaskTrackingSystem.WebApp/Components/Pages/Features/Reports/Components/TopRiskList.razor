@@ -30,7 +30,7 @@
 @code {
     [Parameter] public IReadOnlyList<TopRiskItem> Items { get; set; } = Array.Empty<TopRiskItem>();
     [Parameter] public int Limit { get; set; } = 5;
-    [Parameter] public string EmptyText { get; set; } = "No risk items to show.";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noRiskItems", "No risk items to show.");
 
     private static string GetBadgeClass(string tone) => tone switch
     {

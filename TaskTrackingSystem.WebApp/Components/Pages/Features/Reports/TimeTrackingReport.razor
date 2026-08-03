@@ -152,9 +152,9 @@
                     <MetricComparisonCard Title="@AppLocalization.Text("report.estVsActualEffort", "Estimated vs actual effort")"
                                           Subtitle="@AppLocalization.Text("report.estVsActualEffortDesc", "Are plans matching delivery effort?")"
                                           PrimaryLabel="@AppLocalization.Text("report.actual", "Actual")"
-                                          PrimaryValue="@($"{AppLocalization.Number(actualHours)}h")"
+                                          PrimaryValue="@($"{AppLocalization.Number(actualHours)} {AppLocalization.Text("common.hoursAbbrev", "hrs")}")"
                                           SecondaryLabel="@AppLocalization.Text("report.estimated", "Estimated")"
-                                          SecondaryValue="@($"{AppLocalization.Number(totalHours)}h")"
+                                          SecondaryValue="@($"{AppLocalization.Number(totalHours)} {AppLocalization.Text("common.hoursAbbrev", "hrs")}")"
                                           Segments="EffortComparisonSegments"
                                           Insight="@EffortVarianceInsight" />
                 </div>
@@ -162,7 +162,7 @@
                     <RadialMetricCard Title="@AppLocalization.Text("report.utilizationGauge", "Utilization gauge")"
                                       Subtitle="@AppLocalization.Text("report.utilizationGaugeDesc", "Actual hours as a share of estimated effort.")"
                                       Percent="@utilizationPercent"
-                                      Value="@($"{AppLocalization.Number(varianceHours)}h")"
+                                       Value="@($"{AppLocalization.Number(varianceHours)} {AppLocalization.Text("common.hoursAbbrev", "hrs")}")"
                                       ValueLabel="@AppLocalization.Text("report.varianceLabel", "variance")"
                                       CenterLabel="@AppLocalization.Text("report.usedLabel", "used")"
                                       Color="@UtilizationColor"
@@ -469,7 +469,7 @@
 
             return new TopRiskItem(
                 g.Key,
-                $"{AppLocalization.Number(actual)}h {AppLocalization.Text("report.actual", "actual").ToLowerInvariant()} · {AppLocalization.Number(estimated)}h {AppLocalization.Text("report.estimated", "estimated").ToLowerInvariant()}",
+                $"{AppLocalization.Number(actual)} {AppLocalization.Text("common.hoursAbbrev", "hrs")} {AppLocalization.Text("report.actual", "actual").ToLowerInvariant()} · {AppLocalization.Number(estimated)} {AppLocalization.Text("common.hoursAbbrev", "hrs")} {AppLocalization.Text("report.estimated", "estimated").ToLowerInvariant()}",
                 score,
                 $"{AppLocalization.Number(g.Count())} {AppLocalization.Text("report.issuesLabel", "issues")}",
                 tone,

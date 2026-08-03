@@ -217,17 +217,27 @@
     private bool filterAssignToMyTeam = false;
 
     private List<string> EmployeeHeatmapRows => allEmployees.Take(6).Select(emp => emp.FullName).ToList();
-    private List<string> EmployeeHeatmapColumns => new() { "Assigned", "Open", "Overdue", "Hours" };
+    private List<string> EmployeeHeatmapColumns => new()
+    {
+        AssignedColumnLabel,
+        OpenColumnLabel,
+        OverdueColumnLabel,
+        HoursColumnLabel
+    };
+    private string AssignedColumnLabel => AppLocalization.Text("report.assignedColumn", "Assigned");
+    private string OpenColumnLabel => AppLocalization.Text("report.openColumn", "Open");
+    private string OverdueColumnLabel => AppLocalization.Text("report.overdueColumn", "Overdue");
+    private string HoursColumnLabel => AppLocalization.Text("common.hours", "Hours");
     private int CompletedIssueTotal => allEmployees.Sum(emp => emp.CompletedCount);
     private double AverageCompletionRate => allEmployees.Any() ? allEmployees.Average(emp => emp.CompletionRate) : 0;
 
     private List<HeatmapCell> EmployeeHeatmapCells => allEmployees.Take(6)
         .SelectMany(emp => new[]
         {
-            new HeatmapCell(emp.FullName, "Assigned", Math.Min(100, emp.AssignedCount * 8), $"{emp.AssignedCount} assigned tasks"),
-            new HeatmapCell(emp.FullName, "Open", Math.Min(100, emp.OpenIssues * 12), $"{emp.OpenIssues} open issues"),
-            new HeatmapCell(emp.FullName, "Overdue", Math.Min(100, emp.OverdueIssues * 20), $"{emp.OverdueIssues} overdue issues"),
-            new HeatmapCell(emp.FullName, "Hours", Math.Min(100, (double)emp.ActualHours * 5), $"{emp.ActualHours:N1} actual hours")
+            new HeatmapCell(emp.FullName, AssignedColumnLabel, Math.Min(100, emp.AssignedCount * 8), $"{AppLocalization.Number(emp.AssignedCount)} {AppLocalization.Text("report.assignedTasks", "assigned tasks").ToLowerInvariant()}"),
+            new HeatmapCell(emp.FullName, OpenColumnLabel, Math.Min(100, emp.OpenIssues * 12), $"{AppLocalization.Number(emp.OpenIssues)} {AppLocalization.Text("report.openIssuesSegment", "open issues").ToLowerInvariant()}"),
+            new HeatmapCell(emp.FullName, OverdueColumnLabel, Math.Min(100, emp.OverdueIssues * 20), $"{AppLocalization.Number(emp.OverdueIssues)} {AppLocalization.Text("report.overdueIssuesSegment", "overdue issues").ToLowerInvariant()}"),
+            new HeatmapCell(emp.FullName, HoursColumnLabel, Math.Min(100, (double)emp.ActualHours * 5), $"{AppLocalization.Number(emp.ActualHours, "N1")} {AppLocalization.Text("common.actualHours", "actual hours").ToLowerInvariant()}")
         })
         .ToList();
 

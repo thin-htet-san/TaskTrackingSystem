@@ -21,7 +21,7 @@
                             var cell = Cells.FirstOrDefault(item => item.Row == row && item.Column == column);
                             var value = cell?.Value ?? 0;
                             <div class="@GetCellClass(value)" title="@cell?.Detail">
-                                <span class="text-sm font-bold tabular-nums">@value.ToString("0.#")</span>
+                        <span class="text-sm font-bold tabular-nums">@AppLocalization.Number(value, "0.#")</span>
                             </div>
                         }
                     }
@@ -32,13 +32,13 @@
 </ReportChartCard>
 
 @code {
-    [Parameter] public string Title { get; set; } = "Workload heatmap";
+    [Parameter] public string Title { get; set; } = AppLocalization.Text("report.workloadHeatmap", "Workload heatmap");
     [Parameter] public string? Subtitle { get; set; }
     [Parameter] public string? Insight { get; set; }
     [Parameter] public IReadOnlyList<string> Rows { get; set; } = Array.Empty<string>();
     [Parameter] public IReadOnlyList<string> Columns { get; set; } = Array.Empty<string>();
     [Parameter] public IReadOnlyList<HeatmapCell> Cells { get; set; } = Array.Empty<HeatmapCell>();
-    [Parameter] public string EmptyText { get; set; } = "No workload data available.";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noWorkloadData", "No workload data available.");
 
     private static string GetCellClass(double value)
     {

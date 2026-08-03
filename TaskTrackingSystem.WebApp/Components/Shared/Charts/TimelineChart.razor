@@ -32,7 +32,7 @@
 
 @code {
     [Parameter] public IReadOnlyList<TimelineChartItem> Items { get; set; } = Array.Empty<TimelineChartItem>();
-    [Parameter] public string EmptyText { get; set; } = "No timeline data available.";
+    [Parameter] public string EmptyText { get; set; } = AppLocalization.Text("report.noChartData", "No timeline data available.");
     [Parameter] public string WrapperClass { get; set; } = "overflow-auto";
 
     private IReadOnlyList<DateTime> Months => BuildMonths();

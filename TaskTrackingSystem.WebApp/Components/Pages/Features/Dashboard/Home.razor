@@ -225,17 +225,27 @@
         <div class="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
             <div class="flex flex-col gap-1">
                 <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">@AppLocalization.Text("dashboard.from", "From")</label>
-                <input type="month"
-                       class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                       value="@timelineStartMonthValue"
-                       @onchange="OnTimelineStartMonthChanged" />
+                <select class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        value="@timelineStartMonthValue"
+                        @onchange="OnTimelineStartMonthChanged"
+                        aria-label="@AppLocalization.Text("dashboard.from", "From")">
+                    @foreach (var month in TimelineMonthOptions)
+                    {
+                        <option value="@month.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture)">@GetTimelineMonthLabel(month)</option>
+                    }
+                </select>
             </div>
             <div class="flex flex-col gap-1">
                 <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">@AppLocalization.Text("dashboard.to", "To")</label>
-                <input type="month"
-                       class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                       value="@timelineEndMonthValue"
-                       @onchange="OnTimelineEndMonthChanged" />
+                <select class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        value="@timelineEndMonthValue"
+                        @onchange="OnTimelineEndMonthChanged"
+                        aria-label="@AppLocalization.Text("dashboard.to", "To")">
+                    @foreach (var month in TimelineMonthOptions)
+                    {
+                        <option value="@month.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture)">@GetTimelineMonthLabel(month)</option>
+                    }
+                </select>
             </div>
             <div class="pb-1 text-sm font-medium text-slate-500">
                 @TimelineRangeLabel
@@ -267,6 +277,8 @@
     private bool canCreateTask = false;
     private string timelineStartMonthValue = string.Empty;
     private string timelineEndMonthValue = string.Empty;
+
+    private IReadOnlyList<DateTime> TimelineMonthOptions => BuildTimelineMonthOptions();
 
     private bool _dataLoaded = false;
     private bool _shouldRenderCharts = false;
@@ -802,6 +814,36 @@
         }
 
         return DateTime.TryParseExact($"{value}-01", "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out month);
+    }
+
+    private IReadOnlyList<DateTime> BuildTimelineMonthOptions()
+    {
+        var first = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-18);
+        var last = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(36);
+        var projectDates = projectsList
+            .SelectMany(project => new[] { project.StartDate, project.EndDate })
+            .Select(date => new DateTime(date.Year, date.Month, 1));
+
+        if (projectDates.Any())
+        {
+            first = projectDates.Min() < first ? projectDates.Min() : first;
+            last = projectDates.Max() > last ? projectDates.Max() : last;
+        }
+
+        return Enumerable.Range(0, Math.Max(1, ((last.Year - first.Year) * 12) + last.Month - first.Month + 1))
+            .Select(offset => first.AddMonths(offset))
+            .ToList();
+    }
+
+    private string GetTimelineMonthLabel(DateTime month)
+    {
+        if (!AppLocalization.IsBurmeseCulture)
+        {
+            return month.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        var names = new[] { "ဇန်နဝါရီ", "ဖေဖော်ဝါရီ", "မတ်", "ဧပြီ", "မေ", "ဇွန်", "ဇူလိုင်", "သြဂုတ်", "စက်တင်ဘာ", "အောက်တိုဘာ", "နိုဝင်ဘာ", "ဒီဇင်ဘာ" };
+        return $"{names[month.Month - 1]} {AppLocalization.Number(month.Year)}";
     }
 
     private static long ToUnixMilliseconds(DateTime value)

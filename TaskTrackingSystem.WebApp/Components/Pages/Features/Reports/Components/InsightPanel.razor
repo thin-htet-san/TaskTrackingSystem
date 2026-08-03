@@ -9,7 +9,7 @@
 </div>
 
 @code {
-    [Parameter] public string Title { get; set; } = "Key Insights";
+    [Parameter] public string Title { get; set; } = AppLocalization.Text("report.keyInsights", "Key Insights");
     [Parameter] public IReadOnlyList<string> Insights { get; set; } = Array.Empty<string>();
     [Parameter] public string PanelClass { get; set; } = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm";
 }

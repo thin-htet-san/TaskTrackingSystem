@@ -27,7 +27,7 @@
                     var total = points.Sum(point => point.Value);
                             var title = BuildCellTitle(points, x, y, total);
                     <div class="@GetCellClass(x, y, total)" title="@title">
-                        <span class="@GetCountClass(total)">@total.ToString("0")</span>
+                        <span class="@GetCountClass(total)">@AppLocalization.Number(total, "0")</span>
                         <span class="@GetLabelClass(total)">@GetCellLabel(x, y, total)</span>
                         @if (total > 0)
                         {
