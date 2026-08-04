@@ -33,7 +33,7 @@
         <div class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[240px]">
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.searchUsers", "Search Users")</label>
-                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchPlaceholder", "Search by name, email, username...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                <input @bind="searchInput" @bind:event="oninput" type="text" placeholder="@AppLocalization.Text("common.searchPlaceholder", "Search by name, email, username...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.role", "Role")</label>
@@ -57,9 +57,8 @@
                 <i data-lucide="search" class="h-4 w-4 mr-2"></i>
                 @AppLocalization.Text("action.search", "Search")
             </button>
-            <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
-                @AppLocalization.Text("action.reset", "Reset")
+                <button @onclick="ResetSearch" title="@AppLocalization.Text("action.reset", "Reset")" aria-label="@AppLocalization.Text("action.reset", "Reset")" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2.5 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 text-slate-500"></i>
             </button>
         </div>
     </div>

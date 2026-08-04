@@ -40,6 +40,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
             [FromQuery] string? status,
+            [FromQuery] string? search,
             [FromQuery] int? projectId,
             [FromQuery] bool? assignedToMe,
             [FromQuery] bool? assignedToMyTeam,
@@ -54,14 +55,14 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
             {
                 var full = await _reportService.GetTasksReportAsync(
-                    startDate, endDate, status, projectId, User.GetRoleId(), User.GetUserId(), assignedToMe, assignedToMyTeam);
+                    startDate, endDate, status, search, projectId, User.GetRoleId(), User.GetUserId(), assignedToMe, assignedToMyTeam);
                 return StatusCode(full.StatusCode, full);
             }
 
             var page = PaginationExtensions.NormalizePage(paging.Page);
             var limit = PaginationExtensions.NormalizePageSize(paging.Limit ?? 0);
             var result = await _reportService.GetPagedTasksReportAsync(
-                startDate, endDate, status, projectId, User.GetRoleId(), User.GetUserId(), page, limit, assignedToMe, assignedToMyTeam);
+                startDate, endDate, status, search, projectId, User.GetRoleId(), User.GetUserId(), page, limit, assignedToMe, assignedToMyTeam);
             return Ok(result);
         }
 

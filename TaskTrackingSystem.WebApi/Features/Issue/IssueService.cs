@@ -61,16 +61,28 @@ namespace TaskTrackingSystem.WebApi.Features.Issue
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var searchTerm = search.Trim().ToLower();
+                var searchTerm = search.Trim();
+                var searchPattern = $"%{searchTerm}%";
                 query = query.Where(i =>
-                    (i.Title != null && i.Title.ToLower().Contains(searchTerm)) ||
-                    (i.TitleMy != null && i.TitleMy.ToLower().Contains(searchTerm)) ||
-                    (i.Description != null && i.Description.ToLower().Contains(searchTerm)) ||
-                    (i.DescriptionMy != null && i.DescriptionMy.ToLower().Contains(searchTerm)) ||
-                    (i.DelayReason != null && i.DelayReason.ToLower().Contains(searchTerm)) ||
-                    (i.DelayReasonMy != null && i.DelayReasonMy.ToLower().Contains(searchTerm)) ||
-                    (i.BlockedBy != null && i.BlockedBy.ToLower().Contains(searchTerm)) ||
-                    (i.BlockedByMy != null && i.BlockedByMy.ToLower().Contains(searchTerm)));
+                    EF.Functions.ILike(i.Title ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(i.TitleMy ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(i.Description ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(i.DescriptionMy ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(i.DelayReason ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(i.DelayReasonMy ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(i.BlockedBy ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(i.BlockedByMy ?? string.Empty, searchPattern) ||
+                    (i.AssignedToNavigation != null &&
+                        (EF.Functions.ILike(i.AssignedToNavigation.FirstName ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(i.AssignedToNavigation.LastName ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike((i.AssignedToNavigation.FirstName ?? string.Empty) + " " + (i.AssignedToNavigation.LastName ?? string.Empty), searchPattern) ||
+                         EF.Functions.ILike((i.AssignedToNavigation.FirstName ?? string.Empty) + (i.AssignedToNavigation.LastName ?? string.Empty), searchPattern) ||
+                         EF.Functions.ILike(i.AssignedToNavigation.FirstNameMy ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(i.AssignedToNavigation.LastNameMy ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike((i.AssignedToNavigation.FirstNameMy ?? string.Empty) + " " + (i.AssignedToNavigation.LastNameMy ?? string.Empty), searchPattern) ||
+                         EF.Functions.ILike((i.AssignedToNavigation.FirstNameMy ?? string.Empty) + (i.AssignedToNavigation.LastNameMy ?? string.Empty), searchPattern) ||
+                         EF.Functions.ILike(i.AssignedToNavigation.Username ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(i.AssignedToNavigation.Email ?? string.Empty, searchPattern))));
             }
 
             if (taskId.HasValue && taskId.Value > 0)

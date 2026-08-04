@@ -4,6 +4,7 @@ public class EmployeeProductivityReportDto
 {
     public long UserId { get; set; }
     public string FullName { get; set; } = string.Empty;
+    public string? FullNameMy { get; set; }
     public string Username { get; set; } = string.Empty;
     public int AssignedCount { get; set; }
     public int CompletedCount { get; set; }

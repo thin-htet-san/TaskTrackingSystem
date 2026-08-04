@@ -44,7 +44,7 @@
         <div class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[200px]">
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.searchTasks", "Search Task")</label>
-                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchByTitle", "Search by title or project...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                <input @bind="searchInput" @bind:event="oninput" type="text" placeholder="@AppLocalization.Text("common.searchByTitle", "Search by title or project...")" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("report.periodFilter", "Period Filter")</label>
@@ -83,7 +83,7 @@
             <div class="relative min-w-[240px]">
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.project", "Project")</label>
                 <div class="relative">
-                    <input @bind="projectSearchInput"
+                    <input @bind="projectSearchInput" @bind:event="oninput"
                            @onfocus="ShowProjectSuggestions"
                            @onblur="HideProjectSuggestionsDelayed"
                            type="text"
@@ -126,8 +126,8 @@
             <button @onclick="ApplyAllFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
                     <i data-lucide="search" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.search", "Search")
             </button>
-            <button @onclick="ResetAllFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i> @AppLocalization.Text("action.reset", "Reset")
+            <button @onclick="ResetAllFilters" title="@AppLocalization.Text("action.reset", "Reset")" aria-label="@AppLocalization.Text("action.reset", "Reset")" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="rotate-ccw" class="h-4 w-4 text-slate-500"></i>
             </button>
 
             <div class="flex flex-wrap items-center gap-6 w-full border-t border-slate-100 pt-3 mt-1">
@@ -501,7 +501,9 @@
     private IEnumerable<ProjectDto> FilteredProjects =>
         string.IsNullOrWhiteSpace(projectSearchQuery)
             ? projects
-            : projects.Where(p => Content.GetProjectName(p).Contains(projectSearchQuery.Trim(), StringComparison.OrdinalIgnoreCase));
+            : projects.Where(p =>
+                p.Name.Contains(projectSearchQuery.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(p.NameMy) && p.NameMy.Contains(projectSearchQuery.Trim(), StringComparison.OrdinalIgnoreCase)));
 
     private void SetView(bool chartView)
     {
@@ -573,6 +575,8 @@
     private async Task LoadTaskReport()
     {
         isLoading = true;
+        taskReports = new();
+        taskReportPage = null;
         projectSearchQuery = projectSearchInput;
         StateHasChanged();
 
@@ -587,7 +591,9 @@
 
             if (fullTask.Result?.IsSuccess == true && fullTask.Result.Value != null)
             {
-                taskReports = fullTask.Result.Value;
+                taskReports = fullTask.Result.Value
+                    .Where(task => MatchesTaskSearch(task, searchQuery))
+                    .ToList();
             }
             else if (fullTask.Result?.IsSuccess == false)
             {
@@ -596,9 +602,32 @@
 
             if (pagedTask.Result != null)
             {
-                taskReportPage = pagedTask.Result;
-                currentPage = taskReportPage.Page;
-                pageSize = taskReportPage.PageSize;
+                if (string.IsNullOrWhiteSpace(searchQuery))
+                {
+                    taskReportPage = pagedTask.Result;
+                    currentPage = taskReportPage.Page;
+                    pageSize = taskReportPage.PageSize;
+                }
+                else
+                {
+                    var totalCount = taskReports.Count;
+                    var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
+                    currentPage = totalPages > 0 ? Math.Min(currentPage, totalPages) : 1;
+                    var filteredPage = taskReports
+                        .OrderBy(task => task.DueDate)
+                        .ThenByDescending(task => task.CreatedAt)
+                        .Skip((currentPage - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToList();
+                    taskReportPage = new PagedResult<TaskReportDto>
+                    {
+                        Items = filteredPage,
+                        TotalCount = totalCount,
+                        Page = currentPage,
+                        PageSize = pageSize,
+                        TotalPages = totalPages
+                    };
+                }
             }
         }
         catch (Exception ex)
@@ -618,6 +647,7 @@
     private string BuildTaskReportQuery(bool includePaging = false)
     {
         var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(searchQuery)) parts.Add($"search={Uri.EscapeDataString(searchQuery.Trim())}");
         if (filterStartDate.HasValue) parts.Add($"startDate={filterStartDate:yyyy-MM-dd}");
         if (filterEndDate.HasValue) parts.Add($"endDate={filterEndDate:yyyy-MM-dd}");
         if (!string.IsNullOrEmpty(filterStatus)) parts.Add($"status={Uri.EscapeDataString(filterStatus)}");
@@ -631,6 +661,29 @@
         }
         return "Report/tasks" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
     }
+
+    private static bool MatchesTaskSearch(TaskReportDto task, string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return true;
+        }
+
+        var term = search.Trim();
+        return ContainsSearch(task.Title, term) ||
+               ContainsSearch(task.TitleMy, term) ||
+               ContainsSearch(task.Description, term) ||
+               ContainsSearch(task.DescriptionMy, term) ||
+               ContainsSearch(task.ProjectName, term) ||
+               ContainsSearch(task.ProjectNameMy, term) ||
+               ContainsSearch(task.AssignedToUser, term) ||
+               ContainsSearch(task.AssignedToUserMy, term) ||
+               ContainsSearch(task.AssignedByUser, term) ||
+               ContainsSearch(task.AssignedByUserMy, term);
+    }
+
+    private static bool ContainsSearch(string? value, string search)
+        => !string.IsNullOrWhiteSpace(value) && value.Contains(search, StringComparison.OrdinalIgnoreCase);
 
     private async Task DownloadExcel()
     {

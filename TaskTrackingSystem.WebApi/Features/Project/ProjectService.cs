@@ -220,18 +220,40 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             _db.Projects.Update(project);
 
             var tasksToUpdate = await _db.Tasks
-                .Where(t => t.ProjectId == id && t.IsDeleted != true)
+                .Where(t => t.ProjectId == id)
                 .ToListAsync();
             foreach (var task in tasksToUpdate)
             {
-                task.IsDeleted = true;
-                task.UpdatedAt = DateTime.UtcNow;
-                task.UpdatedBy = currentUserId;
+                if (task.IsDeleted != true)
+                {
+                    task.IsDeleted = true;
+                    task.UpdatedAt = DateTime.UtcNow;
+                    task.UpdatedBy = currentUserId;
+                }
             }
 
             if (tasksToUpdate.Any())
             {
                 _db.Tasks.UpdateRange(tasksToUpdate);
+            }
+
+            var taskIds = tasksToUpdate.Select(t => t.Id).ToList();
+            if (taskIds.Any())
+            {
+                var issuesToUpdate = await _db.Issues
+                    .Where(i => taskIds.Contains(i.TaskId) && i.IsDeleted != true)
+                    .ToListAsync();
+                foreach (var issue in issuesToUpdate)
+                {
+                    issue.IsDeleted = true;
+                    issue.UpdatedAt = DateTime.UtcNow;
+                    issue.UpdatedBy = currentUserId;
+                }
+
+                if (issuesToUpdate.Any())
+                {
+                    _db.Issues.UpdateRange(issuesToUpdate);
+                }
             }
 
             await _db.SaveChangesAsync();

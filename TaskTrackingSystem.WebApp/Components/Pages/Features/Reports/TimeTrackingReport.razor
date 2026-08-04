@@ -96,7 +96,7 @@
             <div class="flex flex-wrap items-end gap-4">
                 <div class="flex-1 min-w-[200px]">
                     <label class="block text-xs font-medium text-slate-500 mb-1.5">@AppLocalization.Text("common.searchByIssueAssignee", "Search Issues / Assignee")</label>
-                    <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue title, description or assignee...")"
+                <input @bind="searchInput" @bind:event="oninput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue title, description or assignee...")"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
                 <div>
@@ -121,8 +121,8 @@
                 <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
                     <i data-lucide="search" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.search", "Search")
                 </button>
-                <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2"></i> @AppLocalization.Text("action.reset", "Reset")
+            <button @onclick="ResetFilters" title="@AppLocalization.Text("action.reset", "Reset")" aria-label="@AppLocalization.Text("action.reset", "Reset")" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
+                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
                 </button>
             </div>
             
@@ -332,10 +332,10 @@
             {
                 var q = appliedSearch.Trim().ToLower();
                 result = result.Where(i =>
-                    Content.GetText(i.Title, i.TitleMy).ToLower().Contains(q) ||
-                    Content.GetText(i.Description, i.DescriptionMy).ToLower().Contains(q) ||
-                    Content.GetText(i.AssignedToName, i.AssignedToNameMy).ToLower().Contains(q) ||
-                    Content.GetText(i.TaskTitle, i.TaskTitleMy).ToLower().Contains(q)
+                    ContainsSearch(i.Title, i.TitleMy, q) ||
+                    ContainsSearch(i.Description, i.DescriptionMy, q) ||
+                    ContainsSearch(i.AssignedToName, i.AssignedToNameMy, q) ||
+                    ContainsSearch(i.TaskTitle, i.TaskTitleMy, q)
                 );
             }
 
@@ -350,6 +350,10 @@
             return result.OrderBy(i => i.Title);
         }
     }
+
+    private static bool ContainsSearch(string? english, string? burmese, string search)
+        => (!string.IsNullOrWhiteSpace(english) && english.Contains(search, StringComparison.OrdinalIgnoreCase))
+           || (!string.IsNullOrWhiteSpace(burmese) && burmese.Contains(search, StringComparison.OrdinalIgnoreCase));
 
     private IEnumerable<IssueDto> PagedIssues => FilteredIssues.Skip((currentPage - 1) * pageSize).Take(pageSize);
 

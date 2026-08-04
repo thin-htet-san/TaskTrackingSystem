@@ -8,6 +8,7 @@ namespace TaskTrackingSystem.Shared.Models.AuditLog
         public long? UserId { get; set; }
         public string Username { get; set; } = null!;
         public string UserFullName { get; set; } = null!;
+        public string? UserFullNameMy { get; set; }
         public string Action { get; set; } = null!;
         public string Module { get; set; } = null!;
         public string Description { get; set; } = null!;

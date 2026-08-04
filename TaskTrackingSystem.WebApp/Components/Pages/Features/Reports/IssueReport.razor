@@ -39,7 +39,7 @@
         <div class="flex flex-wrap items-end gap-3">
             <div class="min-w-[220px] flex-1">
                 <label class="mb-1.5 block text-xs font-medium text-slate-500">@AppLocalization.Text("common.search", "Search")</label>
-                <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue, task, project, assignee...")"
+                <input @bind="searchInput" @bind:event="oninput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue, task, project, assignee...")"
                        class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600" />
             </div>
             <div>
@@ -66,8 +66,8 @@
             <button @onclick="ApplyFilters" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700">
                 <i data-lucide="search" class="mr-2 h-4 w-4"></i> @AppLocalization.Text("action.search", "Search")
             </button>
-            <button @onclick="ResetFilters" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-                <i data-lucide="rotate-ccw" class="mr-2 h-4 w-4"></i> @AppLocalization.Text("action.reset", "Reset")
+            <button @onclick="ResetFilters" title="@AppLocalization.Text("action.reset", "Reset")" aria-label="@AppLocalization.Text("action.reset", "Reset")" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 shadow-sm hover:bg-slate-50">
+                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
             </button>
         </div>
     </div>
@@ -259,16 +259,20 @@
         if (!string.IsNullOrWhiteSpace(appliedSearch))
         {
             var s = appliedSearch.Trim();
-            return Content.GetText(issue.Title, issue.TitleMy).Contains(s, StringComparison.OrdinalIgnoreCase)
-                || Content.GetText(issue.TaskTitle, issue.TaskTitleMy).Contains(s, StringComparison.OrdinalIgnoreCase)
-                || Content.GetText(issue.ProjectName, issue.ProjectNameMy).Contains(s, StringComparison.OrdinalIgnoreCase)
-                || Content.GetText(issue.Description, issue.DescriptionMy).Contains(s, StringComparison.OrdinalIgnoreCase)
-                || Content.GetText(issue.DelayReason, issue.DelayReasonMy).Contains(s, StringComparison.OrdinalIgnoreCase)
-                || Content.GetText(issue.BlockedBy, issue.BlockedByMy).Contains(s, StringComparison.OrdinalIgnoreCase)
-                || Content.GetText(issue.AssignedToName, issue.AssignedToNameMy).Contains(s, StringComparison.OrdinalIgnoreCase);
+            return ContainsSearch(issue.Title, issue.TitleMy, s)
+                || ContainsSearch(issue.TaskTitle, issue.TaskTitleMy, s)
+                || ContainsSearch(issue.ProjectName, issue.ProjectNameMy, s)
+                || ContainsSearch(issue.Description, issue.DescriptionMy, s)
+                || ContainsSearch(issue.DelayReason, issue.DelayReasonMy, s)
+                || ContainsSearch(issue.BlockedBy, issue.BlockedByMy, s)
+                || ContainsSearch(issue.AssignedToName, issue.AssignedToNameMy, s);
         }
         return true;
     }
+
+    private static bool ContainsSearch(string? english, string? burmese, string search)
+        => (!string.IsNullOrWhiteSpace(english) && english.Contains(search, StringComparison.OrdinalIgnoreCase))
+           || (!string.IsNullOrWhiteSpace(burmese) && burmese.Contains(search, StringComparison.OrdinalIgnoreCase));
 
     private async Task ApplyFilters()
     {

@@ -44,7 +44,7 @@
         <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div class="grid grid-cols-1 lg:grid-cols-6 gap-3">
                 <div class="lg:col-span-2">
-                    <input @bind="searchInput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue title, description or assignee...")"
+                    <input @bind="searchInput" @bind:event="oninput" type="text" placeholder="@AppLocalization.Text("common.searchIssues", "Search issue title, description or assignee...")"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                 </div>
                 <div>
@@ -92,9 +92,8 @@
                     <i data-lucide="search" class="h-4 w-4 mr-2"></i>
                     @AppLocalization.Text("action.search", "Search")
                 </button>
-                <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
-                    @AppLocalization.Text("action.reset", "Reset")
+                <button @onclick="ResetSearch" title="@AppLocalization.Text("action.reset", "Reset")" aria-label="@AppLocalization.Text("action.reset", "Reset")" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 text-slate-500"></i>
                 </button>
             </div>
         </div>
@@ -508,10 +507,10 @@
 
             await System.Threading.Tasks.Task.WhenAll(issuesTask, tasksTask, projectsTask, usersTask);
 
-            ApplyPageResult(issuesTask.Result);
             tasks = tasksTask.Result ?? new();
             projects = projectsTask.Result ?? new();
             projectMembers = usersTask.Result?.Where(u => u.IsActive).OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToList() ?? new();
+            ApplyPageResult(issuesTask.Result);
         }
         catch (Exception ex)
         {
@@ -542,6 +541,29 @@
         totalPages = result?.TotalPages ?? 0;
         currentPage = result?.Page ?? currentPage;
         pageSize = result?.PageSize ?? pageSize;
+        RemoveOrphanedIssues();
+    }
+
+    private bool HasActiveParentRecords(IssueDto issue)
+    {
+        var task = tasks.FirstOrDefault(t => t.Id == issue.TaskId);
+        return task != null &&
+               task.ProjectId == issue.ProjectId &&
+               projects.Any(project => project.Id == task.ProjectId);
+    }
+
+    private void RemoveOrphanedIssues()
+    {
+        var activeIssues = issues.Where(HasActiveParentRecords).ToList();
+        var removedCount = issues.Count - activeIssues.Count;
+        if (removedCount == 0)
+        {
+            return;
+        }
+
+        issues = activeIssues;
+        totalCount = Math.Max(0, totalCount - removedCount);
+        totalPages = pageSize > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 0;
     }
 
     private async Task LoadIssues()
@@ -632,6 +654,16 @@
     {
         if (!canEditIssue)
         {
+            return;
+        }
+
+        // The page can still contain a DTO loaded before its task/project was deleted.
+        // Never open an issue editor for an orphaned issue.
+        if (!HasActiveParentRecords(issue))
+        {
+            issues.RemoveAll(current => current.Id == issue.Id);
+            totalCount = Math.Max(0, totalCount - 1);
+            totalPages = pageSize > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 0;
             return;
         }
 

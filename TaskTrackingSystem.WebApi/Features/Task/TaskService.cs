@@ -327,6 +327,22 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             task.UpdatedAt = DateTime.UtcNow;
             task.UpdatedBy = currentUserId;
             _db.Tasks.Update(task);
+
+            var issuesToUpdate = await _db.Issues
+                .Where(i => i.TaskId == id && i.IsDeleted != true)
+                .ToListAsync();
+            foreach (var issue in issuesToUpdate)
+            {
+                issue.IsDeleted = true;
+                issue.UpdatedAt = DateTime.UtcNow;
+                issue.UpdatedBy = currentUserId;
+            }
+
+            if (issuesToUpdate.Any())
+            {
+                _db.Issues.UpdateRange(issuesToUpdate);
+            }
+
             await _db.SaveChangesAsync();
             await _auditLog.LogAsync("Delete", "Task", $"Deleted task '{task.Title}'");
             return Result.Success(200);

@@ -442,6 +442,16 @@
             return Content.GetUserFullName(user);
         }
 
+        if (string.Equals(currentUserName, "System Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return AppLocalization.Text("common.systemAdmin", "System Admin");
+        }
+
+        if (string.Equals(currentUserName, "User", StringComparison.OrdinalIgnoreCase))
+        {
+            return AppLocalization.Text("common.user", "User");
+        }
+
         return currentUserName;
     }
 

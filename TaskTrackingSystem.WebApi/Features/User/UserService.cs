@@ -51,16 +51,19 @@ namespace TaskTrackingSystem.WebApi.Features.User
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var searchTerm = search.Trim().ToLower();
+                var searchTerm = search.Trim();
+                var searchPattern = $"%{searchTerm}%";
                 query = query.Where(u =>
-                    (u.FirstName != null && u.FirstName.ToLower().Contains(searchTerm)) ||
-                    (u.LastName != null && u.LastName.ToLower().Contains(searchTerm)) ||
-                    ((u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty)).ToLower().Contains(searchTerm) ||
-                    (u.FirstNameMy != null && u.FirstNameMy.ToLower().Contains(searchTerm)) ||
-                    (u.LastNameMy != null && u.LastNameMy.ToLower().Contains(searchTerm)) ||
-                    ((u.FirstNameMy ?? string.Empty) + " " + (u.LastNameMy ?? string.Empty)).ToLower().Contains(searchTerm) ||
-                    (u.Username != null && u.Username.ToLower().Contains(searchTerm)) ||
-                    (u.Email != null && u.Email.ToLower().Contains(searchTerm)));
+                    EF.Functions.ILike(u.FirstName ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(u.LastName ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike((u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty), searchPattern) ||
+                    EF.Functions.ILike((u.FirstName ?? string.Empty) + (u.LastName ?? string.Empty), searchPattern) ||
+                    EF.Functions.ILike(u.FirstNameMy ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(u.LastNameMy ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike((u.FirstNameMy ?? string.Empty) + " " + (u.LastNameMy ?? string.Empty), searchPattern) ||
+                    EF.Functions.ILike((u.FirstNameMy ?? string.Empty) + (u.LastNameMy ?? string.Empty), searchPattern) ||
+                    EF.Functions.ILike(u.Username ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(u.Email ?? string.Empty, searchPattern));
             }
 
             if (roleId.HasValue && roleId.Value > 0)

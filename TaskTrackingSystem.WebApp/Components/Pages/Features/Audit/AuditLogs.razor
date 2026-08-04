@@ -31,9 +31,8 @@
                 <i data-lucide="search" class="h-4 w-4 mr-2"></i>
                 @AppLocalization.Text("action.search", "Search")
             </button>
-            <button @onclick="ResetSearch" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                <i data-lucide="rotate-ccw" class="h-4 w-4 mr-2 text-slate-500"></i>
-                @AppLocalization.Text("action.reset", "Reset")
+                <button @onclick="ResetSearch" title="@AppLocalization.Text("action.reset", "Reset")" aria-label="@AppLocalization.Text("action.reset", "Reset")" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2.5 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4 text-slate-500"></i>
             </button>
         </div>
     </div>
@@ -52,7 +51,7 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.index", "No.")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.date", "Timestamp")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.user", "User")</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.module", "အပိုင်း")</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.module", "Module")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.actions", "Action")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("common.description", "Description")</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@AppLocalization.Text("field.ipAddress", "IP Address")</th>
@@ -72,10 +71,10 @@
                                 <td class="px-6 py-4 align-top">
                                     <div class="flex items-center gap-2">
                                         <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold shrink-0">
-                                            @(log.UserFullName.Length > 0 ? log.UserFullName[0].ToString().ToUpper() : "S")
+                                            @(GetAuditUserName(log).Length > 0 ? GetAuditUserName(log)[0].ToString().ToUpper() : "S")
                                         </span>
                                         <div>
-                                            <p class="text-xs font-semibold text-slate-800">@log.UserFullName</p>
+                                            <p class="text-xs font-semibold text-slate-800">@GetAuditUserName(log)</p>
                                             <p class="text-[10px] text-slate-400">@@@log.Username</p>
                                         </div>
                                     </div>
@@ -165,25 +164,40 @@
         }
     }
 
-    private void ApplySearch()
+    private async Task ApplySearch()
     {
         currentPage = 1;
-        _ = LoadLogs();
+        await LoadLogs();
     }
 
-    private void ResetSearch()
+    private async Task ResetSearch()
     {
         searchInput = "";
         currentPage = 1;
-        _ = LoadLogs();
+        await LoadLogs();
     }
 
-    private void HandleKeyUp(KeyboardEventArgs e)
+    private async Task HandleKeyUp(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            ApplySearch();
+            await ApplySearch();
         }
+    }
+
+    private string GetAuditUserName(AuditLogDto log)
+    {
+        if (string.Equals(log.UserFullName, "System Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return AppLocalization.Text("common.systemAdmin", "System Admin");
+        }
+
+        if (string.Equals(log.UserFullName, "System", StringComparison.OrdinalIgnoreCase))
+        {
+            return AppLocalization.Text("notification.system", "System");
+        }
+
+        return Content.GetText(log.UserFullName, log.UserFullNameMy);
     }
 
     private string BuildAuditLogsUrl()

@@ -149,6 +149,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             DateTime? startDate,
             DateTime? endDate,
             string? status,
+            string? search,
             int? projectId,
             bool? assignedToMe,
             bool? assignedToMyTeam)
@@ -164,6 +165,25 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
             if (endDate.HasValue)
                 query = query.Where(t => t.CreatedAt < endDate.Value.Date.AddDays(1));
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchPattern = $"%{search.Trim()}%";
+                query = query.Where(t =>
+                    EF.Functions.ILike(t.Title ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(t.TitleMy ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(t.Description ?? string.Empty, searchPattern) ||
+                    EF.Functions.ILike(t.DescriptionMy ?? string.Empty, searchPattern) ||
+                    (t.Project != null &&
+                        (EF.Functions.ILike(t.Project.Name ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(t.Project.NameMy ?? string.Empty, searchPattern))) ||
+                    (t.AssignedToNavigation != null &&
+                        (EF.Functions.ILike(t.AssignedToNavigation.Username ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(t.AssignedToNavigation.FirstName ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(t.AssignedToNavigation.LastName ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(t.AssignedToNavigation.FirstNameMy ?? string.Empty, searchPattern) ||
+                         EF.Functions.ILike(t.AssignedToNavigation.LastNameMy ?? string.Empty, searchPattern))));
+            }
 
             if (projectId.HasValue)
                 query = query.Where(t => t.ProjectId == projectId.Value);
@@ -326,12 +346,12 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         }
 
         public async Task<Result<IEnumerable<TaskReportDto>>> GetTasksReportAsync(
-            DateTime? startDate, DateTime? endDate, string? status, int? projectId, long roleId, long currentUserId,
+            DateTime? startDate, DateTime? endDate, string? status, string? search, int? projectId, long roleId, long currentUserId,
             bool? assignedToMe = null, bool? assignedToMyTeam = null)
         {
             var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
             var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
-            var query = await BuildTaskReportQueryAsync(isAdmin, isManager, currentUserId, startDate, endDate, status, projectId, assignedToMe, assignedToMyTeam);
+            var query = await BuildTaskReportQueryAsync(isAdmin, isManager, currentUserId, startDate, endDate, status, search, projectId, assignedToMe, assignedToMyTeam);
             var tasks = await query
                 .OrderBy(t => t.DueDate)
                 .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
@@ -345,6 +365,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             DateTime? startDate,
             DateTime? endDate,
             string? status,
+            string? search,
             int? projectId,
             long roleId,
             long currentUserId,
@@ -355,7 +376,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         {
             var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
             var isManager = await DataScopeAuthorization.IsManagerScopeAsync(_db, roleId);
-            var query = await BuildTaskReportQueryAsync(isAdmin, isManager, currentUserId, startDate, endDate, status, projectId, assignedToMe, assignedToMyTeam);
+            var query = await BuildTaskReportQueryAsync(isAdmin, isManager, currentUserId, startDate, endDate, status, search, projectId, assignedToMe, assignedToMyTeam);
             var paged = await query
                 .OrderBy(t => t.DueDate)
                 .ThenByDescending(t => t.CreatedAt ?? DateTime.UtcNow)
@@ -388,6 +409,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     UserId = user.Id,
                     Username = user.Username,
                     FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    FullNameMy = $"{user.FirstNameMy} {user.LastNameMy}".Trim(),
                     TotalAssignedTasks = total,
                     CompletedTasksCount = done,
                     EfficiencyRatio = total > 0 ? Math.Round(((double)done / total) * 100, 2) : 0,
@@ -423,7 +445,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     (t.Project?.Name.ToLower().Contains(s) == true) ||
                     (t.Project?.NameMy?.ToLower().Contains(s) == true) ||
                     (t.AssignedToNavigation != null &&
-                     ($"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}").ToLower().Contains(s))
+                     ($"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName} {t.AssignedToNavigation.FirstNameMy} {t.AssignedToNavigation.LastNameMy}").ToLower().Contains(s))
                 ).ToList();
             }
 
@@ -531,6 +553,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 {
                     UserId = u.Id,
                     FullName = $"{u.FirstName} {u.LastName}".Trim(),
+                    FullNameMy = $"{u.FirstNameMy} {u.LastNameMy}".Trim(),
                     Username = u.Username,
                     TotalAssigned = uTasks.Count,
                     Completed = uTasks.Count(t => t.StatusId == AppTaskStatus.Done),
@@ -544,7 +567,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
-                list = list.Where(u => u.FullName.ToLower().Contains(s) || u.Username.ToLower().Contains(s)).ToList();
+                list = list.Where(u => u.FullName.ToLower().Contains(s) ||
+                                       (u.FullNameMy?.ToLower().Contains(s) == true) ||
+                                       u.Username.ToLower().Contains(s)).ToList();
             }
 
             return Result<IEnumerable<TeamProductivityReportDto>>.Success(list.OrderByDescending(u => u.CompletionRate));
@@ -719,7 +744,11 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 var s = search.Trim().ToLower();
                 query = query.Where(t =>
                     t.Title.ToLower().Contains(s) ||
-                    (t.Project != null && t.Project.Name.ToLower().Contains(s)));
+                    (t.TitleMy != null && t.TitleMy.ToLower().Contains(s)) ||
+                    (t.Description != null && t.Description.ToLower().Contains(s)) ||
+                    (t.DescriptionMy != null && t.DescriptionMy.ToLower().Contains(s)) ||
+                    (t.Project != null && (t.Project.Name.ToLower().Contains(s) ||
+                                           (t.Project.NameMy != null && t.Project.NameMy.ToLower().Contains(s)))));
             }
 
             var paged = await query
@@ -731,11 +760,15 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             {
                 TaskId = t.Id,
                 Title = t.Title,
+                TitleMy = t.TitleMy,
                 Description = t.Description,
+                DescriptionMy = t.DescriptionMy,
                 ProjectName = t.Project?.Name ?? "-",
+                ProjectNameMy = t.Project?.NameMy,
                 StatusName = StatusMap.TryGetValue(t.StatusId, out var s) ? s : $"Status {t.StatusId}",
                 PriorityName = PriorityMap.TryGetValue(t.PriorityId, out var p) ? p : $"Priority {t.PriorityId}",
                 AssignedTo = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstName} {t.AssignedToNavigation.LastName}" : null,
+                AssignedToMy = t.AssignedToNavigation != null ? $"{t.AssignedToNavigation.FirstNameMy} {t.AssignedToNavigation.LastNameMy}" : null,
                 AssignedToUserId = t.AssignedTo,
                 DueDate = t.DueDate,
                 DaysOverdue = t.DueDate < now ? (int)(now - t.DueDate).TotalDays : 0,
@@ -866,6 +899,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                     UserId = user.Id,
                     Username = user.Username,
                     FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    FullNameMy = $"{user.FirstNameMy} {user.LastNameMy}".Trim(),
                     AssignedCount = total,
                     CompletedCount = done,
                     AssignedIssues = userIssues.Count,
@@ -884,7 +918,9 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
-                list = list.Where(u => u.FullName.ToLower().Contains(s) || u.Username.ToLower().Contains(s)).ToList();
+                list = list.Where(u => u.FullName.ToLower().Contains(s) ||
+                                       (u.FullNameMy?.ToLower().Contains(s) == true) ||
+                                       u.Username.ToLower().Contains(s)).ToList();
             }
 
             return Result<IEnumerable<EmployeeProductivityReportDto>>.Success(list.OrderByDescending(u => u.OpenIssues).ThenByDescending(u => u.ActualHours));
@@ -1021,6 +1057,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
                 {
                     ProjectId = project.Id,
                     ProjectName = project.Name,
+                    ProjectNameMy = project.NameMy,
                     StartDate = project.StartDate,
                     EndDate = project.EndDate,
                     TotalTasks = totalTasks,
@@ -1041,7 +1078,8 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
-                list = list.Where(p => p.ProjectName.ToLower().Contains(s)).ToList();
+                list = list.Where(p => p.ProjectName.ToLower().Contains(s) ||
+                                       (p.ProjectNameMy?.ToLower().Contains(s) == true)).ToList();
             }
 
             return Result<IEnumerable<ProjectProgressReportDto>>.Success(list.OrderBy(p => p.ProjectName));

@@ -1,4 +1,5 @@
 using TaskTrackingSystem.Shared.Models.Issue;
+using TaskTrackingSystem.Shared.Localization;
 using TaskTrackingSystem.Shared.Models.Menu;
 using TaskTrackingSystem.Shared.Models.Project;
 using TaskTrackingSystem.Shared.Models.Role;
@@ -53,6 +54,18 @@ public sealed class LocalizedContentService : ILocalizedContentService
     {
         var english = JoinName(firstNameEnglish, lastNameEnglish);
         var burmese = JoinName(firstNameBurmese, lastNameBurmese);
+
+        // These are standard system display labels, not personal names.
+        if (string.Equals(english, "System Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return AppLocalization.Text("common.systemAdmin", "System Admin");
+        }
+
+        if (string.Equals(english, "User", StringComparison.OrdinalIgnoreCase))
+        {
+            return AppLocalization.Text("common.user", "User");
+        }
+
         return GetText(english, burmese);
     }
 
