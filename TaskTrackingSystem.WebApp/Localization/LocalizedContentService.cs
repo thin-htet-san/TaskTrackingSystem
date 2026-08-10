@@ -34,6 +34,53 @@ public interface ILocalizedContentService
 public sealed class LocalizedContentService : ILocalizedContentService
 {
     private readonly UiLanguageService _uiLanguageService;
+    private readonly LanguageDetectionService _languageDetection = new();
+    private static readonly IReadOnlyDictionary<string, string> KnownBurmeseNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Kyaw Kyaw Aung"] = "ကျော်ကျော် အောင်",
+        ["Min Min Htun"] = "မင်းမင်း ထွန်း",
+        ["Mg Mg Naing"] = "မောင်မောင် နိုင်",
+        ["Aung Aung Oo"] = "အောင်အောင် ဦး",
+        ["Wai Yan Tun"] = "ဝေယံ ထွန်း",
+        ["Thura Ko"] = "သူရ ကို",
+        ["Su Su Win"] = "စုစု ဝင်း",
+        ["Nandar Hlaing"] = "နန္ဒာ လှိုင်",
+        ["Phyo Phyo Aye"] = "ဖြိုးဖြိုး အေး",
+        ["Zaw Zaw Lin"] = "ဇော်ဇော် လင်း",
+        ["Hla Hla Khin"] = "လှလှ ခင်",
+        ["Nwe Nwe Aye"] = "နွေနွေ အေး",
+        ["Ei Ei Mon"] = "အိအိ မွန်",
+        ["Thandar Win"] = "သန္တာ ဝင်း",
+        ["Khin Khin Tun"] = "ခင်ခင် ထွန်း",
+        ["Su Mon Hlaing"] = "စုမွန် လှိုင်",
+        ["Mon Mon Aung"] = "မွန်မွန် အောင်",
+        ["Yee Yee Lwin"] = "ရီရီ လွင်",
+        ["Pyae Pyae Naing"] = "ပြည့်ပြည့် နိုင်",
+        ["May Zaw"] = "မေ ဇော်",
+        ["Htet Htet Oo"] = "ထက်ထက် ဦး",
+        ["Aye Aye Khaing"] = "အေးအေး ခိုင်",
+        ["Chaw Chaw Aung"] = "ချောချော အောင်",
+        ["Mya Mya Myint"] = "မြမြ မြင့်",
+        ["Lwin Lwin Htun"] = "လွင်လွင် ထွန်း",
+        ["Phyu Phyu Soe"] = "ဖြူဖြူ စိုး",
+        ["Myat Myat Aung"] = "မြတ်မြတ် အောင်",
+        ["Nyein Nyein Win"] = "ငြိမ်းငြိမ်း ဝင်း",
+        ["Kyu Kyu Hlaing"] = "ကြူကြူ လှိုင်",
+        ["San San Aye"] = "စန်းစန်း အေး",
+        ["Si Si Ko"] = "စီစီ ကို",
+        ["Moe Moe Thant"] = "မိုးမိုး သန့်",
+        ["Yu Yu Naing"] = "ယုယု နိုင်",
+        ["Pan Pan Wai"] = "ပန်းပန်း ဝေ",
+        ["Khaing Khine"] = "ခိုင် ခိုင်",
+        ["Thiri Aung"] = "သီရိ အောင်",
+        ["Hnin Aye"] = "နှင်း အေး",
+        ["Wint Oo"] = "ဝင့် ဦး",
+        ["Chan Moe"] = "ချမ်း မိုး",
+        ["Aye Mon"] = "အေးမွန်",
+        ["Htoo Aung Lwin"] = "ထူးအောင် လွင်",
+        ["Thin Htet San"] = "သင်းထက် စံ",
+        ["Maung Aye"] = "မောင် အေး"
+    };
 
     public LocalizedContentService(UiLanguageService uiLanguageService)
     {
@@ -47,7 +94,14 @@ public sealed class LocalizedContentService : ILocalizedContentService
             return !string.IsNullOrWhiteSpace(burmese) ? burmese : english ?? string.Empty;
         }
 
-        return !string.IsNullOrWhiteSpace(english) ? english : burmese ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(english))
+        {
+            return string.Empty;
+        }
+
+        return _languageDetection.AppearsPredominantlyBurmese(english)
+            ? string.Empty
+            : english;
     }
 
     public string GetFullName(string? firstNameEnglish, string? lastNameEnglish, string? firstNameBurmese, string? lastNameBurmese)
@@ -66,14 +120,21 @@ public sealed class LocalizedContentService : ILocalizedContentService
             return AppLocalization.Text("common.user", "User");
         }
 
+        if (_uiLanguageService.CurrentLanguage == AppLanguage.Burmese
+            && string.IsNullOrWhiteSpace(burmese)
+            && KnownBurmeseNames.TryGetValue(english, out var knownBurmeseName))
+        {
+            return knownBurmeseName;
+        }
+
         return GetText(english, burmese);
     }
 
-    public string GetProjectName(ProjectDto project) => GetText(project.Name, project.NameMy);
+    public string GetProjectName(ProjectDto project) => WithFallback(GetText(project.Name, project.NameMy), AppLocalization.Text("project.untitledProject", "Untitled project"));
     public string GetProjectDescription(ProjectDto project) => GetText(project.Description, project.DescriptionMy);
-    public string GetTaskTitle(TaskDto task) => GetText(task.Title, task.TitleMy);
+    public string GetTaskTitle(TaskDto task) => WithFallback(GetText(task.Title, task.TitleMy), AppLocalization.Text("task.untitledTask", "Untitled task"));
     public string GetTaskDescription(TaskDto task) => GetText(task.Description, task.DescriptionMy);
-    public string GetIssueTitle(IssueDto issue) => GetText(issue.Title, issue.TitleMy);
+    public string GetIssueTitle(IssueDto issue) => WithFallback(GetText(issue.Title, issue.TitleMy), AppLocalization.Text("issue.untitledIssue", "Untitled issue"));
     public string GetIssueDescription(IssueDto issue) => GetText(issue.Description, issue.DescriptionMy);
     public string GetMenuName(MenuDto menu) => GetText(menu.MenuName, menu.MenuNameMy);
     public string GetMenuName(AccessMenuDto menu) => GetText(menu.MenuName, menu.MenuNameMy);
@@ -85,4 +146,7 @@ public sealed class LocalizedContentService : ILocalizedContentService
     {
         return string.Join(" ", new[] { firstName, lastName }.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!.Trim()));
     }
+
+    private static string WithFallback(string text, string fallback) =>
+        string.IsNullOrWhiteSpace(text) ? fallback : text;
 }

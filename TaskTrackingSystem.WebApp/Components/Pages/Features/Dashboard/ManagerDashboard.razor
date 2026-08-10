@@ -20,7 +20,7 @@
                         @AppLocalization.Text("dashboard.managerIntro", "Track your team, project health, and weekly task progress in one place.")
                         @if (summary.PendingTasksCount > 0)
                         {
-                            <span class="text-slate-500"> @AppLocalization.Text("dashboard.pendingTasksNotice", "{count} tasks are still pending.").Replace("{count}", summary.PendingTasksCount.ToString())</span>
+                            <span class="text-slate-500"> @AppLocalization.Text("dashboard.pendingTasksNotice", "{count} tasks are still pending.").Replace("{count}", AppLocalization.Number(summary.PendingTasksCount))</span>
                         }
                     </p>
                 </div>
@@ -100,7 +100,7 @@
                         {
                             <div class="@GetCalendarCellClasses(cell)">
                                 <div class="flex h-full flex-col justify-between">
-                                    <div class="text-sm font-semibold @(cell.IsCurrentMonth ? (cell.IsToday ? "text-white" : "text-slate-900") : "text-slate-400")">@cell.Date.Day</div>
+                                    <div class="text-sm font-semibold @(cell.IsCurrentMonth ? (cell.IsToday ? "text-white" : "text-slate-900") : "text-slate-400")">@AppLocalization.Number(cell.Date.Day)</div>
                                     <div class="flex items-center gap-1">
                                         @foreach (var dot in cell.DeadlineDots)
                                         {
@@ -168,9 +168,9 @@
                                         </div>
 
                                         <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
-                                            <span>@project.Completed/@project.Total @AppLocalization.Text("dashboard.tasksUnit", "tasks")</span>
-                                            <span class="text-rose-600">@project.Overdue @AppLocalization.Text("status.overdue", "overdue")</span>
-                                            <span>@project.TeamSize @AppLocalization.Text("dashboard.teamMembers", "members")</span>
+                                            <span>@AppLocalization.Number(project.Completed)/@AppLocalization.Number(project.Total) @AppLocalization.Text("dashboard.tasksUnit", "tasks")</span>
+                                            <span class="text-rose-600">@AppLocalization.Number(project.Overdue) @AppLocalization.Text("status.overdue", "overdue")</span>
+                                            <span>@AppLocalization.Number(project.TeamSize) @AppLocalization.Text("dashboard.teamMembers", "members")</span>
                                         </div>
 
                                         <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
@@ -180,7 +180,7 @@
 
                                     <div class="flex flex-col items-start gap-3 lg:items-end">
                                         <div class="text-right">
-                                            <div class="text-xl font-bold text-slate-950">@project.ProgressPercentage.ToString("F0")%</div>
+                                            <div class="text-xl font-bold text-slate-950">@AppLocalization.Number(project.ProgressPercentage, "0")%</div>
                                             <div class="text-xs uppercase tracking-[0.08em] text-slate-500">@AppLocalization.Text("dashboard.complete", "Complete")</div>
                                         </div>
                                         <button @onclick="() => ViewProjectTasks(project.Id)" class="inline-flex items-center rounded-2xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-600">
@@ -239,9 +239,9 @@
         .Select(member => new ProgressListChartItem(
             member.FullName,
             member.CompletionPercentage,
-            $"{member.Completed}/{member.Total}",
+            $"{AppLocalization.Number(member.Completed)}/{AppLocalization.Number(member.Total)}",
             member.Color,
-            $"{member.Label} - {member.CompletionPercentage:F0}%",
+            $"{member.Label} - {AppLocalization.Number(member.CompletionPercentage, "0")}%",
             member.Initials))
         .ToList();
     private List<BarChartGroup> WeeklyBarGroups => WeeklyProgress
@@ -359,10 +359,10 @@
 
         return new List<DashboardMetric>
         {
-            new("folder-kanban", AppLocalization.Text("dashboard.allActive", "all active"), activeProjects.ToString(), AppLocalization.Text("dashboard.activeProjects", "Active Projects"), "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
-            new("check-square", AppLocalization.Text("dashboard.acrossProjects", "across projects"), totalTasks.ToString(), AppLocalization.Text("dashboard.totalTasksMetric", "Total Tasks"), "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-emerald-700"),
-            new("users", AppLocalization.Text("dashboard.yourTeam", "your team"), teamMembers.ToString(), AppLocalization.Text("dashboard.teamMembers", "Team Members"), "rounded-2xl bg-emerald-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
-            new("triangle-alert", AppLocalization.Text("dashboard.needsAttention", "needs attention"), overdueTasks.ToString(), AppLocalization.Text("dashboard.overdueTasks", "Overdue Tasks"), "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
+            new("folder-kanban", AppLocalization.Text("dashboard.allActive", "all active"), AppLocalization.Number(activeProjects), AppLocalization.Text("dashboard.activeProjects", "Active Projects"), "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
+            new("check-square", AppLocalization.Text("dashboard.acrossProjects", "across projects"), AppLocalization.Number(totalTasks), AppLocalization.Text("dashboard.totalTasksMetric", "Total Tasks"), "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-emerald-700"),
+            new("users", AppLocalization.Text("dashboard.yourTeam", "your team"), AppLocalization.Number(teamMembers), AppLocalization.Text("dashboard.teamMembers", "Team Members"), "rounded-2xl bg-emerald-700 p-3 text-white", "text-sm font-semibold text-emerald-700"),
+            new("triangle-alert", AppLocalization.Text("dashboard.needsAttention", "needs attention"), AppLocalization.Number(overdueTasks), AppLocalization.Text("dashboard.overdueTasks", "Overdue Tasks"), "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
         };
     }
 
@@ -433,12 +433,13 @@
 
                 var completed = userTasks.Count(task => task.StatusId == AppTaskStatus.Done);
                 var percentage = Math.Round((double)completed / total * 100, 2);
-                var initials = BuildInitials(user.FirstName, user.LastName);
-                var label = $"{total} {AppLocalization.Text("dashboard.tasksUnit", "tasks")}";
+                var displayName = Content.GetUserFullName(user);
+                var initials = AppLocalization.IsBurmeseCulture ? BuildInitialsFromDisplayName(displayName) : BuildInitials(user.FirstName, user.LastName);
+                var label = $"{AppLocalization.Number(total)} {AppLocalization.Text("dashboard.tasksUnit", "tasks")}";
 
                 return new TeamProgressViewModel(
                     user.Id,
-                    $"{user.FirstName} {user.LastName}".Trim(),
+                    displayName,
                     initials,
                     completed,
                     total,
@@ -489,7 +490,7 @@
                 var daysLeft = (project.EndDate.Date - DateTime.Today).Days;
                 var label = daysLeft == 0
                     ? AppLocalization.Text("dashboard.today", "Today")
-                    : AppLocalization.Text("dashboard.daysLeft", "{count}d left").Replace("{count}", daysLeft.ToString());
+                    : AppLocalization.Text("dashboard.daysLeft", "{count}d left").Replace("{count}", AppLocalization.Number(daysLeft));
                 var labelClass = daysLeft <= 14 ? "text-amber-500 font-semibold" : "text-slate-500";
 
                 return new DeadlineItemViewModel(
@@ -524,7 +525,7 @@
             maxTotal = Math.Max(maxTotal, completed + pending);
 
             rows.Add(new WeeklyProgressViewModel(
-                $"W{rows.Count + 1}",
+                GetWeekLabel(rows.Count + 1),
                 weekStart,
                 weekEnd.AddDays(-1),
                 completed,
@@ -606,17 +607,34 @@
     {
         if (start.Month == end.Month && start.Year == end.Year)
         {
-            return $"{start:MMM d} - {end:dd}";
+            return $"{AppLocalization.MonthName(start, true)} {AppLocalization.Number(start.Day)} - {AppLocalization.Number(end.Day)}";
         }
 
-        return $"{start:MMM d} - {end:MMM d}";
+        return $"{AppLocalization.MonthName(start, true)} {AppLocalization.Number(start.Day)} - {AppLocalization.MonthName(end, true)} {AppLocalization.Number(end.Day)}";
     }
+
+    private static string GetWeekLabel(int index) => AppLocalization.IsBurmeseCulture
+        ? AppLocalization.Number(index)
+        : $"W{index}";
 
     private static string BuildInitials(string firstName, string lastName)
     {
         var first = string.IsNullOrWhiteSpace(firstName) ? string.Empty : firstName.Trim()[0].ToString().ToUpperInvariant();
         var last = string.IsNullOrWhiteSpace(lastName) ? string.Empty : lastName.Trim()[0].ToString().ToUpperInvariant();
         return $"{first}{last}";
+    }
+
+    private static string BuildInitialsFromDisplayName(string displayName)
+    {
+        var parts = displayName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[^1][0]}";
+        }
+
+        return displayName.Length > 1 ? displayName[..2] : displayName;
     }
 
     private string GetProjectColor(long projectId)
@@ -634,11 +652,11 @@
     }
 
     private string GetDisplayDateLabel(DateTime date) => AppLocalization.IsBurmeseCulture
-        ? $"{date.Month}လ {date.Day}ရက်"
+        ? $"{AppLocalization.MonthName(date, true)} {AppLocalization.Number(date.Day)}"
         : date.ToString("dddd, d");
 
     private string GetMonthYearLabel(DateTime date) => AppLocalization.IsBurmeseCulture
-        ? $"{date.Year} ခုနှစ် {date.Month}လ"
+        ? $"{AppLocalization.Number(date.Year)} {AppLocalization.MonthName(date)}"
         : date.ToString("MMMM yyyy");
 
     private string GetCalendarCellClasses(CalendarCellViewModel cell)

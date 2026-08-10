@@ -44,12 +44,105 @@ public class NotificationService
             .Take(take)
             .ToListAsync();
 
+        await EnrichLocalizedTextAsync(items);
+
         foreach (var item in items)
         {
             item.TargetUrl = NotificationNavigation.BuildTargetUrl(item.SourceType, item.SourceId, item.NotificationType);
         }
 
         return items;
+    }
+
+    private async global::System.Threading.Tasks.Task EnrichLocalizedTextAsync(List<NotificationDto> items)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var taskIds = items
+            .Where(item => item.SourceType.Equals("task", StringComparison.OrdinalIgnoreCase))
+            .Select(item => item.SourceId)
+            .Distinct()
+            .ToList();
+        var projectIds = items
+            .Where(item => item.SourceType.Equals("project", StringComparison.OrdinalIgnoreCase))
+            .Select(item => item.SourceId)
+            .Distinct()
+            .ToList();
+
+        var tasks = taskIds.Count == 0
+            ? new Dictionary<long, (string Title, string? TitleMy)>()
+            : await _db.Tasks
+                .Where(task => taskIds.Contains(task.Id))
+                .Select(task => new { task.Id, task.Title, task.TitleMy })
+                .ToDictionaryAsync(task => task.Id, task => (task.Title, task.TitleMy));
+
+        var projects = projectIds.Count == 0
+            ? new Dictionary<long, (string Name, string? NameMy)>()
+            : await _db.Projects
+                .Where(project => projectIds.Contains(project.Id))
+                .Select(project => new { project.Id, project.Name, project.NameMy })
+                .ToDictionaryAsync(project => project.Id, project => (project.Name, project.NameMy));
+
+        foreach (var item in items)
+        {
+            item.TitleMy = string.IsNullOrWhiteSpace(item.TitleMy)
+                ? GetTitleMy((NotificationType)item.NotificationType)
+                : item.TitleMy;
+
+            if (!string.IsNullOrWhiteSpace(item.BodyMy))
+            {
+                continue;
+            }
+
+            if (item.SourceType.Equals("task", StringComparison.OrdinalIgnoreCase)
+                && tasks.TryGetValue(item.SourceId, out var task))
+            {
+                var taskTitle = string.IsNullOrWhiteSpace(task.TitleMy) ? task.Title : task.TitleMy;
+                item.BodyMy = (NotificationType)item.NotificationType switch
+                {
+                    NotificationType.TaskAssigned => $"သင့်အား လုပ်ငန်းသစ်တစ်ခု တာဝန်ပေးအပ်ထားပါသည် - {taskTitle}",
+                    NotificationType.CommentAdded => $"{GetSenderNameMy(item)} သည် လုပ်ငန်း '{taskTitle}' တွင် မှတ်ချက်တစ်ခု ရေးသားခဲ့ပါသည်",
+                    NotificationType.Mention => $"{GetSenderNameMy(item)} သည် လုပ်ငန်း '{taskTitle}' တွင် သင့်ကို ရည်ညွှန်းဖော်ပြခဲ့ပါသည်",
+                    _ => item.BodyMy
+                };
+            }
+
+            if (item.SourceType.Equals("project", StringComparison.OrdinalIgnoreCase)
+                && projects.TryGetValue(item.SourceId, out var project)
+                && (NotificationType)item.NotificationType == NotificationType.ProjectUpdated)
+            {
+                var projectName = string.IsNullOrWhiteSpace(project.NameMy) ? project.Name : project.NameMy;
+                item.BodyMy = $"သင့်အား စီမံကိန်း '{projectName}' တွင် တာဝန်ပေးအပ်ထားပါသည်";
+            }
+        }
+    }
+
+    private static string? GetTitleMy(NotificationType notificationType) => notificationType switch
+    {
+        NotificationType.TaskAssigned => "လုပ်ငန်းတာဝန် ပေးအပ်ခြင်း",
+        NotificationType.StatusChanged => "လုပ်ငန်းအခြေအနေ ပြောင်းလဲခြင်း",
+        NotificationType.ProjectUpdated => "စီမံကိန်းတာဝန် ပေးအပ်ခြင်း",
+        NotificationType.CommentAdded => "မှတ်ချက်အသစ် ရေးသားခြင်း",
+        NotificationType.Mention => "သင့်ကို ရည်ညွှန်းဖော်ပြခြင်း",
+        _ => null
+    };
+
+    private static string GetSenderNameMy(NotificationDto item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.SenderNameMy))
+        {
+            return item.SenderNameMy.Trim();
+        }
+
+        if (string.Equals(item.SenderName, "System Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return "စနစ်အုပ်ချုပ်သူ";
+        }
+
+        return string.IsNullOrWhiteSpace(item.SenderName) ? "စနစ်" : item.SenderName.Trim();
     }
 
     public async Task<int> GetUnreadCountAsync(long userId)

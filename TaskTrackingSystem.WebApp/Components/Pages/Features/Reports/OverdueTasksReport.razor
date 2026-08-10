@@ -254,7 +254,7 @@
                                     <span class="font-semibold text-rose-600">@AppLocalization.Number(task.OverdueIssues)</span> @AppLocalization.Text("common.overdue", "overdue")
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm font-medium text-slate-800">@(string.IsNullOrWhiteSpace(Content.GetText(task.DelayReason, task.DelayReasonMy)) ? AppLocalization.Text("report.noReasonRecorded", "No reason recorded") : Content.GetText(task.DelayReason, task.DelayReasonMy))</div>
+                                    <div class="text-sm font-medium text-slate-800">@GetDelayReasonLabel(task)</div>
                                     <div class="mt-1 text-xs text-slate-500">@AppLocalization.Text("report.blockedBy", "Blocked by: ")@(string.IsNullOrWhiteSpace(Content.GetText(task.BlockedBy, task.BlockedByMy)) ? AppLocalization.Text("common.none", "None") : Content.GetText(task.BlockedBy, task.BlockedByMy)) · @AppLocalization.Text("report.escalation", "Escalation: ")@GetEscalationLabel(task.EscalationLevel)</div>
                                 </td>
                             </tr>
@@ -393,24 +393,46 @@
                     : 0;
             }
 
-            // 2. Fetch paged list for the table view
-            var pagedParts = new List<string>(parts);
-            pagedParts.Add($"page={currentPage}");
-            pagedParts.Add($"limit={pageSize}");
-            var pagedUrl = "Report/overdue-critical" + (pagedParts.Count > 0 ? "?" + string.Join("&", pagedParts) : "");
-            var pagedResult = await client.GetFromJsonAsync<PagedResult<OverdueCriticalTaskDto>>(pagedUrl, Serialization.CaseInsensitive);
-            if (pagedResult != null)
-            {
-                overdueReportPage = pagedResult;
-                overdueReportTasks = pagedResult.Items.ToList();
-                currentPage = pagedResult.Page;
-                pageSize = pagedResult.PageSize;
-            }
+            ApplyLocalPagination();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Overdue report loading error: {ex.Message}");
         }
+    }
+
+    private void ApplyLocalPagination()
+    {
+        var normalizedPageSize = Math.Clamp(pageSize <= 0 ? 10 : pageSize, 1, 100);
+        var totalCount = allOverdue.Count;
+        var totalPages = totalCount == 0
+            ? 0
+            : (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
+        var normalizedPage = Math.Max(currentPage, 1);
+
+        if (totalPages > 0 && normalizedPage > totalPages)
+        {
+            normalizedPage = totalPages;
+        }
+
+        overdueReportTasks = totalPages == 0
+            ? new List<OverdueCriticalTaskDto>()
+            : allOverdue
+                .Skip((normalizedPage - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .ToList();
+
+        overdueReportPage = new PagedResult<OverdueCriticalTaskDto>
+        {
+            Items = overdueReportTasks,
+            TotalCount = totalCount,
+            Page = normalizedPage,
+            PageSize = normalizedPageSize,
+            TotalPages = totalPages
+        };
+
+        currentPage = normalizedPage;
+        pageSize = normalizedPageSize;
     }
 
     private async Task ApplyFilters()
@@ -522,6 +544,22 @@
         3 => "Manager",
         _ => "None"
     };
+
+    private string GetDelayReasonLabel(OverdueCriticalTaskDto task)
+    {
+        var reason = Content.GetText(task.DelayReason, task.DelayReasonMy);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return AppLocalization.Text("report.noReasonRecorded", "No reason recorded");
+        }
+
+        return reason.Trim() switch
+        {
+            "Past due date" => AppLocalization.Text("report.pastDueDate", "Past due date"),
+            "High priority due soon" => AppLocalization.Text("report.highPriorityDueSoon", "High priority due soon"),
+            _ => reason
+        };
+    }
 
     private static int GetPrioritySeverity(string priorityName) => priorityName switch
     {

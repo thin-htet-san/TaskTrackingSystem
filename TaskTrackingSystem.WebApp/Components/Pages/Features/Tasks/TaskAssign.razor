@@ -504,7 +504,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading project members: {ex.Message}");
-            statusMessage = "Failed to load project members.";
+            statusMessage = AppLocalization.Text("task.failedLoadProjectMembers", "Failed to load project members.");
             isError = true;
         }
         finally
@@ -527,11 +527,14 @@
             var dto = new UpdateTaskDto
             {
                 Title = SelectedTask.Title,
+                TitleMy = SelectedTask.TitleMy,
                 Description = SelectedTask.Description,
+                DescriptionMy = SelectedTask.DescriptionMy,
                 StatusId = SelectedTask.StatusId,
                 PriorityId = SelectedTask.PriorityId,
                 DueDate = SelectedTask.DueDate,
-                AssignedTo = TargetAssigneeId
+                AssignedTo = TargetAssigneeId,
+                AssignedBy = SelectedTask.AssignedBy
             };
 
             var response = await client.PutAsJsonAsync($"Task/{SelectedTask.Id}", dto);
@@ -549,19 +552,98 @@
             }
             else
             {
-                statusMessage = "Failed to update assignee.";
+                var apiError = await ReadApiErrorAsync(response);
+                statusMessage = string.IsNullOrWhiteSpace(apiError)
+                    ? AppLocalization.Text("task.failedUpdateAssignee", "Failed to update assignee.")
+                    : AppLocalization.ErrorMessage(apiError, AppLocalization.Text("task.failedUpdateAssignee", "Failed to update assignee."));
                 isError = true;
             }
         }
         catch (Exception ex)
         {
-            statusMessage = $"Error: {ex.Message}";
+            statusMessage = AppLocalization.ErrorMessage(ex.Message, AppLocalization.Text("task.failedUpdateAssignee", "Failed to update assignee."));
             isError = true;
         }
         finally
         {
             isSaving = false;
             await JS.InvokeVoidAsync("initIcons");
+        }
+    }
+
+    private static async Task<string?> ReadApiErrorAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return null;
+            }
+
+            try
+            {
+                var result = System.Text.Json.JsonSerializer.Deserialize<Result>(body, Serialization.CaseInsensitive);
+                if (!string.IsNullOrWhiteSpace(result?.ErrorMessage))
+                {
+                    return result.ErrorMessage;
+                }
+            }
+            catch
+            {
+                // Try validation/problem-details payloads below.
+            }
+
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("errorMessage", out var errorMessage) &&
+                    errorMessage.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return errorMessage.GetString();
+                }
+
+                if (root.TryGetProperty("message", out var message) &&
+                    message.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return message.GetString();
+                }
+
+                if (root.TryGetProperty("errors", out var errors) &&
+                    errors.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    var messages = new List<string>();
+                    foreach (var property in errors.EnumerateObject())
+                    {
+                        if (property.Value.ValueKind != System.Text.Json.JsonValueKind.Array)
+                        {
+                            continue;
+                        }
+
+                        foreach (var item in property.Value.EnumerateArray())
+                        {
+                            if (item.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                messages.Add(item.GetString() ?? string.Empty);
+                            }
+                        }
+                    }
+
+                    return string.Join(" ", messages.Where(message => !string.IsNullOrWhiteSpace(message)));
+                }
+            }
+            catch
+            {
+                return body;
+            }
+
+            return body;
+        }
+        catch
+        {
+            return null;
         }
     }
 

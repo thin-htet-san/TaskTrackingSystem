@@ -70,7 +70,7 @@
                                     <p class="text-sm text-slate-500">@AppLocalization.Text("dashboard.tasksInProgressDesc", "Tasks currently being worked on")</p>
                                 </div>
                             </div>
-                            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@InProgressTasks.Count</span>
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@AppLocalization.Number(InProgressTasks.Count)</span>
                         </div>
 
                         <div class="max-h-[420px] divide-y divide-slate-100 overflow-y-auto">
@@ -85,7 +85,7 @@
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm text-slate-500">@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                            <div class="text-sm text-slate-500">@DisplayFormats.Date(task.DueDate)</div>
                                             <div class="text-sm font-semibold @GetDueTextClass(task)">@GetDueLabel(task)</div>
                                         </div>
                                     </div>
@@ -109,7 +109,7 @@
                                     <p class="text-sm text-slate-500">@AppLocalization.Text("dashboard.todoUpcomingDesc", "Tasks waiting for action or coming up soon")</p>
                                 </div>
                             </div>
-                            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@TodoUpcomingTasks.Count</span>
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">@AppLocalization.Number(TodoUpcomingTasks.Count)</span>
                         </div>
 
                         <div class="max-h-[420px] divide-y divide-slate-100 overflow-y-auto">
@@ -124,7 +124,7 @@
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm text-slate-500">@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                            <div class="text-sm text-slate-500">@DisplayFormats.Date(task.DueDate)</div>
                                             <div class="text-sm font-semibold @GetDueTextClass(task)">@GetDueLabel(task)</div>
                                         </div>
                                     </div>
@@ -148,7 +148,7 @@
                                     <p class="text-sm text-slate-500">@AppLocalization.Text("dashboard.overdueDesc", "Tasks past their due date")</p>
                                 </div>
                             </div>
-                            <span class="rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-600">@OverdueTasks.Count</span>
+                            <span class="rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-600">@AppLocalization.Number(OverdueTasks.Count)</span>
                         </div>
 
                         <div class="max-h-[320px] divide-y divide-rose-100 overflow-y-auto">
@@ -165,7 +165,7 @@
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm text-slate-500">@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                            <div class="text-sm text-slate-500">@DisplayFormats.Date(task.DueDate)</div>
                                             <div class="text-sm font-semibold text-rose-600">@DaysOverdue(task)</div>
                                         </div>
                                     </div>
@@ -208,7 +208,7 @@
                             {
                                 <button type="button" @onclick="() => SelectDate(cell.Date)" class="@GetCalendarCellClasses(cell)">
                                     <div class="flex h-full flex-col justify-between">
-                                        <div class="text-sm font-semibold @(cell.IsCurrentMonth ? (cell.IsSelected ? "text-white" : "text-slate-900") : "text-slate-400")">@cell.Date.Day</div>
+                                        <div class="text-sm font-semibold @(cell.IsCurrentMonth ? (cell.IsSelected ? "text-white" : "text-slate-900") : "text-slate-400")">@AppLocalization.Number(cell.Date.Day)</div>
                                         <div class="flex items-center gap-1">
                                             @foreach (var dot in cell.TaskDots.Take(3))
                                             {
@@ -216,7 +216,7 @@
                                             }
                                             @if (cell.TaskDots.Count > 3)
                                             {
-                                                <span class="text-[10px] leading-none text-slate-400">+@((cell.TaskDots.Count - 3))</span>
+                                                <span class="text-[10px] leading-none text-slate-400">+@AppLocalization.Number(cell.TaskDots.Count - 3)</span>
                                             }
                                         </div>
                                     </div>
@@ -243,7 +243,7 @@
                                             <div class="truncate text-xs text-slate-500">@GetProjectName(task.ProjectId)</div>
                                         </div>
                                         <div class="text-right text-xs text-slate-500">
-                                            <div>@task.DueDate.ToString("yyyy-MM-dd")</div>
+                                                <div>@DisplayFormats.Date(task.DueDate)</div>
                                             <div class="@GetDueTextClass(task)">@GetDueLabel(task)</div>
                                         </div>
                                     </div>
@@ -389,11 +389,11 @@
 
         return new List<DashboardMetric>
         {
-            new("timer-reset", "active", inProgress.ToString(), AppLocalization.Text("status.inprogress", "In Progress"), "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-violet-700"),
-            new("list-checks", "queued", todo.ToString(), AppLocalization.Text("status.todo", "To Do"), "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-cyan-600"),
-            new("calendar-clock", "soon", dueSoon.ToString(), AppLocalization.Text("dashboard.dueSoon", "Due Soon"), "rounded-2xl bg-amber-500 p-3 text-white", "text-sm font-semibold text-amber-600"),
-            new("circle-check-big", "done", completed.ToString(), AppLocalization.Text("status.done", "Completed"), "rounded-2xl bg-emerald-600 p-3 text-white", "text-sm font-semibold text-emerald-600"),
-            new("triangle-alert", "late", overdue.ToString(), AppLocalization.Text("status.overdue", "Overdue"), "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
+            new("timer-reset", AppLocalization.Text("dashboard.active", "active"), AppLocalization.Number(inProgress), AppLocalization.Text("status.inprogress", "In Progress"), "rounded-2xl bg-violet-700 p-3 text-white", "text-sm font-semibold text-violet-700"),
+            new("list-checks", AppLocalization.Text("dashboard.queued", "queued"), AppLocalization.Number(todo), AppLocalization.Text("status.todo", "To Do"), "rounded-2xl bg-cyan-600 p-3 text-white", "text-sm font-semibold text-cyan-600"),
+            new("calendar-clock", AppLocalization.Text("dashboard.soon", "soon"), AppLocalization.Number(dueSoon), AppLocalization.Text("dashboard.dueSoon", "Due Soon"), "rounded-2xl bg-amber-500 p-3 text-white", "text-sm font-semibold text-amber-600"),
+            new("circle-check-big", AppLocalization.Text("dashboard.done", "done"), AppLocalization.Number(completed), AppLocalization.Text("status.done", "Completed"), "rounded-2xl bg-emerald-600 p-3 text-white", "text-sm font-semibold text-emerald-600"),
+            new("triangle-alert", AppLocalization.Text("dashboard.late", "late"), AppLocalization.Number(overdue), AppLocalization.Text("status.overdue", "Overdue"), "rounded-2xl bg-rose-600 p-3 text-white", "text-sm font-semibold text-rose-600")
         };
     }
 
@@ -474,7 +474,7 @@
 
         if (days < 0)
         {
-            return AppLocalization.Text("dashboard.daysAgo", "{count}d ago").Replace("{count}", Math.Abs(days).ToString());
+            return AppLocalization.Text("dashboard.daysAgo", "{count}d ago").Replace("{count}", AppLocalization.Number(Math.Abs(days)));
         }
 
         if (days == 0)
@@ -482,7 +482,7 @@
             return AppLocalization.Text("dashboard.today", "Today");
         }
 
-        return AppLocalization.Text("dashboard.daysLeft", "{count}d left").Replace("{count}", days.ToString());
+        return AppLocalization.Text("dashboard.daysLeft", "{count}d left").Replace("{count}", AppLocalization.Number(days));
     }
 
     private string GetDueTextClass(TaskDto task)
@@ -512,15 +512,15 @@
         var days = (DateTime.Today - task.DueDate.Date).Days;
         return days <= 0
             ? AppLocalization.Text("dashboard.dueToday", "Due today")
-            : AppLocalization.Text("dashboard.daysAgo", "{count}d ago").Replace("{count}", days.ToString());
+            : AppLocalization.Text("dashboard.daysAgo", "{count}d ago").Replace("{count}", AppLocalization.Number(days));
     }
 
     private string GetDisplayDateLabel(DateTime date) => AppLocalization.IsBurmeseCulture
-        ? $"{date.Month}လ {date.Day}ရက်"
+        ? $"{AppLocalization.MonthName(date, true)} {AppLocalization.Number(date.Day)}"
         : date.ToString("dddd, MMM d");
 
     private string GetMonthYearLabel(DateTime date) => AppLocalization.IsBurmeseCulture
-        ? $"{date.Year} ခုနှစ် {date.Month}လ"
+        ? $"{AppLocalization.Number(date.Year)} {AppLocalization.MonthName(date)}"
         : date.ToString("MMMM yyyy");
 
     private sealed record CalendarCellViewModel(

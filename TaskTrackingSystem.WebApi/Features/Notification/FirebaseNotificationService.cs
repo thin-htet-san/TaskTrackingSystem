@@ -53,7 +53,9 @@ public class FirebaseNotificationService
         }
 
         var title = "Task assigned";
+        var titleMy = "လုပ်ငန်းတာဝန် ပေးအပ်ခြင်း";
         var body = $"You have been assigned a new task: {task.Title}";
+        var bodyMy = $"သင့်အား လုပ်ငန်းသစ်တစ်ခု တာဝန်ပေးအပ်ထားပါသည် - {GetTaskTitleMy(task)}";
 
         return SendAsync(
             recipientIds: new[] { task.AssignedTo.Value },
@@ -62,7 +64,9 @@ public class FirebaseNotificationService
             sourceType: "task",
             sourceId: task.Id,
             title: title,
-            body: body);
+            body: body,
+            titleMy: titleMy,
+            bodyMy: bodyMy);
     }
 
     public async global::System.Threading.Tasks.Task NotifyTaskStatusChangedAsync(Database.AppDbContextModels.Task task, long senderId, AppTaskStatus oldStatusId, AppTaskStatus newStatusId)
@@ -99,7 +103,9 @@ public class FirebaseNotificationService
         }
 
         var title = "Project assigned";
+        var titleMy = "စီမံကိန်းတာဝန် ပေးအပ်ခြင်း";
         var body = $"You have been assigned to project '{project.Name}'";
+        var bodyMy = $"သင့်အား စီမံကိန်း '{GetProjectNameMy(project)}' တွင် တာဝန်ပေးအပ်ထားပါသည်";
 
         await SendAsync(
             uniqueRecipientIds,
@@ -108,7 +114,9 @@ public class FirebaseNotificationService
             "project",
             project.Id,
             title,
-            body);
+            body,
+            titleMy,
+            bodyMy);
     }
 
     public async global::System.Threading.Tasks.Task NotifyCommentAddedAsync(Database.AppDbContextModels.Task task, long senderId, string actorName, string message)
@@ -128,7 +136,10 @@ public class FirebaseNotificationService
         }
 
         var title = "New comment";
+        var titleMy = "မှတ်ချက်အသစ် ရေးသားခြင်း";
+        var actorNameMy = await GetUserFullNameMyAsync(senderId) ?? actorName;
         var body = $"{actorName} commented on task '{task.Title}'";
+        var bodyMy = $"{actorNameMy} သည် လုပ်ငန်း '{GetTaskTitleMy(task)}' တွင် မှတ်ချက်တစ်ခု ရေးသားခဲ့ပါသည်";
 
         await SendAsync(
             recipientIds,
@@ -137,7 +148,9 @@ public class FirebaseNotificationService
             "task",
             task.Id,
             title,
-            body);
+            body,
+            titleMy,
+            bodyMy);
     }
 
     public async global::System.Threading.Tasks.Task NotifyMentionedAsync(Database.AppDbContextModels.Task task, long senderId, string actorName, string message)
@@ -149,7 +162,10 @@ public class FirebaseNotificationService
         }
 
         var title = "You were mentioned";
+        var titleMy = "သင့်ကို ရည်ညွှန်းဖော်ပြခြင်း";
+        var actorNameMy = await GetUserFullNameMyAsync(senderId) ?? actorName;
         var body = $"{actorName} mentioned you in task '{task.Title}'";
+        var bodyMy = $"{actorNameMy} သည် လုပ်ငန်း '{GetTaskTitleMy(task)}' တွင် သင့်ကို ရည်ညွှန်းဖော်ပြခဲ့ပါသည်";
 
         await SendAsync(
             recipientIds,
@@ -158,7 +174,9 @@ public class FirebaseNotificationService
             "task",
             task.Id,
             title,
-            body);
+            body,
+            titleMy,
+            bodyMy);
     }
 
     private List<long> BuildTaskAudience(Database.AppDbContextModels.Task task, long senderId)
@@ -220,7 +238,9 @@ public class FirebaseNotificationService
         string sourceType,
         long sourceId,
         string title,
-        string body)
+        string body,
+        string? titleMy = null,
+        string? bodyMy = null)
     {
         var uniqueRecipientIds = recipientIds.Distinct().ToList();
         if (uniqueRecipientIds.Count == 0)
@@ -234,7 +254,9 @@ public class FirebaseNotificationService
             SenderId = senderId > 0 ? senderId : null,
             NotificationType = (byte)notificationType,
             Title = title,
+            TitleMy = titleMy,
             Body = body,
+            BodyMy = bodyMy,
             SourceType = sourceType,
             SourceId = sourceId,
             IsRead = false,
@@ -244,10 +266,14 @@ public class FirebaseNotificationService
         _db.Notifications.AddRange(notifications);
         await _db.SaveChangesAsync();
 
-        var senderName = senderId > 0
+        var sender = senderId > 0
             ? await _db.Users
                 .Where(u => u.Id == senderId)
-                .Select(u => $"{u.FirstName} {u.LastName}")
+                .Select(u => new
+                {
+                    Name = $"{u.FirstName} {u.LastName}",
+                    NameMy = $"{u.FirstNameMy} {u.LastNameMy}"
+                })
                 .FirstOrDefaultAsync()
             : null;
 
@@ -264,14 +290,17 @@ public class FirebaseNotificationService
             {
                 Id = notification.Id,
                 Title = notification.Title,
+                TitleMy = notification.TitleMy,
                 Body = notification.Body,
+                BodyMy = notification.BodyMy,
                 NotificationType = notification.NotificationType,
                 SourceType = notification.SourceType,
                 SourceId = notification.SourceId,
                 TargetUrl = NotificationNavigation.BuildTargetUrl(notification.SourceType, notification.SourceId, notification.NotificationType),
                 IsRead = notification.IsRead,
                 CreatedAt = notification.CreatedAt,
-                SenderName = senderName
+                SenderName = sender?.Name,
+                SenderNameMy = string.IsNullOrWhiteSpace(sender?.NameMy) ? null : sender.NameMy.Trim()
             };
 
             var recipientUnreadCount = unreadCountLookup.TryGetValue(notification.RecipientId, out var unreadCount)
@@ -347,6 +376,38 @@ public class FirebaseNotificationService
             var error = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"[Firebase] Failed to send push: {(int)response.StatusCode} {response.ReasonPhrase}. {error}");
         }
+    }
+
+    private static string GetTaskTitleMy(Database.AppDbContextModels.Task task) =>
+        string.IsNullOrWhiteSpace(task.TitleMy) ? task.Title : task.TitleMy;
+
+    private static string GetProjectNameMy(Database.AppDbContextModels.Project project) =>
+        string.IsNullOrWhiteSpace(project.NameMy) ? project.Name : project.NameMy;
+
+    private async Task<string?> GetUserFullNameMyAsync(long userId)
+    {
+        if (userId <= 0)
+        {
+            return null;
+        }
+
+        var user = await _db.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new
+            {
+                English = $"{u.FirstName} {u.LastName}",
+                Burmese = $"{u.FirstNameMy} {u.LastNameMy}"
+            })
+            .FirstOrDefaultAsync();
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        return string.IsNullOrWhiteSpace(user.Burmese)
+            ? user.English.Trim()
+            : user.Burmese.Trim();
     }
 
     private async global::System.Threading.Tasks.Task<string> GetAccessTokenAsync(FirebaseServiceAccount serviceAccount)

@@ -174,6 +174,10 @@ public static class AppLocalization
         ["common.saveAssignmentChanges"] = "Save Assignment Changes",
         ["common.assignmentSaved"] = "Assignment saved successfully!",
         ["task.assigneeUpdated"] = "Task assignee updated successfully!",
+        ["task.failedUpdateAssignee"] = "Failed to update assignee.",
+        ["task.failedLoadProjectMembers"] = "Failed to load project members.",
+        ["task.assigneeMustBelong"] = "Task assignee must belong to the selected project.",
+        ["task.titleRequiredEitherLanguage"] = "At least one task title is required.",
         ["task.saveAssignmentTitle"] = "Save Assignment?",
         ["task.saveAssignmentConfirm"] = "Are you sure you want to save this task assignment?",
         ["project.saveAssignmentTitle"] = "Save Assignment?",
@@ -196,7 +200,7 @@ public static class AppLocalization
         ["page.reports"] = "Reports",
         ["page.projectAssignment"] = "Project Assignment",
         ["page.tasks"] = "Tasks",
-        ["page.kanbanBoard"] = "အလုပ်တာဝန် စီမံခန့်ခွဲမှုဘုတ်",
+        ["page.kanbanBoard"] = "Kanban Board",
         ["page.taskAssignment"] = "Task Assignment",
         ["page.taskDetails"] = "Task Details",
         ["page.issues"] = "Issues",
@@ -269,6 +273,9 @@ public static class AppLocalization
         ["dashboard.vsLastMonth"] = "vs last mo",
         ["dashboard.upcoming"] = "Upcoming",
         ["dashboard.active"] = "Active",
+        ["dashboard.queued"] = "queued",
+        ["dashboard.soon"] = "soon",
+        ["dashboard.late"] = "late",
         ["dashboard.employeeTitle"] = "Employee Dashboard",
         ["dashboard.teamMember"] = "Team Member",
         ["dashboard.myWork"] = "My Work",
@@ -347,6 +354,7 @@ public static class AppLocalization
         ["project.newProject"] = "New Project",
         ["project.editProject"] = "Edit Project",
         ["project.createProject"] = "Create Project",
+        ["project.untitledProject"] = "Untitled project",
         ["project.noProjectsYet"] = "No projects yet",
         ["project.createFirstProject"] = "Create your first project to get started.",
         ["project.noAssignedProjects"] = "You have not been assigned to any projects.",
@@ -368,6 +376,7 @@ public static class AppLocalization
         ["task.newTask"] = "New Task",
         ["task.editTask"] = "Edit Task",
         ["task.createTask"] = "Create Task",
+        ["task.untitledTask"] = "Untitled task",
         ["task.noTasksYet"] = "No tasks yet",
         ["task.createFirstTask"] = "Create your first task to get started.",
         ["task.taskTitle"] = "Task title",
@@ -576,6 +585,13 @@ public static class AppLocalization
         ["auth.phonePlaceholder"] = "Phone number",
         ["auth.register"] = "Register",
         ["auth.registerTitle"] = "Register - Taskify",
+        ["auth.usernameOrEmail"] = "Username or Email",
+        ["auth.enterUsernameOrEmail"] = "Enter username or email",
+        ["auth.recoveryCode"] = "Recovery Code",
+        ["auth.enterRecoveryCode"] = "Enter recovery code",
+        ["auth.newPassword"] = "New Password",
+        ["auth.resetPasswordHelp"] = "Use the recovery code configured in the API to set a new password.",
+        ["auth.unableToResetPassword"] = "Unable to reset password.",
         ["task.loadingDetails"] = "Loading task details...",
         ["task.notFound"] = "Task Not Found",
         ["task.notFoundDesc"] = "The task you are looking for does not exist or has been deleted.",
@@ -703,6 +719,8 @@ public static class AppLocalization
         ["report.delaysByAssignee"] = "Delays by assignee",
         ["report.delaysByAssigneeDesc"] = "People who may need support or scope adjustment.",
         ["report.delaysByAssigneeInsight"] = "Support signal only: high counts should trigger help, not blame.",
+        ["report.pastDueDate"] = "Past due date",
+        ["report.highPriorityDueSoon"] = "High priority due soon",
         ["report.severityVsDaysOverdue"] = "Severity vs days overdue",
         ["report.severityVsDaysOverdueDesc"] = "High priority and older delays sit in the upper-right risk zone.",
         ["report.severityMatrixInsight"] = "The matrix combines priority severity with age of delay to show triage order.",
@@ -729,6 +747,7 @@ public static class AppLocalization
         ["project.failedSaveAssignment"] = "Failed to save assignment. Please try again.",
         ["project.selectProjectPrompt"] = "Please select a project from the left panel to manage user assignments.",
         ["issue.addIssueDescription"] = "Create a one-day work issue for a task and record the hours you spent.",
+        ["issue.untitledIssue"] = "Untitled issue",
         ["issue.created"] = "Issue created successfully!",
         ["issue.updated"] = "Issue updated successfully!",
         ["issue.deleted"] = "Issue deleted successfully!",
@@ -778,6 +797,17 @@ public static class AppLocalization
         ["auth.needAccount"] = "Need an account?",
         ["auth.resetPassword"] = "Reset password",
         ["result.signedOut"] = "You have been signed out successfully.",
+        ["result.passwordUpdated"] = "Password updated successfully. Please sign in with your new password.",
+        ["result.apiUnavailable"] = "Unable to reach the API server. Start TaskTrackingSystem.WebApi and try again.",
+        ["result.registrationFailed"] = "Registration failed. Please try again.",
+        ["result.resetPasswordFailed"] = "Failed to reset password.",
+        ["result.invalidCredentials"] = "Invalid username/email or password.",
+        ["result.noPermissionUpdateTasks"] = "You do not have permission to update tasks.",
+        ["result.usernameTaken"] = "Username is already taken.",
+        ["result.emailRegistered"] = "Email is already registered.",
+        ["result.noSystemRoles"] = "No system roles configured. Registration failed.",
+        ["result.invalidRecoveryCode"] = "Invalid recovery code.",
+        ["result.accountNotFound"] = "Account not found.",
         ["report.1to3Days"] = "1-3d",
         ["report.4to7Days"] = "4-7d",
         ["report.8PlusDays"] = "8d+",
@@ -1058,6 +1088,10 @@ public static class AppLocalization
         ["common.saveAssignmentChanges"] = "တာဝန်ချမှု ပြောင်းလဲချက်များ သိမ်းမည်",
         ["common.assignmentSaved"] = "တာဝန်ချထားမှုကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။",
         ["task.assigneeUpdated"] = "အလုပ်တာဝန်ယူသူကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။",
+        ["task.failedUpdateAssignee"] = "အလုပ်တာဝန်ယူသူကို ပြင်ဆင်၍ မရပါ။",
+        ["task.failedLoadProjectMembers"] = "စီမံကိန်းအဖွဲ့ဝင်များကို ဖွင့်၍ မရပါ။",
+        ["task.assigneeMustBelong"] = "အလုပ်တာဝန်ယူသူသည် ရွေးထားသော စီမံကိန်း၏ အဖွဲ့ဝင် ဖြစ်ရပါမည်။",
+        ["task.titleRequiredEitherLanguage"] = "လုပ်ငန်းခေါင်းစဉ်ကို အနည်းဆုံး ဘာသာစကားတစ်ခုဖြင့် ထည့်ရပါမည်။",
         ["task.saveAssignmentTitle"] = "တာဝန်ချမှု သိမ်းမည်လား။",
         ["task.saveAssignmentConfirm"] = "ဤအလုပ်တာဝန်ချထားမှုကို သိမ်းဆည်းရန် သေချာပါသလား။",
         ["project.saveAssignmentTitle"] = "တာဝန်ချမှု သိမ်းမည်လား။",
@@ -1151,6 +1185,9 @@ public static class AppLocalization
         ["dashboard.vsLastMonth"] = "ပြီးခဲ့သည့်လနှင့် နှိုင်းယှဉ်",
         ["dashboard.upcoming"] = "မကြာမီစမည်",
         ["dashboard.active"] = "လက်ရှိ",
+        ["dashboard.queued"] = "စောင့်ဆိုင်း",
+        ["dashboard.soon"] = "မကြာမီ",
+        ["dashboard.late"] = "နောက်ကျ",
         ["dashboard.employeeTitle"] = "ဝန်ထမ်း ပင်မစာမျက်နှာ",
         ["dashboard.teamMember"] = "အဖွဲ့ဝင်",
         ["dashboard.myWork"] = "ကျွန်ုပ်၏အလုပ်များ",
@@ -1228,6 +1265,7 @@ public static class AppLocalization
         ["project.newProject"] = "စီမံကိန်းအသစ်",
         ["project.editProject"] = "စီမံကိန်းပြင်ရန်",
         ["project.createProject"] = "စီမံကိန်းဖန်တီးရန်",
+        ["project.untitledProject"] = "အမည်မရှိသော စီမံကိန်း",
         ["project.noProjectsYet"] = "စီမံကိန်းမရှိသေးပါ",
         ["project.createFirstProject"] = "စတင်ရန် ပထမဆုံးစီမံကိန်းကို ဖန်တီးပါ။",
         ["project.noAssignedProjects"] = "သင့်အား စီမံကိန်းမခွဲဝေထားသေးပါ။",
@@ -1249,6 +1287,7 @@ public static class AppLocalization
         ["task.newTask"] = "အလုပ်အသစ်",
         ["task.editTask"] = "အလုပ်ပြင်ရန်",
         ["task.createTask"] = "အလုပ် ဖန်တီးမည်",
+        ["task.untitledTask"] = "ခေါင်းစဉ်မရှိသော အလုပ်",
         ["task.noTasksYet"] = "အလုပ်မရှိသေးပါ",
         ["task.createFirstTask"] = "စတင်ရန် ပထမဆုံးအလုပ်ကို ဖန်တီးပါ။",
         ["task.taskTitle"] = "အလုပ်ခေါင်းစဉ်",
@@ -1425,7 +1464,7 @@ public static class AppLocalization
         ["validation.fillAllFields"] = "လိုအပ်သော အကွက်များအားလုံးကို ဖြည့်ပါ။",
 
         ["common.password"] = "စကားဝှက်",
-        ["common.usernameOrEmail"] = "အသုံးပြုသူအမည် သို့မဟုတ် အီးမေးလ်",
+        ["common.usernameOrEmail"] = "အသုံးပြုသူအမည် သို့မဟုတ် ဂျီမေးလ်",
         ["common.email"] = "အီးမေးလ်",
         ["auth.registerAccountTitle"] = "Taskify အကောင့် ဖန်တီးပါ",
         ["auth.alreadyHaveAccess"] = "အကောင့်ရှိပြီးသားလား?",
@@ -1437,6 +1476,13 @@ public static class AppLocalization
         ["auth.phonePlaceholder"] = "ဖုန်းနံပါတ် ထည့်ပါ",
         ["auth.register"] = "အကောင့်ဖွင့်ရန်",
         ["auth.registerTitle"] = "မှတ်ပုံတင်ရန် - Taskify",
+        ["auth.usernameOrEmail"] = "အသုံးပြုသူအမည် သို့မဟုတ် ဂျီမေးလ်",
+        ["auth.enterUsernameOrEmail"] = "အသုံးပြုသူအမည် သို့မဟုတ် ဂျီမေးလ် ထည့်ပါ",
+        ["auth.recoveryCode"] = "ပြန်လည်ရယူရေးကုဒ်",
+        ["auth.enterRecoveryCode"] = "ပြန်လည်ရယူရေးကုဒ် ထည့်ပါ",
+        ["auth.newPassword"] = "စကားဝှက်အသစ်",
+        ["auth.resetPasswordHelp"] = "API တွင် သတ်မှတ်ထားသော ပြန်လည်ရယူရေးကုဒ်ဖြင့် စကားဝှက်အသစ် သတ်မှတ်ပါ။",
+        ["auth.unableToResetPassword"] = "စကားဝှက်ကို ပြန်လည်သတ်မှတ်၍ မရပါ။",
         ["task.loadingDetails"] = "လုပ်ငန်း အသေးစိတ်များကို ဖွင့်နေသည်...",
         ["task.notFound"] = "လုပ်ငန်း ရှာမတွေ့ပါ",
         ["task.notFoundDesc"] = "သင်ရှာဖွေနေသော လုပ်ငန်းသည် မရှိတော့ပါ သို့မဟုတ် ဖျက်လိုက်ပါပြီ။",
@@ -1527,6 +1573,7 @@ public static class AppLocalization
         ["project.failedSaveAssignment"] = "တာဝန်ချထားမှုကို သိမ်းဆည်း၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
         ["project.selectProjectPrompt"] = "အသုံးပြုသူ ခွဲဝေမှုများကို စီမံခန့်ခွဲရန် ဘယ်ဘက်အကန့်မှ စီမံကိန်းတစ်ခုကို ရွေးချယ်ပေးပါ။",
         ["issue.addIssueDescription"] = "လုပ်ငန်းတစ်ခုအတွက် တစ်ရက်တာ အလုပ်ပြဿနာတစ်ခု ဖန်တီးပြီး သင်အသုံးပြုခဲ့သည့် နာရီများကို မှတ်တမ်းတင်ပါ။",
+        ["issue.untitledIssue"] = "ခေါင်းစဉ်မရှိသော ပြဿနာ",
         ["issue.created"] = "ပြဿနာကို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။",
         ["issue.updated"] = "ပြဿနာကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။",
         ["issue.deleted"] = "ပြဿနာကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။",
@@ -1579,6 +1626,17 @@ public static class AppLocalization
         ["auth.needAccount"] = "အကောင့်မရှိသေးပါသလား?",
         ["auth.resetPassword"] = "စကားဝှက် ပြန်လည်သတ်မှတ်ရန်",
         ["result.signedOut"] = "အကောင့်မှ အောင်မြင်စွာ ထွက်ပြီးပါပြီ။",
+        ["result.passwordUpdated"] = "စကားဝှက်ကို အောင်မြင်စွာ ပြောင်းပြီးပါပြီ။ စကားဝှက်အသစ်ဖြင့် အကောင့်ဝင်ပါ။",
+        ["result.apiUnavailable"] = "API ဆာဗာကို ဆက်သွယ်၍ မရပါ။ TaskTrackingSystem.WebApi ကို ဖွင့်ထားပြီး ပြန်ကြိုးစားပါ။",
+        ["result.registrationFailed"] = "အကောင့်ဖွင့်၍ မရပါ။ ထပ်မံကြိုးစားပါ။",
+        ["result.resetPasswordFailed"] = "စကားဝှက်ကို ပြန်လည်သတ်မှတ်၍ မရပါ။",
+        ["result.invalidCredentials"] = "အသုံးပြုသူအမည်/ဂျီမေးလ် သို့မဟုတ် စကားဝှက် မမှန်ပါ။",
+        ["result.noPermissionUpdateTasks"] = "လုပ်ငန်းများကို ပြင်ဆင်ရန် ခွင့်ပြုချက် မရှိပါ။",
+        ["result.usernameTaken"] = "ဤအသုံးပြုသူအမည်ကို အသုံးပြုပြီးသား ဖြစ်ပါသည်။",
+        ["result.emailRegistered"] = "ဤအီးမေးလ်ကို မှတ်ပုံတင်ပြီးသား ဖြစ်ပါသည်။",
+        ["result.noSystemRoles"] = "စနစ်အခန်းကဏ္ဍများ မသတ်မှတ်ထားသေးပါ။ အကောင့်ဖွင့်၍ မရပါ။",
+        ["result.invalidRecoveryCode"] = "ပြန်လည်ရယူရေးကုဒ် မမှန်ပါ။",
+        ["result.accountNotFound"] = "အကောင့် ရှာမတွေ့ပါ။",
         ["report.1to3Days"] = "၁-၃ ရက်",
         ["report.4to7Days"] = "၄-၇ ရက်",
         ["report.8PlusDays"] = "၈ ရက်နှင့်အထက်",
@@ -1749,9 +1807,54 @@ public static class AppLocalization
         ["report.delaysByAssignee"] = "တာဝန်ယူသူအလိုက် နှောင့်နှေးမှုများ",
         ["report.delaysByAssigneeDesc"] = "ပံ့ပိုးမှု သို့မဟုတ် နယ်ပယ်ပြင်ဆင်မှု လိုအပ်နိုင်သော အဖွဲ့ဝင်များ။",
         ["report.delaysByAssigneeInsight"] = "ပံ့ပိုးမှုအချက်ပြချက်သာဖြစ်သည် - များပြားသောအရေအတွက်သည် အကူအညီပေးရန်ဖြစ်ပြီး အပြစ်တင်ရန်မဟုတ်ပါ။",
+        ["report.pastDueDate"] = "သတ်မှတ်ရက် ကျော်လွန်နေသည်",
+        ["report.highPriorityDueSoon"] = "ဦးစားပေးမြင့်ပြီး မကြာမီ ပြီးဆုံးရမည်",
         ["report.severityVsDaysOverdue"] = "ပြင်းထန်မှု နှင့် ရက်လွန်ရက်များ",
         ["report.severityVsDaysOverdueDesc"] = "ဦးစားပေးမြင့်မားပြီး ပိုမိုကြာမြင့်သော နှောင့်နှေးမှုများသည် ညာဘက်အပေါ်ရှိ အန္တရာယ်ဇုန်တွင် တည်ရှိသည်။",
         ["report.severityMatrixInsight"] = "ဤမက်ထရစ်သည် ဦးစားပေးပြင်းထန်မှုကို နှောင့်နှေးချိန်သက်တမ်းနှင့် ပေါင်းစပ်ကာ ဖြေရှင်းရမည့် အစီအစဉ်ကို ပြသသည်။"
+    };
+
+    private static readonly IReadOnlyDictionary<string, string> ErrorMessageKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Invalid username/email or password."] = "result.invalidCredentials",
+        ["Failed to parse authentication response tokens."] = "result.invalidCredentials",
+        ["Please fill in all required fields."] = "validation.fillAllFields",
+        ["Registration failed. Please try again."] = "result.registrationFailed",
+        ["Failed to parse registration response."] = "result.registrationFailed",
+        ["Username is already taken."] = "result.usernameTaken",
+        ["Email is already registered."] = "result.emailRegistered",
+        ["No system roles configured. Registration failed."] = "result.noSystemRoles",
+        ["Unable to reach the API server. Please ensure TaskTrackingSystem.WebApi is running."] = "result.apiUnavailable",
+        ["Unable to reach the API server. Start TaskTrackingSystem.WebApi and try again."] = "result.apiUnavailable",
+        ["Failed to reset password."] = "result.resetPasswordFailed",
+        ["Unable to reset password."] = "result.resetPasswordFailed",
+        ["Invalid recovery code."] = "result.invalidRecoveryCode",
+        ["Account not found."] = "result.accountNotFound",
+        ["Username must be at least 3 characters long."] = "validation.usernameMinLength",
+        ["Username cannot contain spaces."] = "validation.usernameNoSpaces",
+        ["Username cannot contain spaces, and can only contain letters, numbers, underscores (_), and periods (.)"] = "validation.usernameInvalidCharacters",
+        ["Username cannot contain spaces, and can only contain letters, numbers, underscores (_), and periods (.)."] = "validation.usernameInvalidCharacters",
+        ["Password must be at least 6 characters."] = "validation.passwordMinLength",
+        ["Password must be at least 8 characters long."] = "validation.passwordMinLengthRule",
+        ["Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."] = "validation.passwordComplexityRule",
+        ["Failed to update assignee."] = "task.failedUpdateAssignee",
+        ["Failed to load project members."] = "task.failedLoadProjectMembers",
+        ["Task assignee must belong to the selected project."] = "task.assigneeMustBelong",
+        ["At least one task title is required."] = "task.titleRequiredEitherLanguage",
+        ["You do not have permission to update tasks."] = "result.noPermissionUpdateTasks"
+    };
+
+    private static readonly IReadOnlyDictionary<string, string> ValidationFieldNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Username"] = "common.username",
+        ["Email"] = "common.email",
+        ["FirstName"] = "auth.firstName",
+        ["LastName"] = "auth.lastName",
+        ["Password"] = "common.password",
+        ["NewPassword"] = "auth.newPassword",
+        ["RecoveryCode"] = "auth.recoveryCode",
+        ["UsernameOrEmail"] = "common.usernameOrEmail",
+        ["Phone"] = "common.phone"
     };
 
     public static bool IsBurmeseCulture => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("my", StringComparison.OrdinalIgnoreCase);
@@ -1770,6 +1873,74 @@ public static class AppLocalization
         }
 
         return string.IsNullOrWhiteSpace(fallback) ? key : fallback;
+    }
+
+    public static string ErrorMessage(string? message, string fallback = "")
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return Text("common.error", string.IsNullOrWhiteSpace(fallback) ? "Error" : fallback);
+        }
+
+        var trimmed = message.Trim();
+        if (ErrorMessageKeys.TryGetValue(trimmed, out var key))
+        {
+            return Text(key, trimmed);
+        }
+
+        var requiredMessage = TryLocalizeRequiredFieldMessage(trimmed);
+        if (!string.IsNullOrWhiteSpace(requiredMessage))
+        {
+            return requiredMessage;
+        }
+
+        var localized = trimmed;
+        foreach (var mappedError in ErrorMessageKeys)
+        {
+            if (localized.Contains(mappedError.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                localized = localized.Replace(mappedError.Key, Text(mappedError.Value, mappedError.Key), StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        foreach (var field in ValidationFieldNames)
+        {
+            var requiredError = $"The {field.Key} field is required.";
+            if (localized.Contains(requiredError, StringComparison.OrdinalIgnoreCase))
+            {
+                var fieldLabel = Text(field.Value, field.Key);
+                var translated = IsBurmeseCulture ? $"{fieldLabel} လိုအပ်ပါသည်။" : $"{fieldLabel} is required.";
+                localized = localized.Replace(requiredError, translated, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        if (!string.Equals(localized, trimmed, StringComparison.Ordinal))
+        {
+            return localized;
+        }
+
+        return trimmed;
+    }
+
+    private static string? TryLocalizeRequiredFieldMessage(string message)
+    {
+        const string requiredPrefix = "The ";
+        const string requiredSuffix = " field is required.";
+
+        if (!message.StartsWith(requiredPrefix, StringComparison.Ordinal) ||
+            !message.EndsWith(requiredSuffix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var fieldName = message[requiredPrefix.Length..^requiredSuffix.Length];
+        var fieldLabel = ValidationFieldNames.TryGetValue(fieldName, out var fieldKey)
+            ? Text(fieldKey, fieldName)
+            : fieldName;
+
+        return IsBurmeseCulture
+            ? $"{fieldLabel} လိုအပ်ပါသည်။"
+            : $"{fieldLabel} is required.";
     }
 
     public static LocalizationCatalogValidation ValidateCatalogs(IEnumerable<string>? referencedKeys = null)

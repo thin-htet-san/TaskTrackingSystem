@@ -154,19 +154,24 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             [FromQuery] string? delayType,
             [FromQuery] bool? assignedToMe,
             [FromQuery] bool? assignedToMyTeam,
-            [FromQuery] PaginationQuery? paging = null)
+            [FromQuery] PaginationQuery? paging = null,
+            [FromQuery] int? page = null,
+            [FromQuery] int? limit = null)
         {
-            if (paging == null || (!paging.Page.HasValue && !paging.Limit.HasValue))
+            var requestedPage = page ?? paging?.Page;
+            var requestedLimit = limit ?? paging?.Limit;
+
+            if (!requestedPage.HasValue && !requestedLimit.HasValue)
             {
                 var full = await _reportService.GetOverdueCriticalTasksAsync(
                     search, projectId, User.GetRoleId(), User.GetUserId(), priorityId, delayType, assignedToMe, assignedToMyTeam);
                 return StatusCode(full.StatusCode, full);
             }
 
-            var page = PaginationExtensions.NormalizePage(paging?.Page);
-            var limit = PaginationExtensions.NormalizePageSize(paging?.Limit ?? 0);
+            var normalizedPage = PaginationExtensions.NormalizePage(requestedPage);
+            var normalizedLimit = PaginationExtensions.NormalizePageSize(requestedLimit ?? 0);
             var result = await _reportService.GetPagedOverdueCriticalTasksAsync(
-                search, projectId, User.GetRoleId(), User.GetUserId(), page, limit, priorityId, delayType, assignedToMe, assignedToMyTeam);
+                search, projectId, User.GetRoleId(), User.GetUserId(), normalizedPage, normalizedLimit, priorityId, delayType, assignedToMe, assignedToMyTeam);
             return Ok(result);
         }
 

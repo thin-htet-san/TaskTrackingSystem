@@ -70,13 +70,13 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-start justify-between gap-3">
-                                        <p class="text-sm font-semibold text-slate-900 truncate">@Content.GetText(item.Title, item.TitleMy)</p>
+                                        <p class="text-sm font-semibold text-slate-900 truncate">@GetNotificationTitle(item)</p>
                                         @if (!item.IsRead)
                                         {
                                             <span class="mt-1 h-2.5 w-2.5 rounded-full bg-violet-600 shrink-0"></span>
                                         }
                                     </div>
-                                    <p class="mt-1 text-xs text-slate-600 leading-5">@Content.GetText(item.Body, item.BodyMy)</p>
+                                    <p class="mt-1 text-xs text-slate-600 leading-5">@GetNotificationBody(item)</p>
                                     <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
                                         <span>@FormatSender(Content.GetText(item.SenderName, item.SenderNameMy))</span>
                                         <span>@FormatTime(item.CreatedAt)</span>
@@ -265,7 +265,32 @@
 
     private static string FormatSender(string? senderName)
     {
-        return string.IsNullOrWhiteSpace(senderName) ? AppLocalization.Text("notification.system", "System") : senderName;
+        if (string.IsNullOrWhiteSpace(senderName))
+        {
+            return AppLocalization.Text("notification.system", "System");
+        }
+
+        return string.Equals(senderName, "System Admin", StringComparison.OrdinalIgnoreCase)
+            ? AppLocalization.Text("common.systemAdmin", "System Admin")
+            : senderName;
+    }
+
+    private static string GetNotificationTitle(NotificationDto item)
+    {
+        var title = AppLocalization.IsBurmeseCulture && !string.IsNullOrWhiteSpace(item.TitleMy)
+            ? item.TitleMy
+            : item.Title;
+
+        return AppLocalization.LocalizeNotificationTitle(title);
+    }
+
+    private static string GetNotificationBody(NotificationDto item)
+    {
+        var body = AppLocalization.IsBurmeseCulture && !string.IsNullOrWhiteSpace(item.BodyMy)
+            ? item.BodyMy
+            : item.Body;
+
+        return AppLocalization.LocalizeNotificationBody(body);
     }
 
     private static string FormatTime(DateTime? createdAt)
@@ -278,8 +303,7 @@
         var value = createdAt.Value.ToLocalTime();
         if (AppLocalization.IsBurmeseCulture)
         {
-            var monthName = value.ToString("MMM");
-            var formatted = $"{value.Day} {monthName}၊ {value:HH:mm}";
+            var formatted = $"{AppLocalization.Number(value.Day)} {AppLocalization.MonthName(value, true)}၊ {AppLocalization.LocalizeDigits(value.ToString("HH:mm"))}";
             return AppLocalization.LocalizeDigits(formatted);
         }
         return value.ToString("dd MMM, HH:mm");
