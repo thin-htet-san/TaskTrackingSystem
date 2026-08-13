@@ -26,7 +26,7 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 EXPOSE 7860
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nginx ca-certificates \
+    && apt-get install -y --no-install-recommends nginx ca-certificates fonts-noto-core \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish/api /app/api
