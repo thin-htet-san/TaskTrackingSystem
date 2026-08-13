@@ -249,7 +249,10 @@ public static class AccountEndpoints
             new AuthenticationProperties
             {
                 IsPersistent = rememberMe,
-                ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(7) : DateTimeOffset.UtcNow.AddHours(8)
+                ExpiresUtc = DateTimeOffset.UtcNow.Add(
+                    rememberMe
+                        ? AuthenticationSessionDefaults.RememberMeLifetime
+                        : AuthenticationSessionDefaults.SessionLifetime)
             });
     }
 

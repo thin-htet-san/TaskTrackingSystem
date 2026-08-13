@@ -40,15 +40,19 @@
     <script>
         window.languagePreference = {
             normalize(code) {
-                return code === 'en' ? 'en' : 'my';
+                const normalized = (code || '').toLowerCase();
+                return normalized === 'en' || normalized.startsWith('en-') ? 'en' : 'my';
             },
             apply(storageKey, code) {
                 const normalized = this.normalize(code);
+                const culture = normalized === 'en' ? 'en-US' : 'my-MM';
                 document.documentElement.lang = normalized;
                 try {
                     localStorage.setItem(storageKey, normalized);
                 } catch {
                 }
+                const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+                document.cookie = `.AspNetCore.Culture=c=${culture}|uic=${culture}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
                 return normalized;
             },
             init(storageKey) {

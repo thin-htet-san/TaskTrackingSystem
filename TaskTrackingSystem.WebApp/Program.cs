@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
 using TaskTrackingSystem.WebApp.Localization;
 using TaskTrackingSystem.Shared.Localization;
 using TaskTrackingSystem.WebApp;
@@ -51,13 +52,26 @@ builder.Services.AddScoped<ILocalizedContentService, LocalizedContentService>();
 builder.Services.AddScoped<TaskTrackingSystem.Shared.Localization.IContentTranslationService, ApiContentTranslationService>();
 builder.Services.AddScoped<TaskTrackingSystem.Shared.Localization.LanguageDetectionService>();
 
+var supportedCultures = new[]
+{
+    CultureInfo.GetCultureInfo("my-MM"),
+    CultureInfo.GetCultureInfo("en-US")
+};
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture = new RequestCulture("my-MM");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
+
 // Cookie authentication for Blazor pages and HTTP middleware.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/login";
         options.AccessDeniedPath = "/login";
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.ExpireTimeSpan = AuthenticationSessionDefaults.SessionLifetime;
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
@@ -91,6 +105,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
+app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();

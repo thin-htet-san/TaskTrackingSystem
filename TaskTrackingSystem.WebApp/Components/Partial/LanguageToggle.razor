@@ -1,6 +1,7 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @implements IDisposable
 @inject TaskTrackingSystem.WebApp.Localization.UiLanguageService Language
+@inject NavigationManager Navigation
 
 <button type="button"
         @onclick="ToggleLanguage"
@@ -32,6 +33,7 @@
     private async Task ToggleLanguage()
     {
         await Language.ToggleAsync();
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
     }
 
     private void OnLanguageChanged()

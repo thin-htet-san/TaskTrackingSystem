@@ -117,7 +117,5 @@ public sealed class UiLanguageService
         var culture = language == AppLanguage.Burmese ? CultureInfo.GetCultureInfo("my-MM") : CultureInfo.GetCultureInfo("en-US");
         CultureInfo.CurrentCulture = culture;
         CultureInfo.CurrentUICulture = culture;
-        CultureInfo.DefaultThreadCurrentCulture = culture;
-        CultureInfo.DefaultThreadCurrentUICulture = culture;
     }
 }
