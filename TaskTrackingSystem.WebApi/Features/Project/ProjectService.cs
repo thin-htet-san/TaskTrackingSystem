@@ -398,7 +398,11 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             }
 
             var tasks = await _db.Tasks
-                .Where(t => t.ProjectId == projectId && t.IsDeleted != true && !t.IsArchived)
+                .Where(t =>
+                    t.ProjectId == projectId &&
+                    t.IsDeleted != true &&
+                    t.Project.IsDeleted != true &&
+                    !t.IsArchived)
                 .Select(t => new TaskDto
                 {
                     Id = t.Id,
@@ -430,7 +434,10 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             return query.Where(p =>
                 p.CreatedById == currentUserId ||
-                p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
+                p.ProjectMembers.Any(pm => pm.UserId == currentUserId) ||
+                p.Tasks.Any(t =>
+                    t.IsDeleted != true &&
+                    (t.AssignedTo == currentUserId || t.CreatedBy == currentUserId)));
         }
 
         private async Task<bool> IsProjectAccessibleAsync(long projectId, bool isAdmin, long currentUserId)
@@ -443,7 +450,11 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             return await _db.Projects.AnyAsync(p =>
                 p.Id == projectId &&
                 p.IsDeleted != true &&
-                (p.CreatedById == currentUserId || p.ProjectMembers.Any(pm => pm.UserId == currentUserId)));
+                (p.CreatedById == currentUserId ||
+                 p.ProjectMembers.Any(pm => pm.UserId == currentUserId) ||
+                 p.Tasks.Any(t =>
+                     t.IsDeleted != true &&
+                     (t.AssignedTo == currentUserId || t.CreatedBy == currentUserId))));
         }
     }
 }

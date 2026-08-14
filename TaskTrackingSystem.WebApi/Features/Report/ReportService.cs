@@ -77,7 +77,10 @@ namespace TaskTrackingSystem.WebApi.Features.Report
 
         private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(bool isAdmin, bool isManager, long currentUserId)
         {
-            return _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
+            return _db.Tasks.Where(t =>
+                t.IsDeleted != true &&
+                t.Project.IsDeleted != true &&
+                !t.IsArchived);
         }
 
         private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Project> BuildAccessibleProjectQuery(bool isAdmin, long currentUserId)
@@ -130,13 +133,16 @@ namespace TaskTrackingSystem.WebApi.Features.Report
         private async Task<List<long>> GetTeamUserIdsAsync(long currentUserId)
         {
             var myProjectIds = await _db.ProjectMembers
-                .Where(pm => pm.UserId == currentUserId)
+                .Where(pm => pm.UserId == currentUserId && pm.Project.IsDeleted != true)
                 .Select(pm => pm.ProjectId)
                 .Distinct()
                 .ToListAsync();
 
             return await _db.ProjectMembers
-                .Where(pm => myProjectIds.Contains(pm.ProjectId) && pm.UserId != currentUserId)
+                .Where(pm =>
+                    myProjectIds.Contains(pm.ProjectId) &&
+                    pm.Project.IsDeleted != true &&
+                    pm.UserId != currentUserId)
                 .Select(pm => pm.UserId)
                 .Distinct()
                 .ToListAsync();
@@ -984,7 +990,7 @@ namespace TaskTrackingSystem.WebApi.Features.Report
             if (assignedToMe == true || assignedToMyTeam == true)
             {
                 var myProjectIds = await _db.ProjectMembers
-                    .Where(pm => pm.UserId == currentUserId)
+                    .Where(pm => pm.UserId == currentUserId && pm.Project.IsDeleted != true)
                     .Select(pm => pm.ProjectId)
                     .Distinct()
                     .ToListAsync();

@@ -31,7 +31,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         [HttpGet("tasks/{taskId}/comments")]
         public async Task<ActionResult<IEnumerable<CommentDto>>> GetComments(long taskId)
         {
-            var taskExists = await _db.Tasks.AnyAsync(t => t.Id == taskId && !t.IsDeleted && !t.IsArchived);
+            var taskExists = await _db.Tasks.AnyAsync(t =>
+                t.Id == taskId &&
+                !t.IsDeleted &&
+                !t.Project.IsDeleted &&
+                !t.IsArchived);
             if (!taskExists)
             {
                 return NotFound(new { message = $"Task with ID {taskId} not found." });
@@ -69,7 +73,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 return BadRequest(Result<CommentDto>.Failure("Comment message cannot be empty.", 400));
             }
 
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted && !t.IsArchived);
+            var task = await _db.Tasks.FirstOrDefaultAsync(t =>
+                t.Id == taskId &&
+                !t.IsDeleted &&
+                !t.Project.IsDeleted &&
+                !t.IsArchived);
             if (task == null)
             {
                 return NotFound(Result<CommentDto>.Failure($"Task with ID {taskId} not found.", 404));

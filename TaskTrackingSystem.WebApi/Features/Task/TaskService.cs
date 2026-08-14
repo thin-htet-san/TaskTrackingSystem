@@ -450,7 +450,10 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
         private async Task<IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task>> BuildAccessibleTaskQueryAsync(long roleId, long currentUserId, bool includeArchived = false)
         {
-            var query = _db.Tasks.Where(t => t.IsDeleted != true && (includeArchived || !t.IsArchived));
+            var query = _db.Tasks.Where(t =>
+                t.IsDeleted != true &&
+                t.Project.IsDeleted != true &&
+                (includeArchived || !t.IsArchived));
 
             var isAdmin = await DataScopeAuthorization.IsAdminScopeAsync(_db, roleId);
             if (isAdmin)
@@ -483,7 +486,11 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             return await _db.Projects.AnyAsync(p =>
                 p.Id == projectId &&
                 p.IsDeleted != true &&
-                (p.CreatedById == currentUserId || p.ProjectMembers.Any(pm => pm.UserId == currentUserId)));
+                (p.CreatedById == currentUserId ||
+                 p.ProjectMembers.Any(pm => pm.UserId == currentUserId) ||
+                 p.Tasks.Any(t =>
+                     t.IsDeleted != true &&
+                     (t.AssignedTo == currentUserId || t.CreatedBy == currentUserId))));
         }
 
         private async Task<bool> IsProjectMemberAsync(long projectId, long userId)

@@ -103,7 +103,11 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             foreach (var project in activeProjects)
             {
                 var tasks = await _db.Tasks
-                    .Where(t => t.ProjectId == project.Id && t.IsDeleted != true && !t.IsArchived)
+                    .Where(t =>
+                        t.ProjectId == project.Id &&
+                        t.IsDeleted != true &&
+                        t.Project.IsDeleted != true &&
+                        !t.IsArchived)
                     .ToListAsync();
 
                 int totalTasks = tasks.Count;
@@ -126,7 +130,10 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
 
         private IQueryable<TaskTrackingSystem.Database.AppDbContextModels.Task> BuildAccessibleTaskQuery(bool isAdmin, bool isManager, long currentUserId)
         {
-            var query = _db.Tasks.Where(t => t.IsDeleted != true && !t.IsArchived);
+            var query = _db.Tasks.Where(t =>
+                t.IsDeleted != true &&
+                t.Project.IsDeleted != true &&
+                !t.IsArchived);
 
             if (isAdmin)
             {
@@ -157,7 +164,10 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
 
             return query.Where(p =>
                 p.CreatedById == currentUserId ||
-                p.ProjectMembers.Any(pm => pm.UserId == currentUserId));
+                p.ProjectMembers.Any(pm => pm.UserId == currentUserId) ||
+                p.Tasks.Any(t =>
+                    t.IsDeleted != true &&
+                    (t.AssignedTo == currentUserId || t.CreatedBy == currentUserId)));
         }
     }
 }
